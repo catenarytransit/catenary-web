@@ -140,5 +140,7 @@
 	"cookie_consent_analytics": "Analitikai sütiket használunk az élmény javítása érdekében. Hozzájárul?",
 	"accept": "Elfogad",
 	"decline": "Elutasít",
-	"show_arrivals": "Utolsó állomásra érkezők megjelenítése"
+	"show_arrivals": "Utolsó állomásra érkezők megjelenítése",
+	"openInEnroute": "Megnyitas az Enroute-ban",
+	"copyLink": "Link Masolasa"
 }

@@ -119,5 +119,7 @@
 	"cookie_consent_analytics": "Úsáidimid fianáin le haghaidh anailísíochta chun d’eispéireas a fheabhsú. An dtoilíonn tú?",
 	"accept": "Glac",
 	"decline": "Diúltaigh",
-	"show_arrivals": "Taispeáin Teacht ar an Stáisiún Deireanach"
+	"show_arrivals": "Taispeáin Teacht ar an Stáisiún Deireanach",
+	"openInEnroute": "Oscail in Enroute",
+	"copyLink": "Cóipeail Nasc"
 }

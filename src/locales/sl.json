@@ -137,5 +137,7 @@
 	"gpsdisclaimer": "Če je čakanje predolgo, preverite, ali ima to spletno mesto dovoljenja brskalnika za dostop do vaše lokacije in ali je vaš signal GPS močan.",
 	"last_stop": "zadnja postaja",
 	"search_here": "Iskanje tukaj",
-	"show_arrivals": "Prikaži prihode na zadnji postaji"
+	"show_arrivals": "Prikaži prihode na zadnji postaji",
+	"openInEnroute": "Odpri v Enroute",
+	"copyLink": "Kopiraj Povezavo"
 }

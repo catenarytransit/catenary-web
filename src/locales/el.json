@@ -140,5 +140,7 @@
 	"cookie_consent_analytics": "Χρησιμοποιούμε cookies για αναλυτικούς σκοπούς για να βελτιώσουμε την εμπειρία σας. Συναινείτε;",
 	"accept": "Αποδέχομαι",
 	"decline": "Αρνούμαι",
-	"show_arrivals": "Εμφάνιση αφίξεων στον τελευταίο σταθμό"
+	"show_arrivals": "Εμφάνιση αφίξεων στον τελευταίο σταθμό",
+	"openInEnroute": "Anoigma sto Enroute",
+	"copyLink": "Antigraphi Syndesmi"
 }

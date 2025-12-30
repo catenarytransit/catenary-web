@@ -120,5 +120,7 @@
 	"cookie_consent_analytics": "Vi bruger cookies til analyse for at forbedre din oplevelse. Giver du samtykke?",
 	"accept": "Accepter",
 	"decline": "Afvis",
-	"show_arrivals": "Vis ankomster ved sidste station"
+	"show_arrivals": "Vis ankomster ved sidste station",
+	"openInEnroute": "Aben i Enroute",
+	"copyLink": "Kopier Link"
 }

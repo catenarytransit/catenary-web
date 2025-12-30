@@ -129,5 +129,7 @@
 	"ending_time": "结束时间",
 	"commitdate": "Git 提交日期时间",
 	"search_here": "在此处搜索",
-	"show_arrivals": "显示最后一站到达"
+	"show_arrivals": "显示最后一站到达",
+	"openInEnroute": "在Enroute中打开",
+	"copyLink": "复制链接"
 }

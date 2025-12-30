@@ -31,6 +31,8 @@
 	import { locale, _ } from 'svelte-i18n';
 	import Clock from './Clock.svelte';
 	import StopScreenRow from './StopScreenRow.svelte';
+	import CopyLinkButton from './CopyLinkButton.svelte';
+	import EnrouteButton from './EnrouteButton.svelte';
 	import { SingleTrip, StackInterface } from './stackenum';
 
 	// ---------- Paging controls ----------
@@ -791,7 +793,16 @@
 </script>
 
 <div class="h-full">
-	<HomeButton />
+	<div class="flex flex-row items-center gap-1">
+		<HomeButton />
+		{#if data_meta}
+			<div class="flex flex-row gap-2 ml-auto mr-2">
+				<EnrouteButton mode="station" {chateau} {stop_id} />
+				<CopyLinkButton screen="stop" {chateau} stop={stop_id} />
+			</div>
+		{/if}
+	</div>
+
 
 	<div
 		bind:this={scrollContainer}
@@ -802,16 +813,20 @@
 			<div>
 				{#if data_meta}
 					<div class="flex flex-row ml-1">
-						<h2 class="text-lg font-bold">{data_meta.primary.stop_name}</h2>
-						<p class="ml-auto align-middle">
-							<Clock
-								time_seconds={current_time / 1000}
-								show_seconds={true}
-								timezone={data_meta.primary.timezone}
-							/>
-						</p>
+						<div class="flex flex-col">
+							<h2 class="text-lg font-bold">{data_meta.primary.stop_name}</h2>
+							<p class="text-sm mb-2">{data_meta.primary.timezone}</p>
+						</div>
+						<div class="ml-auto flex flex-col items-end gap-1">
+							<p class="align-middle">
+								<Clock
+									time_seconds={current_time / 1000}
+									show_seconds={true}
+									timezone={data_meta.primary.timezone}
+								/>
+							</p>
+						</div>
 					</div>
-					<p class="text-sm ml-1 mb-2">{data_meta.primary.timezone}</p>
 
 					<!-- Filters -->
 					<div class="flex flex-row flex-wrap gap-2 ml-1 mb-4 items-center">

@@ -113,7 +113,6 @@
 		</div>
 	{/if}
 	{#if latest_item_on_stack.data instanceof SingleTrip}
-		<HomeButton />
 		<SingleTripInfo
 			{usunits}
 			{darkMode}
@@ -171,5 +170,6 @@
 	</div>-->
 	<div class="py-1 flex flex-col h-full">
 		<div class="flex flex-col h-full select-text"><NearbyDepartures {usunits} {darkMode} /></div>
+		<TidbitSidebarCard />
 	</div>
 {/if}

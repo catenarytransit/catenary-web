@@ -570,7 +570,7 @@
 			</div>
 
 			<div
-				class={`border-2  ${current_nearby_pick_state == 1 ? 'bg-purple-200 dark:bg-purple-800 ' : ''} 
+				class={`border-2  ${current_nearby_pick_state == 1 ? 'bg-purple-200 dark:bg-purple-800 ' : ''}
 	rounded-lg border-purple-500 flex flex-row`}
 			>
 				<div

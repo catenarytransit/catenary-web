@@ -132,5 +132,7 @@
 	"replaced_stop": "Ersatt stopp",
 	"level": "Nivå",
 	"occupancy_percentage": "Beläggningsprocent",
-	"show_arrivals": "Visa ankomster vid sista stationen"
+	"show_arrivals": "Visa ankomster vid sista stationen",
+	"openInEnroute": "Oppna i Enroute",
+	"copyLink": "Kopiera Länk"
 }

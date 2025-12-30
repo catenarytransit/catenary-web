@@ -135,5 +135,7 @@
 	"cookie_consent_analytics": "Utilitzem galetes (cookies) per a analítiques per millorar la teva experiència. Hi consents?",
 	"accept": "Acceptar",
 	"decline": "Rebutjar",
-	"show_arrivals": "Mostrar arribades a l'última estació"
+	"show_arrivals": "Mostrar arribades a l'última estació",
+	"openInEnroute": "Obrir a Enroute",
+	"copyLink": "Copiar Enllaç"
 }

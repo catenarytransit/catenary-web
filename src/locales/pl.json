@@ -116,5 +116,7 @@
 	"deleted": "Usunięto",
 	"starting_time": "Czas rozpoczęcia",
 	"ending_time": "Czas zakończenia",
-	"show_arrivals": "Pokaż przyjazdy na ostatniej stacji"
+	"show_arrivals": "Pokaż przyjazdy na ostatniej stacji",
+	"openInEnroute": "Otworz w Enroute",
+	"copyLink": "Kopiuj Link"
 }

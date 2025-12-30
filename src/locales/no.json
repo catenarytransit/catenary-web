@@ -137,5 +137,7 @@
 	"gpsdisclaimer": "Hvis ventetiden er for lang, sjekk om dette nettstedet har tillatelse til å bruke posisjonen din, og verifiser at GPS-signalet er sterkt.",
 	"last_stop": "siste stopp",
 	"search_here": "Søk her",
-	"show_arrivals": "Vis ankomster ved siste stasjon"
+	"show_arrivals": "Vis ankomster ved siste stasjon",
+	"openInEnroute": "Apne i Enroute",
+	"copyLink": "Kopier Lenke"
 }

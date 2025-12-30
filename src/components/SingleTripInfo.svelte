@@ -32,6 +32,8 @@
 		fixRunNumber,
 		fixStationName
 	} from './agencyspecific';
+	import EnrouteButton from './EnrouteButton.svelte';
+	import HomeButton from './SidebarParts/home_button.svelte';
 	let is_loading_trip_data: boolean = true;
 	let trip_data: Record<string, any> | null = null;
 	let init_loaded = 0;
@@ -897,6 +899,13 @@
 		</div>
 	{/each}
 {:else if trip_data != null}
+	<div class="flex flex-row items-center gap-1 px-3">
+		<HomeButton />
+		<div class="flex flex-row gap-2 ml-auto mr-2">
+			<EnrouteButton mode="enroute" chateau={trip_selected.chateau_id} trip_id={trip_selected.trip_id} />
+		</div>
+	</div>
+
 	<div class="px-3">
 		{#await import('./RouteHeading.svelte') then { default: RouteHeading }}
 			<RouteHeading

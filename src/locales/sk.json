@@ -137,5 +137,7 @@
 	"gpsdisclaimer": "Ak je čakanie príliš dlhé, skontrolujte, či má táto stránka povolenie prehliadača na prístup k vašej polohe a či máte silný signál GPS.",
 	"last_stop": "posledná zastávka",
 	"search_here": "Hľadať tu",
-	"show_arrivals": "Zobraziť príchody na poslednej stanici"
+	"show_arrivals": "Zobraziť príchody na poslednej stanici",
+	"openInEnroute": "Otvorit v Enroute",
+	"copyLink": "Kopirovat Odkaz"
 }

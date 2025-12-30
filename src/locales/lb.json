@@ -132,5 +132,7 @@
 	"replaced_stop": "Ersetzt arrêt",
 	"level": "Niveau",
 	"occupancy_percentage": "Besetzungsprozentsaz",
-	"show_arrivals": "Arrivéeën op der leschter Statioun uweisen"
+	"show_arrivals": "Arrivéeën op der leschter Statioun uweisen",
+	"openInEnroute": "Ueffen zu Enroute",
+	"copyLink": "Link Kopieren"
 }

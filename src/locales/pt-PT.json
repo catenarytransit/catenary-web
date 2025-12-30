@@ -134,5 +134,7 @@
 	"level": "Nível",
 	"replaced_stop": "paragem substituída",
 	"noormdata": "Ocultar dados do Open Railway Map",
-	"show_arrivals": "Mostrar chegadas na última estação"
+	"show_arrivals": "Mostrar chegadas na última estação",
+	"openInEnroute": "Abrir em Enroute",
+	"copyLink": "Copiar Link"
 }

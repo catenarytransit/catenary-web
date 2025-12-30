@@ -140,5 +140,7 @@
 	"cookie_consent_analytics": "Koristimo kolačiće za analitiku kako bismo poboljšali vaše iskustvo. Pristajete li?",
 	"accept": "Prihvati",
 	"decline": "Odbij",
-	"show_arrivals": "Prikaži dolaske na zadnjoj stanici"
+	"show_arrivals": "Prikaži dolaske na zadnjoj stanici",
+	"openInEnroute": "Otvori u Enroute",
+	"copyLink": "Kopiraj Poveznicu"
 }

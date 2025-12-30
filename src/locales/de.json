@@ -136,5 +136,7 @@
 	"cookie_consent_analytics": "Wir verwenden Cookies für Analysezwecke, um Ihr Erlebnis zu verbessern. Stimmen Sie zu?",
 	"accept": "Akzeptieren",
 	"decline": "Ablehnen",
-	"show_arrivals": "Ankünfte am letzten Bahnhof anzeigen"
+	"show_arrivals": "Ankünfte am letzten Bahnhof anzeigen",
+	"openInEnroute": "In Enroute oeffnen",
+	"copyLink": "Link Kopieren"
 }

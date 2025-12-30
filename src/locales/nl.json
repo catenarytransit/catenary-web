@@ -116,5 +116,7 @@
 	"deleted": "Verwijderd",
 	"starting_time": "Starttijd",
 	"ending_time": "Eindtijd",
-	"show_arrivals": "Aankomsten op het laatste station weergeven"
+	"show_arrivals": "Aankomsten op het laatste station weergeven",
+	"openInEnroute": "Openen in Enroute",
+	"copyLink": "Link Kopieren"
 }

@@ -127,5 +127,7 @@
 	"cookie_consent_analytics": "Utilizziamo i cookie per l'analisi per migliorare la tua esperienza. Acconsenti?",
 	"accept": "Accetta",
 	"decline": "Rifiuta",
-	"show_arrivals": "Mostra arrivi all'ultima stazione"
+	"show_arrivals": "Mostra arrivi all'ultima stazione",
+	"openInEnroute": "Apri in Enroute",
+	"copyLink": "Copia Link"
 }

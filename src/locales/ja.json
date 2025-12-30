@@ -121,5 +121,7 @@
 	"cookie_consent_analytics": "エクスペリエンスを向上させるために分析用のCookieを使用します。同意しますか？",
 	"accept": "同意",
 	"decline": "辞退",
-	"show_arrivals": "終着駅の到着を表示"
+	"show_arrivals": "終着駅の到着を表示",
+	"openInEnroute": "Enrouteで開く",
+	"copyLink": "リンクをコピー"
 }

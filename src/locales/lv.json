@@ -137,5 +137,7 @@
 	"gpsdisclaimer": "Ja gaidīšana ir pārāk ilga, pārbaudiet, vai šai vietnei ir pārlūkprogrammas atļaujas piekļūt jūsu atrašanās vietai, un pārliecinieties, ka GPS signāls ir spēcīgs.",
 	"last_stop": "pēdējā pietura",
 	"search_here": "Meklēt šeit",
-	"show_arrivals": "Rādīt ierašanās pēdējā stacijā"
+	"show_arrivals": "Rādīt ierašanās pēdējā stacijā",
+	"openInEnroute": "Atveret Enroute",
+	"copyLink": "Kopet Saiti"
 }

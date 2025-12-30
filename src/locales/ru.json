@@ -116,5 +116,7 @@
 	"deleted": "Удалено",
 	"starting_time": "Время начала",
 	"ending_time": "Время окончания",
-	"show_arrivals": "Показать прибытия на последней станции"
+	"show_arrivals": "Показать прибытия на последней станции",
+	"openInEnroute": "Otkryt v Enroute",
+	"copyLink": "Kopirovat Ssylku"
 }

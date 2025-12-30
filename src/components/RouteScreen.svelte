@@ -62,6 +62,8 @@
 	import { occupancy_to_symbol } from './occupancy_to_symbol';
 	import TripDataForVehicleOnRouteScreen from './TripDataForVehicleOnRouteScreen.svelte';
 	import ConsolidatedRouteList from './ConsolidatedRouteList.svelte';
+	import HomeButton from './SidebarParts/home_button.svelte';
+	import CopyLinkButton from './CopyLinkButton.svelte';
 
 	let activePattern: string = '';
 
@@ -653,6 +655,13 @@
 
 {#if loaded == true}
 	<div class=" catenary-scroll overflow-y-auto grow" bind:this={bind_scrolling_div}>
+		<div class="flex flex-row items-center gap-1 px-3">
+			<HomeButton />
+			<div class="flex flex-row gap-2 ml-auto mr-2">
+				<CopyLinkButton screen="route" chateau={routestack.chateau_id} route_id={routestack.route_id} />
+			</div>
+		</div>
+
 		<div class="px-3">
 			{#await import('./RouteHeading.svelte') then { default: RouteHeading }}
 				<RouteHeading
@@ -803,7 +812,7 @@
 										</p>{/if}
 
 									<!--
-							
+
 							<button class="rounded-full bg-blue-500 px-1 py-1 text-xs w-6 h-6 flex flex-col "
 							on:click={() => {
 								data_stack_store.update(
@@ -820,18 +829,18 @@
 													null
 												)
 											)
-										);	
+										);
 
 										return data_stack;
 									}
 								)
-							}}			
+							}}
 							>
 								<span class="material-symbols-outlined align-middle leading-none" style="
     line-height: 0;
 ">
 							<span class="text-sm">open_in_new</span>
-							</span> 
+							</span>
 							</button>-->
 								</div>
 							{/if}

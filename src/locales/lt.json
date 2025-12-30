@@ -137,5 +137,7 @@
 	"gpsdisclaimer": "Jei laukimas per ilgas, patikrinkite, ar šiai svetainei suteikti naršyklės leidimai pasiekti jūsų vietą, ir įsitikinkite, kad jūsų GPS signalas yra stiprus.",
 	"last_stop": "paskutinė stotelė",
 	"search_here": "Ieškoti čia",
-	"show_arrivals": "Rodyti atvykimus paskutinėje stotyje"
+	"show_arrivals": "Rodyti atvykimus paskutinėje stotyje",
+	"openInEnroute": "Atidaryti Enroute",
+	"copyLink": "Kopijuoti Nuoroda"
 }

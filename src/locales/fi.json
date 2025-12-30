@@ -140,5 +140,7 @@
 	"cookie_consent_analytics": "Käytämme analytiikkaevästeitä parantaaksemme käyttökokemustasi. Suostutko?",
 	"accept": "Hyväksy",
 	"decline": "Hylkää",
-	"show_arrivals": "Näytä saapumiset viimeisellä asemalla"
+	"show_arrivals": "Näytä saapumiset viimeisellä asemalla",
+	"openInEnroute": "Avaa Enroute-sovelluksessa",
+	"copyLink": "Kopioi Linkki"
 }
