@@ -22,6 +22,7 @@ async function make_fire_names(map: maplibregl.Map) {
 			'icon-image': 'fireicon',
 			'icon-size': 0.04,
 			'text-field': ['get', 'name'],
+			
 			'text-offset': [0, 1],
 			'text-anchor': 'top',
 			'text-size': ['interpolate', ['linear'], ['zoom'], 6, 6, 12, 14],
