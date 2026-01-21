@@ -55,7 +55,7 @@
 		"gtfs-realtime-bindings": "^1.1.1",
 		"haversine-distance": "^1.2.4",
 		"maplibre-contour": "^0.1.0",
-		"maplibre-gl": "5.9.0",
+		"maplibre-gl": "5.13.0",
 		"moment": "^2.30.1",
 		"mta-subway-bullets": "^1.0.0",
 		"protobufjs": "^7.5.4",
