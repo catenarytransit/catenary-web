@@ -200,6 +200,19 @@
 			/>
 			<label for="dark">Arimo</label>
 		</div>
+		<div>
+			<input
+				type="radio"
+				id="dark"
+				name="dark"
+				value="dark"
+				checked={font_selector === 'NimbusSans'}
+				on:click={() => {
+					ui_font_store.set(make_ui_fonts_list("Nimbus Sans", "NimbusSans"));
+				}}
+			/>
+			<label for="dark">Nimbus Sans</label>
+		</div>
 	</div>
 
 	<div class="flex flex-row gap-x-2">
