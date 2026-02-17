@@ -211,7 +211,7 @@ body::-webkit-scrollbar-thumb {
 html,
 body {
 	overscroll-behavior: none;
-	font-family: 'Arimo', 'Noto Sans', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans SC', sans-serif;
+	font-family: var(--font-sans);
 }
 
 /*PROGRESS BAR*/
