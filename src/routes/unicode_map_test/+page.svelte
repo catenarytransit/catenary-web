@@ -5,6 +5,9 @@
 
 	import { onMount } from 'svelte';
 
+	import { ui_font_store } from '../../globalstores';
+	import { get } from 'svelte/store';
+
 	onMount(() => {
 		const map = new maplibregl.Map({
 			container: 'map',
@@ -41,7 +44,7 @@
 				layout: {
 					'text-size': 24,
 					'text-field': '𔐃𔐈𔐀𔐄𔙆f🐟f▦✺╬∅█☹',
-					'text-font': ['NotoSans-Regular']
+					'text-font': get(ui_font_store).regular
 				},
 				paint: {
 					'text-color': 'white',

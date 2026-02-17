@@ -10,7 +10,8 @@ import {
 	show_zombie_buses_store,
 	show_my_location_store,
 	custom_icons_category_to_layer_id,
-	map_pointer_store
+	map_pointer_store,
+	ui_font_store
 } from '../../globalstores';
 import { determineDarkModeToBool } from '../determineDarkModeToBool';
 import { textColorOfMapLabels } from './addLiveDots';
@@ -167,7 +168,7 @@ export async function makeContextLayerDataset(map: maplibregl.Map) {
 			//'text-field': ['coalesce', ['get', 'route_label']],
 			'text-field': ['get', 'route_label'],
 			//'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
-			'text-font': ['literal', ['NotoSans-Regular']],
+			'text-font': ['literal', get(ui_font_store).regular],
 			'text-size': ['interpolate', ['linear'], ['zoom'], 5, 9, 9, 10, 11, 12, 13, 15],
 			'text-ignore-placement': false,
 			'text-allow-overlap': false,
@@ -251,9 +252,9 @@ export async function makeContextLayerDataset(map: maplibregl.Map) {
 			'text-font': [
 				'step',
 				['zoom'],
-				['literal', ['NotoSans-Regular']],
+				['literal', get(ui_font_store).regular],
 				13,
-				['literal', ['NotoSans-Medium']]
+				['literal', get(ui_font_store).medium]
 			]
 		},
 		paint: {
@@ -298,7 +299,7 @@ export async function makeContextLayerDataset(map: maplibregl.Map) {
 			//'icon-ignore-placement': false,
 			//'text-allow-overlap': true,
 			//'symbol-avoid-edges': false,
-			'text-font': ['NotoSans-Medium']
+			'text-font': get(ui_font_store).medium
 		},
 		paint: {
 			'text-color': darkMode ? '#ffffff' : '#1a1a1a',
@@ -345,9 +346,9 @@ export async function makeContextLayerDataset(map: maplibregl.Map) {
 			'text-font': [
 				'step',
 				['zoom'],
-				['literal', ['NotoSans-Regular']],
+				['literal', get(ui_font_store).regular],
 				6,
-				['literal', ['NotoSans-Medium']]
+				['literal', get(ui_font_store).medium]
 			]
 		},
 		paint: {
@@ -459,7 +460,7 @@ export async function makeContextLayerDots(map: maplibregl.Map) {
 			'text-variable-anchor': ['left', 'right'],
 			'text-radial-offset': 0.5,
 			'text-allow-overlap': false,
-			'text-font': ['NotoSans-SemiBold'],
+			'text-font': get(ui_font_store).semibold,
 			'text-size': ['interpolate', ['linear'], ['zoom'], 9, 9, 11, 11, 13, 12, 15, 14],
 			'text-ignore-placement': ['step', ['zoom'], false, 10.5, true]
 		},

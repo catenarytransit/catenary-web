@@ -9,6 +9,8 @@
  */
 
 import * as maplibregl from 'maplibre-gl';
+import { ui_font_store } from '../globalstores';
+import { get } from 'svelte/store';
 
 interface SantaApiResponse {
 	status: string;
@@ -286,7 +288,7 @@ function initializeSantaLayer(map: maplibregl.Map): void {
 					'icon-allow-overlap': true,
 					'icon-ignore-placement': true,
 					'text-field': '🎅 Santa',
-					'text-font': ['NotoSans-Bold'],
+					'text-font': get(ui_font_store).bold,
 					'text-size': 14,
 					'text-offset': [0, 1.5],
 					'text-anchor': 'top'

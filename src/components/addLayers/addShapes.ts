@@ -1,4 +1,6 @@
 import { layerspercategory } from '../layernames';
+import { ui_font_store } from '../../globalstores';
+import { get } from 'svelte/store';
 
 export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 	const urlParams = new URLSearchParams(window.location.search);
@@ -108,7 +110,7 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 				]
 				: ['coalesce', ['get', 'route_label']],
 			//'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
-			'text-font': ['literal', ['Arimo-Regular']],
+			'text-font': ['literal', get(ui_font_store).regular],
 			'text-size': ['interpolate', ['linear'], ['zoom'], 10, 5, 11, 7, 13, 10],
 			'text-ignore-placement': false,
 			'text-allow-overlap': false,
@@ -183,7 +185,7 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 			'symbol-placement': 'line',
 			'text-field': ['coalesce', ['get', 'route_label']],
 			//'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
-			'text-font': ['Arimo-Medium'],
+			'text-font': get(ui_font_store).medium,
 			'text-size': ['interpolate', ['linear'], ['zoom'], 3, 7, 9, 9, 13, 11],
 			'text-ignore-placement': false,
 
@@ -322,7 +324,7 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 			'symbol-placement': 'line',
 			'text-field': ['coalesce', ['get', 'route_label']],
 			//'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
-			'text-font': ['Arimo-Bold'],
+			'text-font': get(ui_font_store).bold,
 			'text-size': ['interpolate', ['linear'], ['zoom'], 3, 7, 9, 9, 13, 11],
 			'text-ignore-placement': false,
 			'symbol-spacing': ['step', ['zoom'], 20, 6, 40, 9, 70, 13, 80, 15, 100],
@@ -430,7 +432,7 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 			'symbol-placement': 'line',
 			'text-field': ['coalesce', ['get', 'route_label']],
 			//'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
-			'text-font': ['Arimo-Bold'],
+			'text-font': get(ui_font_store).bold,
 			'text-size': ['interpolate', ['linear'], ['zoom'], 3, 7, 9, 9, 13, 11],
 			'text-ignore-placement': false,
 			'symbol-spacing': ['step', ['zoom'], 20, 6, 40, 9, 70, 13, 80, 15, 100],
@@ -488,9 +490,9 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 			'text-font': [
 				'step',
 				['zoom'],
-				['literal', ['Arimo-SemiBold']],
+				['literal', get(ui_font_store).semibold],
 				7,
-				['literal', ['Arimo-Bold']]
+				['literal', get(ui_font_store).bold]
 			],
 			'text-size': ['interpolate', ['linear'], ['zoom'], 3, 6, 6, 7, 9, 9, 13, 11],
 			'text-ignore-placement': false,

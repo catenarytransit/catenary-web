@@ -8,7 +8,8 @@ import {
 	realtime_vehicle_route_cache_hash_store,
 	realtime_vehicle_route_cache_store,
 	show_zombie_buses_store,
-	chateaus_store
+	chateaus_store,
+	ui_font_store
 } from '../globalstores';
 import { clearbottomright } from './clearbottomright';
 import { determineFeedsUsingChateaus } from '../maploaddata';
@@ -278,7 +279,7 @@ function addStationLayers(
 					'text-size': ['interpolate', ['linear'], ['zoom'], 15, 5, 17, 8, 19, 9.5],
 					'text-radial-offset': 1,
 					'text-allow-overlap': true,
-					'text-font': ['NotoSans-Bold']
+					'text-font': get(ui_font_store).bold
 				},
 				paint: {
 					'text-color': darkMode ? '#bae6fd' : '#1d4ed8',

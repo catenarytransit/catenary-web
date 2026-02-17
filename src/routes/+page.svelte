@@ -55,7 +55,8 @@
 		ui_theme_store,
 		show_topo_global_store,
 		consentGiven,
-		current_orm_layer_type_store
+		current_orm_layer_type_store,
+		ui_font_store
 	} from '../globalstores';
 	import Layerbutton from '../components/layerbutton.svelte';
 	import {
@@ -638,23 +639,23 @@
 					if (shortest_side >= 1600) {
 						mapglobal.setLayoutProperty(categoryvalues.labeldots, 'text-font', {
 							stops: [
-								[6, ['NotoSans-Medium']],
-								[12, ['NotoSans-SemiBold']]
+								[6, get(ui_font_store).medium],
+								[12, get(ui_font_store).semibold]
 							]
 						});
 					} else {
 						mapglobal.setLayoutProperty(categoryvalues.labeldots, 'text-font', {
 							stops: [
-								[6, ['NotoSans-Regular']],
-								[14.5, ['NotoSans-Medium']]
+								[6, get(ui_font_store).regular],
+								[14.5, get(ui_font_store).medium]
 							]
 						});
 					}
 				} else {
 					mapglobal.setLayoutProperty(categoryvalues.labeldots, 'text-font', {
 						stops: [
-							[6, ['NotoSans-Medium']],
-							[11, ['NotoSans-SemiBold']]
+							[6, get(ui_font_store).medium],
+							[11, get(ui_font_store).semibold]
 						]
 					});
 
@@ -1607,7 +1608,7 @@
 						'symbol-placement': 'line',
 						'text-size': 10,
 						'text-field': ['concat', ['number-format', ['get', 'ele'], {}], 'm'],
-						'text-font': ['NotoSans-Bold'],
+						'text-font': get(ui_font_store).bold,
 						'text-pitch-alignment': 'viewport'
 					},
 					paint: {

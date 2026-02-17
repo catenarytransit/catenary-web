@@ -1,7 +1,7 @@
 import type { Map } from 'maplibre-gl';
 import { get } from 'svelte/store';
 import { livedotscaling_store } from '../../fontscalingstores';
-import { map_pointer_store } from '../../globalstores';
+import { map_pointer_store, ui_font_store } from '../../globalstores';
 import { layerspercategory as layerspercategory_main } from '../layernames';
 
 export function textColorOfMapLabels(darkMode: boolean) {
@@ -355,8 +355,8 @@ export async function makeCircleLayers(map: Map, darkMode: boolean, layerspercat
 			'text-radial-offset': 0.2,
 			'text-font': {
 				stops: [
-					[6, ['Arimo-Medium']],
-					[11, ['Arimo-SemiBold']]
+					[6, get(ui_font_store).medium],
+					[11, get(ui_font_store).semibold]
 				]
 			},
 			'text-size': bus_label_text_size,
@@ -453,9 +453,9 @@ export async function makeCircleLayers(map: Map, darkMode: boolean, layerspercat
 			'text-font': [
 				'step',
 				['zoom'],
-				['literal', ['Arimo-Regular']],
+				['literal', get(ui_font_store).regular],
 				9,
-				['literal', ['Arimo-Bold']]
+				['literal', get(ui_font_store).bold]
 			],
 			'text-size': other_label_text_size,
 			'text-ignore-placement': ['step', ['zoom'], false, 9.5, true]
@@ -589,7 +589,7 @@ export async function makeCircleLayers(map: Map, darkMode: boolean, layerspercat
 			],*/
 			'text-variable-anchor': ['top'],
 			'text-radial-offset': 0,
-			'text-font': ['literal', ['Arimo-Medium']],
+			'text-font': ['literal', get(ui_font_store).medium],
 			'text-size': tram_label_text_size,
 			'text-ignore-placement': ['step', ['zoom'], false, 9.5, true]
 		},
@@ -690,7 +690,7 @@ export async function makeCircleLayers(map: Map, darkMode: boolean, layerspercat
 			],*/
 			'text-variable-anchor': ['top'],
 			'text-radial-offset': 0,
-			'text-font': ['literal', ['Arimo-Medium']],
+			'text-font': ['literal', get(ui_font_store).medium],
 			'text-size': metro_label_text_size,
 			'text-ignore-placement': ['step', ['zoom'], false, 9.5, true]
 		},
@@ -794,7 +794,7 @@ export async function makeCircleLayers(map: Map, darkMode: boolean, layerspercat
 			],*/
 			'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
 			'text-radial-offset': 0,
-			'text-font': ['literal', ['Arimo-Medium']],
+			'text-font': ['literal', get(ui_font_store).medium],
 			'text-size': intercityrail_label_text_size,
 			'text-ignore-placement': ['step', ['zoom'], false, 9.5, true]
 		},
