@@ -53,7 +53,7 @@
 
 	let live_dots_scale = get(livedotscaling_store);
 
-	let font_selector = get(ui_font_store).postscript_font_name[0];
+	let font_selector = get(ui_font_store).main_font_postscript_name;
 
 	show_seconds_store.subscribe((value) => {
 		show_seconds = value;
@@ -68,7 +68,7 @@
 	});
 
 	ui_font_store.subscribe((value) => {
-		font_selector = value.postscript_font_name[0];
+		font_selector = value.main_font_postscript_name;
 	});
 
 	function locale_code_to_name(locale: string | null | undefined) {

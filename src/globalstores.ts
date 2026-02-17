@@ -100,7 +100,8 @@ export const show_stop_codes_store = writable(false);
 
 export interface UIFontsList {
 	css_font_stack: string[];
-	postscript_font_name: string[];
+	main_font_postscript_name: string;
+	main_font_css_name: string;
 	regular: string[];
 	medium: string[];
 	semibold: string[];
@@ -110,16 +111,17 @@ export interface UIFontsList {
 
 const fallback_ui_fonts = ["Noto Sans", "Noto Sans JP", "Noto Sans KR", "Noto Sans SC", "ui-sans-serif", "system-ui", "sans-serif", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"];
 
-export function make_ui_fonts_list(main_font: string, postscript_font_name: string): UIFontsList {
-	let unmarked = [main_font].concat(fallback_ui_fonts);
+export function make_ui_fonts_list(main_font_css_name: string, main_font_postscript_name: string): UIFontsList {
+	let unmarked = [main_font_css_name].concat(fallback_ui_fonts);
 	return {
 		css_font_stack: unmarked,
-		postscript_font_name: [postscript_font_name],
-		regular: [postscript_font_name + "-Regular"],
-		medium: [postscript_font_name + "-Medium"],
-		semibold: [postscript_font_name + "-SemiBold"],
-		bold: [postscript_font_name + "-Bold"],
-		italic: [postscript_font_name + "-Italic"],
+		main_font_css_name,
+		main_font_postscript_name,
+		regular: [main_font_postscript_name + "-Regular"],
+		medium: [main_font_postscript_name + "-Medium"],
+		semibold: [main_font_postscript_name + "-SemiBold"],
+		bold: [main_font_postscript_name + "-Bold"],
+		italic: [main_font_postscript_name + "-Italic"],
 	};
 }
 
