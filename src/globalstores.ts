@@ -99,7 +99,8 @@ export const show_gtfs_ids_store = writable(false);
 export const show_stop_codes_store = writable(false);
 
 export interface UIFontsList {
-	unmarked: string[];
+	css_font_stack: string[];
+	postscript_font_name: string[];
 	regular: string[];
 	medium: string[];
 	semibold: string[];
@@ -109,19 +110,20 @@ export interface UIFontsList {
 
 const fallback_ui_fonts = ["Noto Sans", "Noto Sans JP", "Noto Sans KR", "Noto Sans SC", "ui-sans-serif", "system-ui", "sans-serif", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"];
 
-export function make_ui_fonts_list(main_font: string): UIFontsList {
+export function make_ui_fonts_list(main_font: string, postscript_font_name: string): UIFontsList {
 	let unmarked = [main_font].concat(fallback_ui_fonts);
 	return {
-		unmarked,
-		regular: unmarked.map(x => x + "-Regular"),
-		medium: unmarked.map(x => x + "-Medium"),
-		semibold: unmarked.map(x => x + "-SemiBold"),
-		bold: unmarked.map(x => x + "-Bold"),
-		italic: unmarked.map(x => x + "-Italic"),
+		css_font_stack: unmarked,
+		postscript_font_name: [postscript_font_name],
+		regular: [postscript_font_name + "-Regular"],
+		medium: [postscript_font_name + "-Medium"],
+		semibold: [postscript_font_name + "-SemiBold"],
+		bold: [postscript_font_name + "-Bold"],
+		italic: [postscript_font_name + "-Italic"],
 	};
 }
 
-export const ui_font_store: Writable<UIFontsList> = writable(make_ui_fonts_list("Arimo"));
+export const ui_font_store: Writable<UIFontsList> = writable(make_ui_fonts_list("Arimo", "Arimo"));
 
 export const custom_icons_category_to_layer_id: Writable<Record<string, string[]>> = writable({});
 

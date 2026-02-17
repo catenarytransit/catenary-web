@@ -8,7 +8,13 @@
 		ui_theme_store,
 		show_seconds_store,
 		show_stop_codes_store,
-		show_countdown_to_stop_store
+		show_countdown_to_stop_store,
+
+		make_ui_fonts_list,
+
+		ui_font_store
+
+
 	} from '../globalstores';
 
 	import { livedotscaling_store } from '../fontscalingstores';
@@ -47,6 +53,8 @@
 
 	let live_dots_scale = get(livedotscaling_store);
 
+	let font_selector = get(ui_font_store).postscript_font_name[0];
+
 	show_seconds_store.subscribe((value) => {
 		show_seconds = value;
 	});
@@ -57,6 +65,10 @@
 
 	ui_theme_store.subscribe((value) => {
 		theme_selector = value;
+	});
+
+	ui_font_store.subscribe((value) => {
+		font_selector = value.postscript_font_name[0];
 	});
 
 	function locale_code_to_name(locale: string | null | undefined) {
@@ -144,6 +156,49 @@
 				}}
 			/>
 			<label for="dark">{$_('dark_theme')}</label>
+		</div>
+	</div>
+
+	<!-- Radio selector -->
+	<div class="mb-2">
+		<div class="">
+			<input
+				type="radio"
+				id="system"
+				name="system"
+				value="system"
+				checked={font_selector === 'Barlow'}
+				on:click={() => {
+					ui_font_store.set(make_ui_fonts_list("Barlow", "Barlow"));
+				}}
+			/>
+			<label for="system">Barlow</label>
+		</div>
+		<div>
+			<input
+				type="radio"
+				id="light"
+				name="light"
+				value="light"
+				checked={font_selector === 'NotoSans'}
+				on:click={() => {
+					ui_font_store.set(make_ui_fonts_list("Noto Sans", "NotoSans"));
+				}}
+			/>
+			<label for="system">Noto Sans</label>
+		</div>
+		<div>
+			<input
+				type="radio"
+				id="dark"
+				name="dark"
+				value="dark"
+				checked={font_selector === 'Arimo'}
+				on:click={() => {
+					ui_font_store.set(make_ui_fonts_list("Arimo", "Arimo"));
+				}}
+			/>
+			<label for="dark">Arimo</label>
 		</div>
 	</div>
 

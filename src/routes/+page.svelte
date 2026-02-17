@@ -251,6 +251,10 @@
 				refreshUIMaplibre();
 			});
 
+			ui_font_store.subscribe((value) => {
+				document.documentElement.style.setProperty('--font-sans', value.css_font_stack);
+			});
+
 			console.log('dark mode ', darkMode, 'system theme', ui_theme_grab);
 		}
 	}
@@ -2115,7 +2119,7 @@
 
 	<style>
 		body {
-			font-family: 'Arimo', 'Noto Sans', sans-serif;
+			font-family: var(--font-sans);
 		}
 
 		.material-symbols-outlined {
