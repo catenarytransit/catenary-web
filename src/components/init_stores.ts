@@ -15,9 +15,11 @@ import {
 	chateaus_store,
 	show_gtfs_ids_store,
 	ui_theme_store,
+	ui_font_store,
 	show_seconds_store,
 	show_topo_global_store,
-	show_stop_codes_store
+	show_stop_codes_store,
+	make_ui_fonts_list
 } from '../globalstores';
 
 export function init_stores() {
@@ -64,6 +66,17 @@ export function init_stores() {
 
 		ui_theme_store.subscribe((value) => {
 			window.localStorage.setItem('ui_theme_store', value);
+		});
+
+		let ui_font_css_grab = window.localStorage.getItem('ui_font_css_name');
+		let ui_font_postscript_grab = window.localStorage.getItem('ui_font_postscript_name');
+		if (ui_font_css_grab && ui_font_postscript_grab) {
+			ui_font_store.set(make_ui_fonts_list(ui_font_css_grab, ui_font_postscript_grab));
+		}
+
+		ui_font_store.subscribe((value) => {
+			window.localStorage.setItem('ui_font_css_name', value.main_font_css_name);
+			window.localStorage.setItem('ui_font_postscript_name', value.main_font_postscript_name);
 		});
 
 		show_seconds_store.subscribe((value) => {

@@ -3,6 +3,8 @@ import { createGeoJSONCircleFeature } from '../geoMathsAssist';
 import { ui_theme_store, usunits_store, show_my_location_store } from '../globalstores';
 import { determineDarkModeToBool } from './determineDarkModeToBool';
 
+import { ui_font_store } from '../globalstores';
+
 /**
  * Initializes the GeoJSON sources and layers for radius circles.
  * @param map The MapLibre GL Map instance.
@@ -37,7 +39,7 @@ export function addGeoRadius(map: maplibregl.Map) {
 			source: 'km_source',
 			layout: {
 				'text-field': ['get', 'label'],
-				'text-font': ['NotoSans-Bold'],
+				'text-font': get(ui_font_store).bold,
 				'symbol-placement': 'line',
 				'text-size': 8,
 				'symbol-spacing': 150,
@@ -77,7 +79,7 @@ export function addGeoRadius(map: maplibregl.Map) {
 			source: 'miles_source',
 			layout: {
 				'text-field': ['get', 'label'],
-				'text-font': ['NotoSans-Bold'],
+				'text-font': get(ui_font_store).bold,
 				'symbol-placement': 'line',
 				'text-size': 8,
 				'symbol-spacing': 150,

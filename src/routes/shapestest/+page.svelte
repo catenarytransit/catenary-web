@@ -2,6 +2,9 @@
 	import maplibregl from 'maplibre-gl';
 	import { onMount } from 'svelte';
 
+	import { ui_font_store } from '../../globalstores';
+	import { get } from 'svelte/store';
+
 	let centerinit: [number, number] = [-118, 33.9];
 	let zoominit = 8.1;
 
@@ -113,7 +116,7 @@
 					'text-line-height': 1.2,
 					'text-letter-spacing': 0.01,
 					'text-max-width': 10,
-					'text-font': ['NotoSans-Medium'],
+					'text-font': get(ui_font_store).medium,
 					'text-offset': [0, 0]
 				},
 				paint: {

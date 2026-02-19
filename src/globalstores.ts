@@ -98,6 +98,35 @@ export const show_my_location_store = writable(true);
 export const show_gtfs_ids_store = writable(false);
 export const show_stop_codes_store = writable(false);
 
+export interface UIFontsList {
+	css_font_stack: string[];
+	main_font_postscript_name: string;
+	main_font_css_name: string;
+	regular: string[];
+	medium: string[];
+	semibold: string[];
+	bold: string[];
+	italic: string[];
+}
+
+const fallback_ui_fonts = ["Noto Sans", "Noto Sans JP", "Noto Sans KR", "Noto Sans SC", "ui-sans-serif", "system-ui", "sans-serif", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"];
+
+export function make_ui_fonts_list(main_font_css_name: string, main_font_postscript_name: string): UIFontsList {
+	let unmarked = [main_font_css_name].concat(fallback_ui_fonts);
+	return {
+		css_font_stack: unmarked,
+		main_font_css_name,
+		main_font_postscript_name,
+		regular: [main_font_postscript_name + "-Regular"],
+		medium: [main_font_postscript_name + "-Medium"],
+		semibold: [main_font_postscript_name + "-SemiBold"],
+		bold: [main_font_postscript_name + "-Bold"],
+		italic: [main_font_postscript_name + "-Italic"],
+	};
+}
+
+export const ui_font_store: Writable<UIFontsList> = writable(make_ui_fonts_list("Arimo", "Arimo"));
+
 export const custom_icons_category_to_layer_id: Writable<Record<string, string[]>> = writable({});
 
 export const map_pointer_store: Writable<maplibregl.Map | null> = writable(null);

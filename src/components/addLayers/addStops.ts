@@ -7,6 +7,8 @@ import {
 	default_tram_filter,
 	default_osm_interrail_filter
 } from '../makeFiltersForStop';
+import { ui_font_store } from '../../globalstores';
+import { get } from 'svelte/store';
 
 const internationalIntercityLabelSize = ['interpolate', ['linear'], ['zoom'], 6, 6, 13, 12];
 const internationalIntercityCircleSize = [
@@ -214,7 +216,7 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			//'icon-ignore-placement': false,
 			//'text-allow-overlap': true,
 			//'symbol-avoid-edges': false,
-			'text-font': ['Arimo-Medium']
+			'text-font': get(ui_font_store).medium
 		},
 		paint: {
 			'text-color': darkMode ? '#eee6fe' : '#2a2a2a',
@@ -270,9 +272,9 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			'text-font': [
 				'step',
 				['zoom'],
-				['literal', ['Arimo-Regular']],
+				['literal', get(ui_font_store).regular],
 				12,
-				['literal', ['Arimo-Medium']]
+				['literal', get(ui_font_store).medium]
 			]
 		},
 		paint: {
@@ -326,11 +328,11 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			'text-font': [
 				'step',
 				['zoom'],
-				['literal', ['Arimo-Regular']],
+				['literal', get(ui_font_store).regular],
 				12,
-				['literal', ['Arimo-Medium']],
+				['literal', get(ui_font_store).medium],
 				15,
-				['literal', ['Arimo-SemiBold']]
+				['literal', get(ui_font_store).semibold]
 			]
 		},
 		paint: {
@@ -393,9 +395,9 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			'text-font': [
 				'step',
 				['zoom'],
-				['literal', ['Arimo-Regular']],
+				['literal', get(ui_font_store).regular],
 				12,
-				['literal', ['Arimo-Medium']]
+				['literal', get(ui_font_store).medium]
 			]
 		},
 		paint: {
@@ -451,11 +453,11 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			'text-font': [
 				'step',
 				['zoom'],
-				['literal', ['Arimo-Regular']],
+				['literal', get(ui_font_store).regular],
 				12,
-				['literal', ['Arimo-Medium']],
+				['literal', get(ui_font_store).medium],
 				16,
-				['literal', ['Arimo-SemiBold']]
+				['literal', get(ui_font_store).semibold]
 			]
 		},
 		paint: {
@@ -524,9 +526,9 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			'text-font': [
 				'step',
 				['zoom'],
-				['literal', ['Arimo-Regular']],
+				['literal', get(ui_font_store).regular],
 				8.5,
-				['literal', ['Arimo-Medium']]
+				['literal', get(ui_font_store).medium]
 			]
 		},
 		paint: {
@@ -585,11 +587,11 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			'text-font': [
 				'step',
 				['zoom'],
-				['literal', ['Arimo-Regular']],
+				['literal', get(ui_font_store).regular],
 				12.5,
-				['literal', ['Arimo-Medium']],
+				['literal', get(ui_font_store).medium],
 				13.5,
-				['literal', ['Arimo-Bold']]
+				['literal', get(ui_font_store).bold]
 			]
 		},
 		paint: {
@@ -656,7 +658,7 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 				//'icon-ignore-placement': false,
 				//'text-allow-overlap': true,
 				//'symbol-avoid-edges': false,
-				'text-font': ['literal', ['Arimo-Medium']]
+				'text-font': ['literal', get(ui_font_store).medium]
 			},
 			paint: {
 				'text-color': darkMode ? '#ffffff' : '#2a2a2a',
@@ -685,11 +687,11 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			'text-font': [
 				'step',
 				['zoom'],
-				['literal', ['Arimo-Italic']],
+				['literal', get(ui_font_store).italic],
 				12.5,
-				['literal', ['Arimo-Medium']],
+				['literal', get(ui_font_store).medium],
 				13.5,
-				['literal', ['Arimo-Bold']]
+				['literal', get(ui_font_store).bold]
 			]
 		},
 		paint: {
@@ -729,9 +731,9 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			'text-font': [
 				'step',
 				['zoom'],
-				['literal', ['Arimo-Medium']],
+				['literal', get(ui_font_store).medium],
 				8.5,
-				['literal', ['Arimo-Bold']],
+				['literal', get(ui_font_store).bold],
 			]
 		},
 		paint: {
@@ -787,7 +789,7 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			//'icon-ignore-placement': false,
 			//'text-allow-overlap': true,
 			//'symbol-avoid-edges': false,
-			'text-font': ['literal', ['Arimo-Bold']]
+			'text-font': ['literal', get(ui_font_store).bold]
 		},
 		paint: {
 			'text-color': darkMode ? '#eee6fe' : '#2a2a2a',
