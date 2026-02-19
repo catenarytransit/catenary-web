@@ -21,11 +21,15 @@
 	import TimeDiff from './TimeDiff.svelte';
 	import type { Writable } from 'svelte/store';
 	import * as maplibregl from 'maplibre-gl';
+	import { booleanPointInPolygon, point } from '@turf/turf';
 	import TidbitSidebarCard from './SidebarParts/tidbits.svelte';
 	import StationScreenTrainRowCompact from './StationScreenTrainRowCompact.svelte';
 
 	const onbutton = 'bg-blue-300 dark:bg-blue-500 bg-opacity-80';
 	const offbutton = '';
+
+	export let is_inside_eurostyle = false;
+	let eurostyle_geojson: any = null;
 
 	const TIME_CUTOFF = 64800;
 	const TIME_PREVIOUS_CUTOFF = 10 * 60;
@@ -308,6 +312,15 @@
 			};
 			window.addEventListener('storage', onStorage);
 
+			fetch('/eurostyle-ui-rail.geojson')
+				.then((res) => res.json())
+				.then((data) => {
+					eurostyle_geojson = data;
+					let ref = currentReferenceCoord();
+					if (ref) checkEurostyle(ref.lat, ref.lng);
+				})
+				.catch((e) => console.error('Failed to load eurostyle geojson', e));
+
 			if (current_nearby_pick_state == 1) {
 				let map = get(map_pointer_store);
 				if (map) {
@@ -431,6 +444,7 @@
 		}
 
 		if (lat != 0 && lng != 0) {
+			checkEurostyle(lat, lng);
 			first_attempt_sent = true;
 			let url = `https://birch_nearby.catenarymaps.org/nearbydeparturesfromcoordsv3?lat=${lat}&lon=${lng}&limit_per_station=30`;
 
@@ -502,6 +516,24 @@
 		let entries = Object.entries(headsigns);
 		entries.sort((a, b) => a[0].localeCompare(b[0]));
 		return entries;
+	}
+
+	function checkEurostyle(lat: number, lng: number) {
+		if (!eurostyle_geojson) return;
+		try {
+			const pt = point([lng, lat]);
+			let inside = false;
+			// Iterate over features in FeatureCollection
+			for (const feature of eurostyle_geojson.features) {
+				if (booleanPointInPolygon(pt, feature)) {
+					inside = true;
+					break;
+				}
+			}
+			is_inside_eurostyle = inside;
+		} catch (e) {
+			console.error('Error checking eurostyle inclusion', e);
+		}
 	}
 </script>
 
@@ -672,6 +704,7 @@
 								{#each station.departures.filter((d) => !d.last_stop).slice(0, 10) as departure}
 									<StationScreenTrainRowCompact
 										platform={departure.platform}
+										eurostyle={is_inside_eurostyle}
 										event={{
 											chateau: departure.chateau_id,
 											trip_id: departure.trip_id,

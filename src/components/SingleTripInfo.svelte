@@ -1468,8 +1468,6 @@
 									<!-- Platform -->
 									{#if stoptime.rt_platform_string}
 										<div class="text-xs flex gap-1 items-center whitespace-nowrap ml-auto">
-											<span class="sr-only">{$_('platform')}</span>
-											<span aria-hidden="true" class="opacity-70">{$_('platform')}</span>
 											<span class="font-bold">
 												{cleanPlatformName(stoptime.rt_platform_string)}
 											</span>

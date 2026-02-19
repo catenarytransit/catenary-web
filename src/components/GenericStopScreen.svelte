@@ -31,6 +31,7 @@
 	import { MTA_CHATEAU_ID, isSubwayRouteId } from '../utils/mta_subway_utils';
 	import { IDFM_CHATEAU_ID, isRatpRoute } from '../utils/ratp_utils';
 	import MtaBullet from './mtabullet.svelte';
+	import { booleanPointInPolygon, point } from '@turf/turf';
 	import RatpBullet from './ratpbullet.svelte';
 
 	export let buildUrl: (startSec: number, endSec: number) => string;
@@ -41,6 +42,9 @@
 	export let stationLat: number | null = null;
 	export let stationLon: number | null = null;
 	export let stationTimezone: string | null = null;
+
+	let eurostyle_geojson: any = null;
+	let is_inside_eurostyle: boolean = false;
 
 	// ---------- Paging controls ----------
 	const OVERLAP_SECONDS = 5 * 60; // small overlap to help dedupe across pages
@@ -503,9 +507,36 @@
 		loadInitialPages();
 	}
 
+	function checkEurostyle(lat: number | null, lng: number | null) {
+		if (!eurostyle_geojson || lat == null || lng == null) return;
+		try {
+			const pt = point([lng, lat]);
+			let inside = false;
+			for (const feature of eurostyle_geojson.features) {
+				if (booleanPointInPolygon(pt, feature)) {
+					inside = true;
+					break;
+				}
+			}
+			is_inside_eurostyle = inside;
+		} catch (e) {
+			console.error('Error checking eurostyle inclusion', e);
+		}
+	}
+
+	$: checkEurostyle(displayLat, displayLon);
+
 	onMount(() => {
 		current_time = Date.now();
 		const tick = setInterval(() => (current_time = Date.now()), 500);
+
+		fetch('/eurostyle-ui-rail.geojson')
+			.then((res) => res.json())
+			.then((data) => {
+				eurostyle_geojson = data;
+				checkEurostyle(displayLat, displayLon);
+			})
+			.catch((e) => console.error('Failed to load eurostyle geojson', e));
 
 		const map = get(map_pointer_store);
 
@@ -637,6 +668,7 @@
 									<tbody>
 										{#each filtered_dates_to_events[date_code] as event}
 											<StationScreenTrainRow
+												eurostyle={is_inside_eurostyle}
 												{event}
 												data_from_server={data_meta}
 												{current_time}

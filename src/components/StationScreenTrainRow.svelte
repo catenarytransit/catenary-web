@@ -16,6 +16,7 @@
 	export let timezone: string = 'UTC';
 	export let show_timediff: boolean = true;
 	export let show_agency_name: boolean = true;
+	export let eurostyle: boolean = false;
 
 	$: shared_rt_time = event.last_stop ? event.realtime_arrival : event.realtime_departure;
 	$: shared_scheduled_time = event.last_stop ? event.scheduled_arrival : event.scheduled_departure;
@@ -51,6 +52,20 @@
 		});
 	}}
 >
+		<!-- Leftmost: Route Name -->
+	{#if eurostyle}
+		<td class="px-1 py-0.5 w-[40px] align-middle text-left">
+		{#if show_route_name && routeDef?.short_name}
+			<span
+				class="rounded-xs font-bold px-1 py-0.5 text-xs inline-block min-w-[24px]"
+				style={`background: ${routeDef?.color}; color: ${routeDef?.text_color};`}
+			>
+				{routeDef?.short_name.replace(' Line', '')}
+			</span>
+		{/if}
+	</td>
+	{/if}
+
 	<!-- Left: Time (Vertical Stack) -->
 	<td class="px-2 py-2 w-[80px] align-middle">
 		<div class="flex flex-col items-start justify-center">
@@ -133,9 +148,9 @@
 			<div
 				class="flex flex-row text-sm text-gray-600 dark:text-gray-400 gap-2 items-center flex-wrap"
 			>
-				{#if show_route_name && routeDef?.short_name}
+				{#if show_route_name && (routeDef?.short_name) && !eurostyle}
 					<span
-						class="rounded-xs font-bold px-1 py-0.5 text-sm"
+						class="rounded-xs font-bold px-1 py-0.5 text-xs"
 						style={`background: ${routeDef?.color}; color: ${routeDef?.text_color};`}
 					>
 						{routeDef?.short_name}
@@ -171,24 +186,15 @@
 							class="h-4 inline-block"
 						/>
 					{:else}
-						<span>{agencyName}</span>
+						<span class="text-xs">{agencyName}</span>
 					{/if}
-				{/if}
-				{#if show_route_name && !routeDef?.short_name}
-					<span class="opacity-80">•</span>
-					<span
-						class="font-bold px-1 py-0.5 rounded-xs text-xs"
-						style={`background: ${routeDef?.color}; color: ${routeDef?.text_color};`}
-					>
-						{routeDef?.long_name}
-					</span>
 				{/if}
 			</div>
 		</div>
 	</td>
 
 	<!-- Right: Platform -->
-	<td class="px-2 py-2 text-right w-[100px] align-middle">
+	<td class="px-2 py-2 text-right w-[50px] align-middle">
 		{#if event.platform_string_realtime}
 			<span
 				class="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded text-sm font-bold text-gray-800 dark:text-gray-200 inline-block"

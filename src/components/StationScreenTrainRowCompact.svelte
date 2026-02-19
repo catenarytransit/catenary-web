@@ -17,6 +17,7 @@
 	export let show_timediff: boolean = true;
 	export let show_agency_name: boolean = true;
 	export let platform: string | null = null;
+	export let eurostyle: boolean = false;
 
 	$: shared_rt_time = event.last_stop ? event.realtime_arrival : event.realtime_departure;
 	$: shared_scheduled_time = event.last_stop ? event.scheduled_arrival : event.scheduled_departure;
@@ -53,7 +54,8 @@
 	}}
 >
 	<!-- Leftmost: Route Name -->
-	<td class="px-1 py-0.5 w-[40px] align-middle text-center">
+	{#if eurostyle}
+		<td class="px-1 py-0.5 w-[40px] align-middle text-left">
 		{#if show_route_name && routeDef?.short_name}
 			<span
 				class="rounded-xs font-bold px-1 py-0.5 text-xs inline-block min-w-[24px]"
@@ -63,6 +65,7 @@
 			</span>
 		{/if}
 	</td>
+	{/if}
 
 	<!-- Left: Time (Vertical Stack) -->
 	<td class="px-1 py-0.5 w-[70px] align-middle">
@@ -146,6 +149,18 @@
 			<div
 				class="flex flex-row text-xs text-gray-600 dark:text-gray-400 gap-2 items-center flex-wrap"
 			>
+			{#if show_route_name && !(eurostyle && routeDef?.short_name)}
+					<span
+						class="rounded-xs font-bold px-1 py-0.5 text-xs"
+						style={`background: ${routeDef?.color}; color: ${routeDef?.text_color};`}
+					>
+						{#if routeDef?.short_name}
+							{routeDef?.short_name} <!-- .replace(' Line', '') -- we don't remove "Line" for consistency with StationScreenTrainRow -->
+						{:else}
+							{routeDef?.long_name}
+						{/if}
+					</span>
+				{/if}
 				{#if agencyName && show_agency_name}
 					{#if agencyId === 'GWR' || agencyName?.trim().toLowerCase() === 'gwr'}
 						<img
@@ -177,15 +192,6 @@
 					{:else}
 						<span>{agencyName}</span>
 					{/if}
-				{/if}
-				{#if show_route_name && !routeDef?.short_name}
-					<span class="opacity-80">•</span>
-					<span
-						class="font-bold px-1 py-0.5 rounded-xs text-xs"
-						style={`background: ${routeDef?.color}; color: ${routeDef?.text_color};`}
-					>
-						{routeDef?.long_name}
-					</span>
 				{/if}
 			</div>
 		</div>
