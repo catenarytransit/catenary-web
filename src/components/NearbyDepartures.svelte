@@ -234,62 +234,42 @@
 
 		// 3. Sorting Logic:
 		let final_list = [];
-
-		// Sort stations by distance first to find the closest
 		wrapped_stations.sort((a, b) => a.sortDistance - b.sortDistance);
 
-		if (wrapped_stations.length > 0) {
-			// First station (closest) always at Top
+		// Check if the closest station meets the 500m threshold for hoisting
+		const should_hoist = wrapped_stations.length > 0 && wrapped_stations[0].sortDistance < 500;
+
+		let mixed = [];
+
+		if (should_hoist) {
+			// Hoist the closest station to the top
 			final_list.push(wrapped_stations[0]);
-
-			// Remaining stations
-			let remaining_stations = wrapped_stations.slice(1);
-
-			// Mix with locals
-			let mixed = [...remaining_stations, ...filtered_local];
-
-			// Sort mixed list
-			mixed.sort((a, b) => {
-				// Pin logic first
-				let ap, bp;
-				if (a.type === 'route_group') ap = isPinnedRoute(a.data.chateau_id, a.data.route_id);
-				else ap = false;
-
-				if (b.type === 'route_group') bp = isPinnedRoute(b.data.chateau_id, b.data.route_id);
-				else bp = false;
-
-				if (ap !== bp) return (bp ? 1 : 0) - (ap ? 1 : 0);
-
-				if (sortMode === 'alpha') {
-					let an = getName(a).toLowerCase();
-					let bn = getName(b).toLowerCase();
-					return an.localeCompare(bn, undefined, { numeric: true });
-				}
-
-				// Distance
-				return a.sortDistance - b.sortDistance;
-			});
-
-			final_list = [...final_list, ...mixed];
+			// Mix remaining stations with local routes
+			mixed = [...wrapped_stations.slice(1), ...filtered_local];
 		} else {
-			// No stations, just local
-			final_list = filtered_local;
-			final_list.sort((a, b) => {
-				// Pin Logic
-				let ap = isPinnedRoute(a.data.chateau_id, a.data.route_id);
-				let bp = isPinnedRoute(b.data.chateau_id, b.data.route_id);
-				if (ap !== bp) return (bp ? 1 : 0) - (ap ? 1 : 0);
-
-				if (sortMode === 'alpha') {
-					let an = getName(a).toLowerCase();
-					let bn = getName(b).toLowerCase();
-					return an.localeCompare(bn, undefined, { numeric: true });
-				}
-				return a.sortDistance - b.sortDistance;
-			});
+			// No hoisting: mix all stations with local routes
+			mixed = [...wrapped_stations, ...filtered_local];
 		}
 
-		display_items = final_list;
+		// Sort the mixed portion (or the entire list if nothing was hoisted)
+		mixed.sort((a, b) => {
+			// Pin logic (applies only to route_groups)
+			let ap = a.type === 'route_group' ? isPinnedRoute(a.data.chateau_id, a.data.route_id) : false;
+			let bp = b.type === 'route_group' ? isPinnedRoute(b.data.chateau_id, b.data.route_id) : false;
+
+			if (ap !== bp) return (bp ? 1 : 0) - (ap ? 1 : 0);
+
+			if (sortMode === 'alpha') {
+				let an = getName(a).toLowerCase();
+				let bn = getName(b).toLowerCase();
+				return an.localeCompare(bn, undefined, { numeric: true });
+			}
+
+			// Distance sorting
+			return a.sortDistance - b.sortDistance;
+		});
+
+		display_items = [...final_list, ...mixed];
 	}
 
 	function getName(item: any) {
@@ -672,7 +652,7 @@
 				{#if item.type === 'station'}
 					{@const station = item.data}
 					<div
-						class="px-2 py-2 mb-2 bg-gray-100 dark:bg-gray-800   rounded-lg mx-2 border border-gray-300 dark:border-gray-700 shadow-sm"
+						class="px-2 py-2 mb-2 bg-gray-100 dark:bg-gray-800 rounded-lg mx-2 border border-gray-300 dark:border-gray-700 shadow-sm"
 					>
 						<div
 							class="flex flex-row justify-between items-center mb-2 border-b border-gray-300 dark:border-gray-600 pb-1"
