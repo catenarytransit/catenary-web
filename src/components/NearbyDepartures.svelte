@@ -186,9 +186,9 @@
 	const LS_SORT_KEY = 'nearby_sort_mode_v1';
 
 	let sortMode: SortMode =
-		typeof window !== 'undefined'
-			? (localStorage.getItem(LS_SORT_KEY) as SortMode) || 'alpha'
-			: 'distance';
+    typeof window !== 'undefined'
+        ? (localStorage.getItem(LS_SORT_KEY) as SortMode) || 'distance'
+        : 'distance';
 
 	function setSortMode(next: SortMode) {
 		sortMode = next;
@@ -297,10 +297,8 @@
 
 	onMount(() => {
 		if (typeof window != 'undefined') {
-			const storedSort = (localStorage.getItem(LS_SORT_KEY) as SortMode) || null;
-			if (storedSort === 'alpha' || storedSort === 'distance') {
-				sortMode = storedSort;
-			}
+			const storedSort = (localStorage.getItem(LS_SORT_KEY) as SortMode) || 'distance';
+			sortMode = storedSort;
 
 			current_time = Date.now();
 			refreshPinnedSet();
