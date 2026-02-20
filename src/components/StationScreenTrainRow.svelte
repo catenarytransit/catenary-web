@@ -7,6 +7,7 @@
 	import Clock from './Clock.svelte';
 	import { SingleTrip, StackInterface } from './stackenum';
 	import { data_stack_store } from '../globalstores';
+	import StationScreenRouteBadge from './StationScreenRouteBadge.svelte';
 
 	export let event: any;
 	export let data_from_server: any;
@@ -52,18 +53,18 @@
 		});
 	}}
 >
-		<!-- Leftmost: Route Name -->
+	<!-- Leftmost: Route Name -->
 	{#if eurostyle}
 		<td class="px-1 py-0.5 w-[40px] align-middle text-left">
-		{#if show_route_name && routeDef?.short_name}
-			<span
-				class="rounded-xs font-bold px-1 py-0.5 text-xs inline-block min-w-[24px]"
-				style={`background: ${routeDef?.color}; color: ${routeDef?.text_color};`}
-			>
-				{routeDef?.short_name.replace(' Line', '')}
-			</span>
-		{/if}
-	</td>
+			{#if show_route_name && routeDef?.short_name}
+				<StationScreenRouteBadge
+					{routeDef}
+					chateau={event.chateau}
+					remove_line={true}
+					extra_classes="inline-block min-w-[24px]"
+				/>
+			{/if}
+		</td>
 	{/if}
 
 	<!-- Left: Time (Vertical Stack) -->
@@ -148,13 +149,8 @@
 			<div
 				class="flex flex-row text-sm text-gray-600 dark:text-gray-400 gap-2 items-center flex-wrap"
 			>
-				{#if show_route_name && (routeDef?.short_name) && !eurostyle}
-					<span
-						class="rounded-xs font-bold px-1 py-0.5 text-xs"
-						style={`background: ${routeDef?.color}; color: ${routeDef?.text_color};`}
-					>
-						{routeDef?.short_name}
-					</span>
+				{#if show_route_name && routeDef?.short_name && !eurostyle}
+					<StationScreenRouteBadge {routeDef} chateau={event.chateau} />
 				{/if}
 
 				{#if agencyName && show_agency_name}
