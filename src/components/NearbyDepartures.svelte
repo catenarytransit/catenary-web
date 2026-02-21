@@ -699,7 +699,7 @@
 
 						<table class="w-full text-left border-collapse">
 							<tbody>
-								{#each station.departures.filter((d) => !d.last_stop).slice(0, 10) as departure}
+								{#each station.departures.filter((d) => !d.last_stop).slice(0, 5) as departure}
 									<StationScreenTrainRowCompact
 										platform={departure.platform}
 										eurostyle={is_inside_eurostyle}
