@@ -193,7 +193,7 @@
 	<td class="px-2 py-2 text-right w-[50px] align-middle">
 		{#if event.platform_string_realtime}
 			<span
-				class="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded text-sm font-bold text-gray-800 dark:text-gray-200 inline-block"
+				class=" px-2 py-1 text-sm font-bold inline-block"
 			>
 				{event.platform_string_realtime
 					.replace('Track', '')
