@@ -221,6 +221,33 @@
       }
     },
     {
+      "id": "landcover_grass",
+      "type": "fill",
+      "source": "openmaptiles",
+      "source-layer": "landcover",
+      "minzoom": 11,
+      "filter": [
+        "all",
+        ["==", ["get", "class"], "grass"],
+        ["!=", ["get", "subclass"], "scrub"]
+      ],
+      "layout": {"visibility": "visible"},
+      "paint": {
+        "fill-antialias": false,
+        "fill-color": {
+          "stops": [[6, "rgba(21, 67, 40, 1)"], [10, "rgba(14, 50, 26, 1)"]]
+        },
+        "fill-opacity": {
+          "property": "",
+          "type": "exponential",
+          "stops": [
+            [{"zoom": 6, "value": 0}, 0.3],
+            [{"zoom": 10, "value": 0}, 0.3]
+          ]
+        }
+      }
+    },
+    {
       "id": "terrainpolygons",
       "type": "fill",
       "source": "terrainpolygons",
@@ -345,33 +372,6 @@
       "source-layer": "landuse",
       "filter": ["==", ["get", "class"], "track"],
       "paint": {"fill-color": "rgba(115, 71, 56, 1)"}
-    },
-    {
-      "id": "landcover_grass",
-      "type": "fill",
-      "source": "openmaptiles",
-      "source-layer": "landcover",
-      "minzoom": 11,
-      "filter": [
-        "all",
-        ["==", ["get", "class"], "grass"],
-        ["!=", ["get", "subclass"], "scrub"]
-      ],
-      "layout": {"visibility": "visible"},
-      "paint": {
-        "fill-antialias": false,
-        "fill-color": {
-          "stops": [[6, "rgba(21, 67, 40, 1)"], [10, "rgba(14, 50, 26, 1)"]]
-        },
-        "fill-opacity": {
-          "property": "",
-          "type": "exponential",
-          "stops": [
-            [{"zoom": 6, "value": 0}, 0.3],
-            [{"zoom": 10, "value": 0}, 0.3]
-          ]
-        }
-      }
     },
     {
       "id": "landcover_wood",
