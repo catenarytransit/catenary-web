@@ -149,8 +149,8 @@
 			<div
 				class="flex flex-row text-sm text-gray-600 dark:text-gray-400 gap-2 items-center flex-wrap"
 			>
-				{#if show_route_name && routeDef?.short_name && !eurostyle}
-					<StationScreenRouteBadge {routeDef} chateau={event.chateau} />
+				{#if show_route_name && routeDef && !eurostyle}
+					<StationScreenRouteBadge {routeDef} chateau={event.chateau} fallback_long_name={true} />
 				{/if}
 
 				{#if agencyName && show_agency_name}
