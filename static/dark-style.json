@@ -12,13 +12,61 @@
     },
     "terrainpolygons": {
       "type": "vector",
-    "bounds":[-180,-85,180,85],
-    "cacheControl":"max-age=43200,s-maxage=7200",
-    "center":[0,0,3],"created":1396562400000,"filesize":0,"fillzoom":9,"format":"pbf","id":"mapbox.mapbox-terrain-v2",
-   "maskLevel":9,"maxzoom":15,"minzoom":0,"modified":1594153892000,
-   "name":"Mapbox Terrain v2","private":false,"scheme":"xyz",
-   "tilejson":"3.0.0","tiles":[
-    "https://birchterrain.catenarymaps.org/mapbox_terrain_tiles_proxy/{z}/{x}/{y}.vector.pbf"],"vector_layers":[{"description":"Generalized landcover classification","fields":{"class":"One of: wood, scrub, grass, crop, snow"},"id":"landcover","maxzoom":22,"minzoom":0,"source":"mapbox.mapbox-terrain-v2","source_name":"Mapbox Terrain v2"},{"description":"","fields":{"class":"One of: shadow, highlight","level":"Brightness %. One of: 94, 90, 89, 78, 67, 56"},"id":"hillshade","maxzoom":22,"minzoom":0,"source":"mapbox.mapbox-terrain-v2","source_name":"Mapbox Terrain v2"},{"description":"Elevation contour polygons","fields":{"ele":"Integer. The elevation of the contour in meters","index":"Indicator for every 2nd, 5th, or 10th contour. Coastlines are given -1. One of: 2, 5, 10, -1, null"},"id":"contour","maxzoom":22,"minzoom":0,"source":"mapbox.mapbox-terrain-v2","source_name":"Mapbox Terrain v2"}],"webpage":"https://studio.mapbox.com/tilesets/mapbox.mapbox-terrain-v2"
+      "bounds": [-180, -85, 180, 85],
+      "cacheControl": "max-age=43200,s-maxage=7200",
+      "center": [0, 0, 3],
+      "created": 1396562400000,
+      "filesize": 0,
+      "fillzoom": 9,
+      "format": "pbf",
+      "id": "mapbox.mapbox-terrain-v2",
+      "maskLevel": 9,
+      "maxzoom": 15,
+      "minzoom": 0,
+      "modified": 1594153892000,
+      "name": "Mapbox Terrain v2",
+      "private": false,
+      "scheme": "xyz",
+      "tilejson": "3.0.0",
+      "tiles": [
+        "https://birchterrain.catenarymaps.org/mapbox_terrain_tiles_proxy/{z}/{x}/{y}.vector.pbf"
+      ],
+      "vector_layers": [
+        {
+          "description": "Generalized landcover classification",
+          "fields": {"class": "One of: wood, scrub, grass, crop, snow"},
+          "id": "landcover",
+          "maxzoom": 22,
+          "minzoom": 0,
+          "source": "mapbox.mapbox-terrain-v2",
+          "source_name": "Mapbox Terrain v2"
+        },
+        {
+          "description": "",
+          "fields": {
+            "class": "One of: shadow, highlight",
+            "level": "Brightness %. One of: 94, 90, 89, 78, 67, 56"
+          },
+          "id": "hillshade",
+          "maxzoom": 22,
+          "minzoom": 0,
+          "source": "mapbox.mapbox-terrain-v2",
+          "source_name": "Mapbox Terrain v2"
+        },
+        {
+          "description": "Elevation contour polygons",
+          "fields": {
+            "ele": "Integer. The elevation of the contour in meters",
+            "index": "Indicator for every 2nd, 5th, or 10th contour. Coastlines are given -1. One of: 2, 5, 10, -1, null"
+          },
+          "id": "contour",
+          "maxzoom": 22,
+          "minzoom": 0,
+          "source": "mapbox.mapbox-terrain-v2",
+          "source_name": "Mapbox Terrain v2"
+        }
+      ],
+      "webpage": "https://studio.mapbox.com/tilesets/mapbox.mapbox-terrain-v2"
     }
   },
   "sprite": [
@@ -147,6 +195,59 @@
       }
     },
     {
+      "id": "landcover_scrub",
+      "type": "fill",
+      "source": "openmaptiles",
+      "source-layer": "landcover",
+      "filter": [
+        "all",
+        ["==", ["get", "class"], "grass"],
+        ["==", ["get", "subclass"], "scrub"]
+      ],
+      "layout": {"visibility": "visible"},
+      "paint": {
+        "fill-antialias": false,
+        "fill-color": {
+          "stops": [[6, "rgba(21, 67, 40, 1)"], [10, "rgba(6, 30, 13, 1)"]]
+        },
+        "fill-opacity": {
+          "property": "",
+          "type": "exponential",
+          "stops": [
+            [{"value": 0, "zoom": 6}, 0.1],
+            [{"value": 0, "zoom": 10}, 0.1]
+          ]
+        }
+      }
+    },
+    {
+      "id": "landcover_grass",
+      "type": "fill",
+      "source": "openmaptiles",
+      "source-layer": "landcover",
+      "minzoom": 11,
+      "filter": [
+        "all",
+        ["==", ["get", "class"], "grass"],
+        ["!=", ["get", "subclass"], "scrub"]
+      ],
+      "layout": {"visibility": "visible"},
+      "paint": {
+        "fill-antialias": false,
+        "fill-color": {
+          "stops": [[6, "rgba(21, 67, 40, 1)"], [10, "rgba(14, 50, 26, 1)"]]
+        },
+        "fill-opacity": {
+          "property": "",
+          "type": "exponential",
+          "stops": [
+            [{"zoom": 6, "value": 0}, 0.3],
+            [{"zoom": 10, "value": 0}, 0.3]
+          ]
+        }
+      }
+    },
+    {
       "id": "terrainpolygons",
       "type": "fill",
       "source": "terrainpolygons",
@@ -154,43 +255,43 @@
       "maxzoom": 16,
       "paint": {
         "fill-color": [
-  "match",
-  ["get", "class"],
-  ["shadow"],
-  [
-    "interpolate",
-    ["linear"],
-    ["get", "level"],
-    56,
-    "hsla(0, 0%, 0%, 0.05)",
-    75,
-    "hsla(187, 0%, 12%, 0.04)"
-  ],
-  ["highlight"],
-  [
-    "interpolate",
-    ["linear"],
-    ["get", "level"],
-    56,
-    "hsla(251, 0%, 84%, 0.1)",
-    94,
-    "hsla(251, 0%, 100%, 0.01)"
-  ],
-  "#000000"
-],
-"fill-opacity": [
-  "interpolate",
-  ["linear"],
-  ["zoom"],
-  2,
-  0,
-  6.16,
-  1,
-  10.76,
-  0.66,
-  22,
-  0.26
-]
+          "match",
+          ["get", "class"],
+          ["shadow"],
+          [
+            "interpolate",
+            ["linear"],
+            ["get", "level"],
+            56,
+            "hsla(0, 0%, 0%, 0.05)",
+            75,
+            "hsla(187, 0%, 12%, 0.04)"
+          ],
+          ["highlight"],
+          [
+            "interpolate",
+            ["linear"],
+            ["get", "level"],
+            56,
+            "hsla(251, 0%, 84%, 0.1)",
+            94,
+            "hsla(251, 0%, 100%, 0.01)"
+          ],
+          "#000000"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          2,
+          0,
+          6.16,
+          1,
+          10.76,
+          0.66,
+          22,
+          0.26
+        ]
       }
     },
     {
@@ -221,6 +322,7 @@
       "source-layer": "park",
       "minzoom": 0,
       "maxzoom": 24,
+      "layout": {"visibility": "visible"},
       "paint": {
         "fill-color": "rgba(27, 56, 30, 1)",
         "fill-opacity": 0.1,
@@ -270,59 +372,6 @@
       "source-layer": "landuse",
       "filter": ["==", ["get", "class"], "track"],
       "paint": {"fill-color": "rgba(115, 71, 56, 1)"}
-    },
-    {
-      "id": "landcover_grass",
-      "type": "fill",
-      "source": "openmaptiles",
-      "source-layer": "landcover",
-      "minzoom": 11,
-      "filter": [
-        "all",
-        ["==", ["get", "class"], "grass"],
-        ["!=", ["get", "subclass"], "scrub"]
-      ],
-      "layout": {"visibility": "visible"},
-      "paint": {
-        "fill-antialias": false,
-        "fill-color": {
-          "stops": [[6, "rgba(21, 67, 40, 1)"], [10, "rgba(14, 50, 26, 1)"]]
-        },
-        "fill-opacity": {
-          "property": "",
-          "type": "exponential",
-          "stops": [
-            [{"zoom": 6, "value": 0}, 0.3],
-            [{"zoom": 10, "value": 0}, 0.3]
-          ]
-        }
-      }
-    },
-    {
-      "id": "landcover_scrub",
-      "type": "fill",
-      "source": "openmaptiles",
-      "source-layer": "landcover",
-      "filter": [
-        "all",
-        ["==", ["get", "class"], "grass"],
-        ["==", ["get", "subclass"], "scrub"]
-      ],
-      "layout": {"visibility": "visible"},
-      "paint": {
-        "fill-antialias": false,
-        "fill-color": {
-          "stops": [[6, "rgba(21, 67, 40, 1)"], [10, "rgba(6, 30, 13, 1)"]]
-        },
-        "fill-opacity": {
-          "property": "",
-          "type": "exponential",
-          "stops": [
-            [{"value": 0, "zoom": 6}, 0.1],
-            [{"value": 0, "zoom": 10}, 0.1]
-          ]
-        }
-      }
     },
     {
       "id": "landcover_wood",
