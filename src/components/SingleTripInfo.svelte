@@ -1432,7 +1432,7 @@
 							<!-- Time Column: Real-time Arrival -->
 							<td class="align-top text-right border-r-0 whitespace-nowrap">
 								<div class="flex flex-col items-end">
-									<div class="flex flex-row gap-2 mb-1 justify-end">
+									<div class="flex flex-row gap-2 justify-end">
 										<div class="leading-none text-gray-500 dark:text-gray-400 text-sm">
 											<Clock
 												timezone={stoptime.timezone || trip_data.tz}
@@ -1446,7 +1446,7 @@
 
 									<!-- Arrival Delay -->
 									{#if stoptime.rt_arrival_diff}
-										<div class="leading-none mb-1">
+										<div class="leading-none">
 											<DelayDiff use_symbol_sign={true} diff={stoptime.rt_arrival_diff} />
 										</div>
 									{/if}
@@ -1518,7 +1518,7 @@
 								: ''}"
 						>
 							<div class="flex flex-col items-end mt-0.5">
-								<div class="flex flex-row gap-2 justify-end mb-1">
+								<div class="flex flex-row gap-2 justify-end">
 									<div class="font-bold leading-none text-sm">
 										<Clock
 											timezone={stoptime.timezone || trip_data.tz}
