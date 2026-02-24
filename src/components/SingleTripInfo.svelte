@@ -140,6 +140,24 @@
 
 	let last_inactive_stop_idx = -1;
 
+	let show_floating_controls = false;
+	let show_original_timetable = false;
+	let show_connections = false;
+
+	onMount(() => {
+		if (window.localStorage.getItem('show_original_timetable') !== null) {
+			show_original_timetable = window.localStorage.getItem('show_original_timetable') === 'true';
+		}
+		if (window.localStorage.getItem('show_connections') !== null) {
+			show_connections = window.localStorage.getItem('show_connections') === 'true';
+		}
+	});
+
+	$: if (typeof window !== 'undefined') {
+		window.localStorage.setItem('show_original_timetable', show_original_timetable.toString());
+		window.localStorage.setItem('show_connections', show_connections.toString());
+	}
+
 	let moving_dot_segment_idx = -1;
 	let moving_dot_progress = 0;
 	let is_at_station = false;
@@ -239,10 +257,12 @@
 										}
 									};
 
-									map.getSource('livedots_context').setData({
-										type: 'FeatureCollection',
-										features: [new_feature]
-									});
+									if (map.getSource('livedots_context')) {
+										map.getSource('livedots_context').setData({
+											type: 'FeatureCollection',
+											features: [new_feature]
+										});
+									}
 								}
 							}
 						}
@@ -581,10 +601,12 @@
 
 				stop_connections = tmp_stop_connections;
 
-				map.getSource('transit_shape_context_for_stop').setData({
-					type: 'FeatureCollection',
-					features: []
-				});
+				if (map.getSource('transit_shape_context_for_stop')) {
+					map.getSource('transit_shape_context_for_stop').setData({
+						type: 'FeatureCollection',
+						features: []
+					});
+				}
 
 				if (data.shape_polyline) {
 					let geojson_polyline_geo = polyline.toGeoJSON(data.shape_polyline);
@@ -1092,7 +1114,103 @@
 				disable_pdf={true}
 				route_type={trip_data.route_type}
 				make_clickable_route_name={true}
-			/>
+			>
+				<div slot="controls" class="relative">
+					<button
+						on:click={() => (show_floating_controls = !show_floating_controls)}
+						class="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 focus:outline-none transition-colors"
+						title={$_('settings', { default: 'Settings' })}
+					>
+						<span class="material-symbols-outlined"> discover_tune </span>
+					</button>
+
+					{#if show_floating_controls}
+						<div
+							class="absolute top-full mt-2 right-0 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-xl z-[100] border border-gray-200 dark:border-gray-700 w-64"
+						>
+							<div class="flex flex-col gap-y-3">
+								<div class="flex flex-row w-full justify-between items-center mb-1">
+									<span class="font-bold text-sm">{$_('settings', { default: 'Settings' })}</span>
+									<button
+										on:click={() => (show_floating_controls = false)}
+										class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+									>
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											width="20"
+											height="20"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											><line x1="18" y1="6" x2="6" y2="18"></line><line
+												x1="6"
+												y1="6"
+												x2="18"
+												y2="18"
+											></line></svg
+										>
+									</button>
+								</div>
+								<div class="flex flex-row gap-x-2 items-center">
+									<input
+										type="checkbox"
+										class="accent-seashore w-4 h-4 cursor-pointer"
+										bind:checked={show_original_timetable}
+									/>
+									<p
+										class="text-sm cursor-pointer select-none"
+										on:click={() => (show_original_timetable = !show_original_timetable)}
+									>
+										{$_('single_trip_info_screen_original', { default: 'Show original timetable' })}
+									</p>
+								</div>
+
+								<div class="flex flex-row gap-x-2 items-center">
+									<input
+										type="checkbox"
+										class="accent-seashore w-4 h-4 cursor-pointer"
+										checked={show_countdown_to_stop}
+										on:click={() => {
+											show_countdown_to_stop_store.update((x) => !x);
+											window.localStorage.show_countdown_to_stop = get(
+												show_countdown_to_stop_store
+											);
+										}}
+									/>
+									<p
+										class="text-sm cursor-pointer select-none"
+										on:click={() => {
+											show_countdown_to_stop_store.update((x) => !x);
+											window.localStorage.show_countdown_to_stop = get(
+												show_countdown_to_stop_store
+											);
+										}}
+									>
+										{$_('single_trip_info_screen_countdown', { default: 'Show countdown' })}
+									</p>
+								</div>
+
+								<div class="flex flex-row gap-x-2 items-center">
+									<input
+										type="checkbox"
+										class="accent-seashore w-4 h-4 cursor-pointer"
+										bind:checked={show_connections}
+									/>
+									<p
+										class="text-sm cursor-pointer select-none"
+										on:click={() => (show_connections = !show_connections)}
+									>
+										{$_('single_trip_info_screen_connections', { default: 'Show connections' })}
+									</p>
+								</div>
+							</div>
+						</div>
+					{/if}
+				</div>
+			</RouteHeading>
 		{:catch error}
 			<p class="p-4 text-red-500">Error loading component: {error.message}</p>
 		{/await}
@@ -1174,7 +1292,7 @@
 			<div>
 				<span class="text-xs">
 					{$_('lastupdated')}: <TimeDiff
-						show_seconds={true}
+						show_seconds={false}
 						show_brackets={false}
 						diff={vehicle_data.timestamp - current_time / 1000}
 					/>
@@ -1296,23 +1414,25 @@
 					{#if isDoubleTime}
 						<!-- Arrival Row -->
 						<tr class={`min-h-[3rem] ${i <= last_inactive_stop_idx ? 'opacity-60' : ''}`}>
-							<!-- Time Column: Arrival -->
+							<!-- Time Column: Scheduled Arrival -->
+							{#if show_original_timetable}
+								<td class="align-top text-right border-r-0 whitespace-nowrap pl-2 pr-3">
+									{#if stoptime.scheduled_arrival_time_unix_seconds != null}
+										<div class="leading-none text-gray-400 dark:text-gray-500 text-sm mt-1">
+											<Clock
+												timezone={stoptime.timezone || trip_data.tz}
+												time_seconds={stoptime.scheduled_arrival_time_unix_seconds}
+												{show_seconds}
+											/>
+										</div>
+									{/if}
+								</td>
+							{/if}
+
+							<!-- Time Column: Real-time Arrival -->
 							<td class="align-top text-right border-r-0 whitespace-nowrap">
 								<div class="flex flex-col items-end">
-									<div class="flex flex-row items-baseline gap-2 mb-1">
-										{#if show_countdown_to_stop}
-											<div class="leading-none text-xs italic opacity-80">
-												<TimeDiff
-													diff={(stoptime.rt_arrival_time ||
-														stoptime.scheduled_arrival_time_unix_seconds ||
-														stoptime.interpolated_stoptime_unix_seconds) -
-														current_time / 1000}
-													show_seconds={true}
-													show_brackets={false}
-													use_ticks={true}
-												/>
-											</div>
-										{/if}
+									<div class="flex flex-row gap-2 mb-1 justify-end">
 										<div class="leading-none text-gray-500 dark:text-gray-400 text-sm">
 											<Clock
 												timezone={stoptime.timezone || trip_data.tz}
@@ -1330,6 +1450,24 @@
 											<DelayDiff use_symbol_sign={true} diff={stoptime.rt_arrival_diff} />
 										</div>
 									{/if}
+
+									<!-- Arrival Countdown -->
+									{#if show_countdown_to_stop}
+										<div
+											class="leading-none text-xs italic opacity-80
+										"
+										>
+											<TimeDiff
+												diff={(stoptime.rt_arrival_time ||
+													stoptime.scheduled_arrival_time_unix_seconds ||
+													stoptime.interpolated_stoptime_unix_seconds) -
+													current_time / 1000}
+												show_seconds={false}
+												show_brackets={false}
+												use_ticks={true}
+											/>
+										</div>
+									{/if}
 								</div>
 							</td>
 
@@ -1340,8 +1478,8 @@
 								>
 									<!-- Continuous Line -->
 									<div
-										class="w-0.5 h-full bg-current"
-										style={`background-color: ${trip_data.color}; opacity: ${i <= last_inactive_stop_idx ? '0.4' : '1'};`}
+										class="bg-gray-700 dark:bg-gray-300 w-0.5 h-full"
+										style={` opacity: ${i <= last_inactive_stop_idx ? '0.4' : '1'};`}
 									></div>
 								</div>
 							</td>
@@ -1353,27 +1491,34 @@
 
 					<!-- Main/Departure Row -->
 					<tr class={`min-h-[3rem]`}>
-						<!-- Time Column: Departure (or single time) -->
+						<!-- Time Column: Scheduled Departure (or single time) -->
+						{#if show_original_timetable}
+							<td
+								class="align-top text-right whitespace-nowrap pl-2 pr-3 {i <= last_inactive_stop_idx
+									? 'opacity-70'
+									: ''}"
+							>
+								{#if stoptime.scheduled_departure_time_unix_seconds != null || stoptime.scheduled_arrival_time_unix_seconds != null}
+									<div class="leading-none text-gray-400 dark:text-gray-500 text-sm mt-0.5">
+										<Clock
+											timezone={stoptime.timezone || trip_data.tz}
+											time_seconds={stoptime.scheduled_departure_time_unix_seconds ||
+												stoptime.scheduled_arrival_time_unix_seconds}
+											{show_seconds}
+										/>
+									</div>
+								{/if}
+							</td>
+						{/if}
+
+						<!-- Time Column: Real-time Departure (or single time) -->
 						<td
 							class="align-top text-right whitespace-nowrap {i <= last_inactive_stop_idx
 								? 'opacity-70'
 								: ''}"
 						>
-							<div class="flex flex-col items-end">
-								<div class="flex flex-row items-baseline gap-2">
-									{#if show_countdown_to_stop}
-										<div class="leading-none text-xs italic opacity-75">
-											<TimeDiff
-												diff={(stoptime.rt_departure_time ||
-													stoptime.scheduled_departure_time_unix_seconds ||
-													stoptime.interpolated_stoptime_unix_seconds) -
-													current_time / 1000}
-												show_seconds={true}
-												show_brackets={false}
-												use_ticks={true}
-											/>
-										</div>
-									{/if}
+							<div class="flex flex-col items-end mt-0.5">
+								<div class="flex flex-row gap-2 justify-end mb-1">
 									<div class="font-bold leading-none text-sm">
 										<Clock
 											timezone={stoptime.timezone || trip_data.tz}
@@ -1391,6 +1536,21 @@
 										<DelayDiff use_symbol_sign={true} diff={stoptime.rt_departure_diff} />
 									</div>
 								{/if}
+
+								<!-- Departure Countdown -->
+								{#if show_countdown_to_stop}
+									<div class="leading-none text-xs italic opacity-75">
+										<TimeDiff
+											diff={(stoptime.rt_departure_time ||
+												stoptime.scheduled_departure_time_unix_seconds ||
+												stoptime.interpolated_stoptime_unix_seconds) -
+												current_time / 1000}
+											show_seconds={false}
+											show_brackets={false}
+											use_ticks={true}
+										/>
+									</div>
+								{/if}
 							</div>
 						</td>
 
@@ -1403,8 +1563,8 @@
 								{#if i > 0 || isDoubleTime || show_previous_stops}
 									{#if i < stoptimes_cleaned_dataset.length - 1}
 										<div
-											class="w-0.5 absolute top-0 bottom-1/2 bg-current"
-											style={`background-color: ${trip_data.color}; opacity: ${i <= last_inactive_stop_idx ? '0.4' : '1'};`}
+											class="bg-gray-800 dark:bg-gray-300 w-0.5 absolute top-0 bottom-1/2 bg-current"
+											style={` opacity: ${i <= last_inactive_stop_idx - 1 ? '0.4' : '1'};`}
 										></div>
 									{/if}
 								{/if}
@@ -1412,8 +1572,8 @@
 								<!-- Bottom Line -->
 								{#if i < stoptimes_cleaned_dataset.length - 1}
 									<div
-										class="w-0.5 absolute top-1/2 bottom-0 bg-current"
-										style={`background-color: ${trip_data.color}; opacity: ${i <= last_inactive_stop_idx - 1 ? '0.4' : '1'};`}
+										class="bg-gray-800 dark:bg-gray-300 w-0.5 absolute top-1/2 bottom-0 bg-current"
+										style={` opacity: ${i <= last_inactive_stop_idx - 1 ? '0.4' : '1'};`}
 									></div>
 								{/if}
 
@@ -1425,8 +1585,8 @@
 									></div>
 								{:else}
 									<div
-										class={`z-10 w-2 h-2 mt-1 rounded-full border-1 bg-white dark:bg-gray-800 `}
-										style={`border-color: ${trip_data.color}; box-shadow: 0 0 0 2px ${darkMode ? '#114' : '#fff'};`}
+										class={`bg-gray-800 dark:bg-gray-300 z-10 w-2 h-2 mt-1 rounded-full border-1 bg-white dark:bg-gray-800 `}
+										style={` box-shadow: 0 0 0 2px ${darkMode ? '#114' : '#fff'};`}
 									></div>
 								{/if}
 
@@ -1495,7 +1655,7 @@
 										<p class="text-xs text-gray-500">{$_('replaced_stop')}</p>
 									{/if}
 
-									{#if connectionKey}
+									{#if connectionKey && show_connections}
 										<div class="flex flex-row flex-wrap gap-x-1 gap-y-1 mt-1">
 											<ConsolidatedRouteList
 												connections={stop_connections[connectionKey]}

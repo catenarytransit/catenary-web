@@ -133,7 +133,7 @@
 
 				{#if !expanded}
 					<div
-						class={`ml-8 text-xs text-gray-400 dark:text-gray-300 transition-opacity duration-500 ${fading ? 'opacity-0' : 'opacity-100'}`}
+						class={`text-xs text-gray-400 dark:text-gray-300 transition-opacity duration-500 ${fading ? 'opacity-0' : 'opacity-100'}`}
 					>
 						{#if currentAlert}
 							{#if currentAlert.header_text}

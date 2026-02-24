@@ -177,27 +177,30 @@
 			</span>
 		</h2>
 
-		{#if pin_route_setting_shown}
-			<button
-				class={`shrink-0 rounded-full leading-none text-sm px-1 hover:bg-gray-100 dark:hover:bg-gray-700 border-2 border-gray-500 ${
-					isPinned ? 'bg-blue-500' : ''
-				}`}
-				aria-pressed={isPinned}
-				aria-label={isPinned ? 'Unpin route' : 'Pin route'}
-				title={isPinned ? 'Unpin route' : 'Pin route'}
-				on:click={togglePin}
-			>
-				{#if isPinned}
-					<span class="material-symbols-outlined leading-none">
-						<span class="text-base leading-none">keep</span>
-					</span>
-				{:else}
-					<span class="material-symbols-outlined leading-none">
-						<span class="text-base leading-none">keep_off</span>
-					</span>
-				{/if}
-			</button>
-		{/if}
+		<div class="flex flex-row items-center gap-2">
+			{#if pin_route_setting_shown}
+				<button
+					class={`shrink-0 rounded-full leading-none text-sm px-1 hover:bg-gray-100 dark:hover:bg-gray-700 border-2 border-gray-500 ${
+						isPinned ? 'bg-blue-500' : ''
+					}`}
+					aria-pressed={isPinned}
+					aria-label={isPinned ? 'Unpin route' : 'Pin route'}
+					title={isPinned ? 'Unpin route' : 'Pin route'}
+					on:click={togglePin}
+				>
+					{#if isPinned}
+						<span class="material-symbols-outlined leading-none">
+							<span class="text-base leading-none">keep</span>
+						</span>
+					{:else}
+						<span class="material-symbols-outlined leading-none">
+							<span class="text-base leading-none">keep_off</span>
+						</span>
+					{/if}
+				</button>
+			{/if}
+			<slot name="controls" />
+		</div>
 	</div>
 
 	{#if gtfs_desc}
