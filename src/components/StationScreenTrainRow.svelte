@@ -85,52 +85,36 @@
 				<div class="line-through opacity-70 text-xs">
 					<Clock {timezone} time_seconds={shared_scheduled_time} {show_seconds} />
 				</div>
-			{:else}
-				{#if shared_rt_time}
-					<!-- Vertical Mode: Scheduled -> Delay -> Realtime -->
-					{#if shared_rt_time != shared_scheduled_time}
-						<span class="text-gray-600 dark:text-gray-400 line-through text-xs">
-							<Clock {timezone} time_seconds={shared_scheduled_time} {show_seconds} />
-						</span>
-						{#if shared_scheduled_time}
-							<DelayDiff
-								diff={shared_rt_time - shared_scheduled_time}
-								{show_seconds}
-								{use_symbol_sign}
-							/>
-						{/if}
-						<span
-							class={`text-seashore dark:text-seashoredark font-medium ${shared_rt_time < current_time / 1000 ? 'opacity-70' : ''}`}
-						>
-							<Clock {timezone} time_seconds={shared_rt_time} {show_seconds} />
-						</span>
-					{:else}
-						<!-- On Time (Vertical) - Just show Clock -->
-						<span
-							class={`text-seashore dark:text-seashoredark font-medium ${shared_rt_time < current_time / 1000 ? 'opacity-70' : ''}`}
-						>
-							<Clock {timezone} time_seconds={shared_rt_time} {show_seconds} />
-						</span>
-					{/if}
-				{:else}
-					<div class={`${shared_scheduled_time < current_time / 1000 ? 'opacity-70' : ''}`}>
+			{:else if shared_rt_time}
+				<!-- Vertical Mode: Scheduled -> Delay -> Realtime -->
+				{#if shared_rt_time != shared_scheduled_time}
+					<span class="text-gray-600 dark:text-gray-400 line-through text-xs">
 						<Clock {timezone} time_seconds={shared_scheduled_time} {show_seconds} />
-					</div>
-				{/if}
-
-				{@const thisdiff = (shared_rt_time || shared_scheduled_time) - current_time / 1000}
-				{@const show_seconds_here = show_seconds && thisdiff < 3600}
-				{#if show_timediff}
-					<div class="mt-1">
-						<TimeDiff
-							large={false}
-							show_brackets={false}
-							show_seconds={show_seconds_here}
-							diff={thisdiff}
-							use_ticks={true}
+					</span>
+					{#if shared_scheduled_time}
+						<DelayDiff
+							diff={shared_rt_time - shared_scheduled_time}
+							{show_seconds}
+							{use_symbol_sign}
 						/>
-					</div>
+					{/if}
+					<span
+						class={`text-seashore dark:text-seashoredark font-medium ${shared_rt_time < current_time / 1000 ? 'opacity-70' : ''}`}
+					>
+						<Clock {timezone} time_seconds={shared_rt_time} {show_seconds} />
+					</span>
+				{:else}
+					<!-- On Time (Vertical) - Just show Clock -->
+					<span
+						class={`text-seashore dark:text-seashoredark font-medium ${shared_rt_time < current_time / 1000 ? 'opacity-70' : ''}`}
+					>
+						<Clock {timezone} time_seconds={shared_rt_time} {show_seconds} />
+					</span>
 				{/if}
+			{:else}
+				<div class={`${shared_scheduled_time < current_time / 1000 ? 'opacity-70' : ''}`}>
+					<Clock {timezone} time_seconds={shared_scheduled_time} {show_seconds} />
+				</div>
 			{/if}
 		</div>
 	</td>
@@ -146,6 +130,7 @@
 					{/if}
 				</div>
 			</div>
+
 			<div
 				class="flex flex-row text-sm text-gray-600 dark:text-gray-400 gap-2 items-center flex-wrap"
 			>
@@ -192,9 +177,7 @@
 	<!-- Right: Platform -->
 	<td class="px-2 py-2 text-right w-[50px] align-middle">
 		{#if event.platform_string_realtime}
-			<span
-				class=" px-2 py-1 text-sm font-bold inline-block"
-			>
+			<span class=" px-2 py-1 text-sm font-bold inline-block">
 				{event.platform_string_realtime
 					.replace('Track', '')
 					.replace('platform', '')

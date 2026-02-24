@@ -755,6 +755,7 @@
 											timezone={displayTimezone}
 											{current_time}
 											{show_seconds}
+											use_symbol_sign={true}
 											show_arrivals={event.last_stop}
 										/>
 
@@ -762,7 +763,7 @@
 											<p>{$_('platform')} {event.platform_string_realtime}</p>
 										{/if}
 										{#if event.vehicle_number}
-											<p>{$_('vehicle')}: {event.vehicle_number}</p>
+											<p class="text-sm opacity-80">{$_('vehicle')}: {event.vehicle_number}</p>
 										{/if}
 									</div>
 								{/each}

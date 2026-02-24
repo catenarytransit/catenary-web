@@ -186,9 +186,9 @@
 	const LS_SORT_KEY = 'nearby_sort_mode_v1';
 
 	let sortMode: SortMode =
-    typeof window !== 'undefined'
-        ? (localStorage.getItem(LS_SORT_KEY) as SortMode) || 'distance'
-        : 'distance';
+		typeof window !== 'undefined'
+			? (localStorage.getItem(LS_SORT_KEY) as SortMode) || 'distance'
+			: 'distance';
 
 	function setSortMode(next: SortMode) {
 		sortMode = next;
@@ -918,6 +918,7 @@
 														large={false}
 														show_brackets={false}
 														show_seconds={false}
+														space_between={false}
 														diff={getEffectiveDepartureTime(trip) - current_time / 1000}
 														stylesForUnits={'font-medium'}
 													/>

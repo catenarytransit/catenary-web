@@ -145,7 +145,6 @@
 		{/if}{#if diff == 0}<span class="text-xs font-semibold text-[#58A738] {alltextclass}">
 				{#if use_symbol_sign}+0{:else}{$_('ontime')}{/if}
 			</span>{/if}
-		<span class="text-xs {alltextclass}">&nbsp;</span>
 	</span>
 
 	{#if diff != 0}
@@ -153,7 +152,7 @@
 			<span class="text-sm {alltextclass}">{h}</span>
 			<span class="text-xs {alltextclass}  {unitsclass}">{locale_hour_marking(this_locale)}</span>
 		{/if}{#if h > 0 || m > 0 || (!show_seconds && m >= 0 && diff != 0)}
-			<span class="text-sm {alltextclass}">{!show_seconds && Math.abs(diff) < 60 ? '<1' : m}</span>
+			<span class="text-sm {alltextclass}">{!show_seconds && Math.abs(diff) < 60 ? '0' : m}</span>
 			<span class="text-xs {alltextclass} {unitsclass}">{locale_min_marking(this_locale)}</span
 			>{/if}
 		{#if show_seconds}

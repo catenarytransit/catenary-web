@@ -22,6 +22,8 @@
 
 	export let show_plus: boolean = false;
 
+	export let space_between: boolean = true;
+
 	export let stylesForUnits: string = '';
 
 	setInterval;
@@ -88,7 +90,7 @@
 		}
 
 		if (use_ticks) {
-			if (l.startsWith("fr")) {
+			if (l.startsWith('fr')) {
 				return "'";
 			}
 		}
@@ -113,7 +115,7 @@
 			}
 		}
 
-		if (l.startsWith("fr") && use_ticks == true) {
+		if (l.startsWith('fr') && use_ticks == true) {
 			return '"';
 		}
 
@@ -177,19 +179,29 @@
 	{#if h > 0}
 		<span class={large ? 'text-sm' : 'text-sm'}>{h}</span>
 		<span class={`${large ? 'text-sm' : 'text-xs'}  ${stylesForUnits}`}
-			>{locale_hour_marking(this_locale)}</span
+			>{#if space_between}
+				<span class="px-0.5"></span>
+			{/if}{locale_hour_marking(this_locale)}</span
 		>
+	{/if}
+	{#if space_between}
+		<span class="px-0.5"></span>
 	{/if}
 	{#if h > 0 || m > 0 || (!show_seconds && m >= 0 && diff != 0)}
 		<span class="{large ? 'text-base' : 'text-sm'} tabular-nums">{m_string}</span>
 		<span class={`${large ? 'text-sm' : 'text-xs'}  ${stylesForUnits}`}
-			>{locale_min_marking(this_locale)}</span
+			>{#if space_between}
+				<span class="px-0.5"></span>
+			{/if}{locale_min_marking(this_locale)}</span
 		>
 	{/if}
 	{#if show_seconds}
 		<span class="{large ? 'text-base' : 'text-sm'} tabular-nums">{s_string}</span>
-		<span class={`${large ? 'text-sm' : 'text-xs'}  ${stylesForUnits}`}
-			>{locale_s_marking(this_locale)}</span
+		<span class={`${large ? 'text-sm' : 'text-xs'}  ${stylesForUnits}`}>
+			{#if space_between}
+				<span class="px-0.5"></span>
+			{/if}
+			{locale_s_marking(this_locale)}</span
 		>
 	{/if}
 
