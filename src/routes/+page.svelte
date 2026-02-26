@@ -832,7 +832,7 @@
 		if (urlParams.get('style') == 'nothing') {
 			style = '/nothing-light.json';
 		}
-		if (urlParams.get('style') == "nothingdark") {
+		if (urlParams.get('style') == 'nothingdark') {
 			style = '/nothing-dark.json';
 		}
 		if (urlParams.get('style') == 'dark2025') {
@@ -1630,30 +1630,30 @@
 
 						if (!darkMode) {
 							map.setPaintProperty('terrainpolygons', 'fill-color', [
-								"match",
-								["get", "class"],
-								["shadow"],
+								'match',
+								['get', 'class'],
+								['shadow'],
 								[
-									"interpolate",
-									["linear"],
-									["get", "level"],
+									'interpolate',
+									['linear'],
+									['get', 'level'],
 									56,
-									"hsla(0, 0%, 0%, 0.05)",
+									'hsla(0, 0%, 0%, 0.05)',
 									75,
-									"hsla(187, 0%, 12%, 0.05)"
+									'hsla(187, 0%, 12%, 0.05)'
 								],
-								["highlight"],
+								['highlight'],
 								[
-									"interpolate",
-									["linear"],
-									["get", "level"],
+									'interpolate',
+									['linear'],
+									['get', 'level'],
 									56,
-									"hsla(251, 0%, 84%, 0.4)",
+									'hsla(251, 0%, 84%, 0.4)',
 									94,
-									"hsla(251, 0%, 100%, 0.04)"
+									'hsla(251, 0%, 100%, 0.04)'
 								],
-								"#000000"
-								]);
+								'#000000'
+							]);
 						}
 					}
 
@@ -1671,58 +1671,58 @@
 					if (map.getLayer('terrainpolygons')) {
 						if (darkMode) {
 							map.setPaintProperty('terrainpolygons', 'fill-opacity', [
-							'interpolate',
-							['linear'],
-							['zoom'],
-							2,
-							0,
-							6.16,
-							1,
-							10.76,
-							0.66,
-							22,
-							0.26
-						]);
+								'interpolate',
+								['linear'],
+								['zoom'],
+								2,
+								0,
+								6.16,
+								1,
+								10.76,
+								0.66,
+								22,
+								0.26
+							]);
 						} else {
 							map.setPaintProperty('terrainpolygons', 'fill-color', [
-								"match",
-								["get", "class"],
-								["shadow"],
+								'match',
+								['get', 'class'],
+								['shadow'],
 								[
-									"interpolate",
-									["linear"],
-									["get", "level"],
+									'interpolate',
+									['linear'],
+									['get', 'level'],
 									56,
-									"hsla(0, 0%, 0%, 0.005)",
+									'hsla(0, 0%, 0%, 0.005)',
 									75,
-									"hsla(187, 0%, 12%, 0.01)"
+									'hsla(187, 0%, 12%, 0.01)'
 								],
-								["highlight"],
+								['highlight'],
 								[
-									"interpolate",
-									["linear"],
-									["get", "level"],
+									'interpolate',
+									['linear'],
+									['get', 'level'],
 									56,
-									"hsla(251, 0%, 84%, 0.1)",
+									'hsla(251, 0%, 84%, 0.1)',
 									94,
-									"hsla(251, 0%, 100%, 0.01)"
+									'hsla(251, 0%, 100%, 0.01)'
 								],
-								"#000000"
-								]);
+								'#000000'
+							]);
 
 							map.setPaintProperty('terrainpolygons', 'fill-opacity', [
-							'interpolate',
-							['linear'],
-							['zoom'],
-							2,
-							0,
-							6.16,
-							0.2,
-							10.76,
-							0.1,
-							22,
-							0.05
-						]);
+								'interpolate',
+								['linear'],
+								['zoom'],
+								2,
+								0,
+								6.16,
+								0.2,
+								10.76,
+								0.1,
+								22,
+								0.05
+							]);
 						}
 					}
 

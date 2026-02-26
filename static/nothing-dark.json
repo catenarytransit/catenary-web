@@ -1,47 +1,95 @@
 {
-  "version": 8,
-  "metadata": {"maputnik:renderer": "mlgljs"},
-  "sources": {
-    "openmaptiles": {
-      "type": "vector",
-      "url": "https://tiles.openfreemap.org/planet"
-    },
-    "esa-worldcover-polygons": {
-      "type": "vector",
-      "url": "https://tiles.swiss-map.cc/esa-worldcover-polygons-v2.json"
-    },
-    "terrainpolygons": {
-      "type": "vector",
-    "bounds":[-180,-85,180,85],
-    "cacheControl":"max-age=43200,s-maxage=7200",
-    "center":[0,0,3],"created":1396562400000,"filesize":0,"fillzoom":9,"format":"pbf","id":"mapbox.mapbox-terrain-v2",
-   "maskLevel":9,"maxzoom":15,"minzoom":0,"modified":1594153892000,
-   "name":"Mapbox Terrain v2","private":false,"scheme":"xyz",
-   "tilejson":"3.0.0","tiles":[
-    "https://birchterrain.catenarymaps.org/mapbox_terrain_tiles_proxy/{z}/{x}/{y}.vector.pbf"],"vector_layers":[{"description":"Generalized landcover classification","fields":{"class":"One of: wood, scrub, grass, crop, snow"},"id":"landcover","maxzoom":22,"minzoom":0,"source":"mapbox.mapbox-terrain-v2","source_name":"Mapbox Terrain v2"},{"description":"","fields":{"class":"One of: shadow, highlight","level":"Brightness %. One of: 94, 90, 89, 78, 67, 56"},"id":"hillshade","maxzoom":22,"minzoom":0,"source":"mapbox.mapbox-terrain-v2","source_name":"Mapbox Terrain v2"},{"description":"Elevation contour polygons","fields":{"ele":"Integer. The elevation of the contour in meters","index":"Indicator for every 2nd, 5th, or 10th contour. Coastlines are given -1. One of: 2, 5, 10, -1, null"},"id":"contour","maxzoom":22,"minzoom":0,"source":"mapbox.mapbox-terrain-v2","source_name":"Mapbox Terrain v2"}],"webpage":"https://studio.mapbox.com/tilesets/mapbox.mapbox-terrain-v2"
-    }
-  },
-  "sprite": [
-    {"id": "ofm", "url": "https://tiles.openfreemap.org/sprites/ofm_f384/ofm"},
-    {"id": "mbicons", "url": "https://moreicons.catenarymaps.org/sprite"},
-    {
-      "id": "orm",
-      "url": "https://maps.catenarymaps.org/orm_sprite_symbols/symbols"
-    },
-    {
-      "id": "ormsdf",
-      "url": "https://maps.catenarymaps.org/orm_sdf_sprite_symbols/symbols"
-    }
-  ],
-  "glyphs": "https://tipo.catenarymaps.org/fonts/{fontstack}/{range}.pbf",
-  "layers": [
-    {
-      "id": "background",
-      "type": "background",
-      "paint": {
-        "background-color": "#000000"
-        }
-      }
-  ],
-  "id": "ccf3u0gvf"
+	"version": 8,
+	"metadata": { "maputnik:renderer": "mlgljs" },
+	"sources": {
+		"openmaptiles": {
+			"type": "vector",
+			"url": "https://tiles.openfreemap.org/planet"
+		},
+		"esa-worldcover-polygons": {
+			"type": "vector",
+			"url": "https://tiles.swiss-map.cc/esa-worldcover-polygons-v2.json"
+		},
+		"terrainpolygons": {
+			"type": "vector",
+			"bounds": [-180, -85, 180, 85],
+			"cacheControl": "max-age=43200,s-maxage=7200",
+			"center": [0, 0, 3],
+			"created": 1396562400000,
+			"filesize": 0,
+			"fillzoom": 9,
+			"format": "pbf",
+			"id": "mapbox.mapbox-terrain-v2",
+			"maskLevel": 9,
+			"maxzoom": 15,
+			"minzoom": 0,
+			"modified": 1594153892000,
+			"name": "Mapbox Terrain v2",
+			"private": false,
+			"scheme": "xyz",
+			"tilejson": "3.0.0",
+			"tiles": [
+				"https://birchterrain.catenarymaps.org/mapbox_terrain_tiles_proxy/{z}/{x}/{y}.vector.pbf"
+			],
+			"vector_layers": [
+				{
+					"description": "Generalized landcover classification",
+					"fields": { "class": "One of: wood, scrub, grass, crop, snow" },
+					"id": "landcover",
+					"maxzoom": 22,
+					"minzoom": 0,
+					"source": "mapbox.mapbox-terrain-v2",
+					"source_name": "Mapbox Terrain v2"
+				},
+				{
+					"description": "",
+					"fields": {
+						"class": "One of: shadow, highlight",
+						"level": "Brightness %. One of: 94, 90, 89, 78, 67, 56"
+					},
+					"id": "hillshade",
+					"maxzoom": 22,
+					"minzoom": 0,
+					"source": "mapbox.mapbox-terrain-v2",
+					"source_name": "Mapbox Terrain v2"
+				},
+				{
+					"description": "Elevation contour polygons",
+					"fields": {
+						"ele": "Integer. The elevation of the contour in meters",
+						"index": "Indicator for every 2nd, 5th, or 10th contour. Coastlines are given -1. One of: 2, 5, 10, -1, null"
+					},
+					"id": "contour",
+					"maxzoom": 22,
+					"minzoom": 0,
+					"source": "mapbox.mapbox-terrain-v2",
+					"source_name": "Mapbox Terrain v2"
+				}
+			],
+			"webpage": "https://studio.mapbox.com/tilesets/mapbox.mapbox-terrain-v2"
+		}
+	},
+	"sprite": [
+		{ "id": "ofm", "url": "https://tiles.openfreemap.org/sprites/ofm_f384/ofm" },
+		{ "id": "mbicons", "url": "https://moreicons.catenarymaps.org/sprite" },
+		{
+			"id": "orm",
+			"url": "https://maps.catenarymaps.org/orm_sprite_symbols/symbols"
+		},
+		{
+			"id": "ormsdf",
+			"url": "https://maps.catenarymaps.org/orm_sdf_sprite_symbols/symbols"
+		}
+	],
+	"glyphs": "https://tipo.catenarymaps.org/fonts/{fontstack}/{range}.pbf",
+	"layers": [
+		{
+			"id": "background",
+			"type": "background",
+			"paint": {
+				"background-color": "#000000"
+			}
+		}
+	],
+	"id": "ccf3u0gvf"
 }

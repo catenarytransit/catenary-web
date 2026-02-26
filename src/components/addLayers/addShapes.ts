@@ -99,13 +99,13 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 			//'text-field': ['coalesce', ['get', 'route_label']],
 			'text-field': urlParams.get('debug')
 				? [
-					'concat',
-					['get', 'onestop_feed_id'],
-					'|',
-					['get', 'shape_id'],
-					'|',
-					['coalesce', ['get', 'route_label']]
-				]
+						'concat',
+						['get', 'onestop_feed_id'],
+						'|',
+						['get', 'shape_id'],
+						'|',
+						['coalesce', ['get', 'route_label']]
+					]
 				: ['coalesce', ['get', 'route_label']],
 			//'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
 			'text-font': ['literal', ['Arimo-Regular']],

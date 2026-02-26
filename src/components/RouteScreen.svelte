@@ -734,7 +734,7 @@
 						{#each vehicles_under_direction_id_parent[activePattern].sort() as vehicle_id}
 							{#if vehicle_positions[vehicle_id]}
 								<div
-									class="rounded-md bg-gray-100 dark:bg-gray-800   py-1 px-1"
+									class="rounded-md bg-gray-100 dark:bg-gray-800 py-1 px-1"
 									on:click={() => {
 										data_stack_store.update((data_stack) => {
 											data_stack.push(

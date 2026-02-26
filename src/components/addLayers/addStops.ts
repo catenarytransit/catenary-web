@@ -70,11 +70,7 @@ export function changeStopsTheme(map: Map, darkMode: boolean) {
 	);
 
 	// Metro osm stops
-	map.setPaintProperty(
-		layerspercategory.metro.osmstops,
-		'circle-color',
-		getCircleInside(darkMode)
-	);
+	map.setPaintProperty(layerspercategory.metro.osmstops, 'circle-color', getCircleInside(darkMode));
 	map.setPaintProperty(
 		layerspercategory.metro.osmstops,
 		'circle-stroke-color',
@@ -110,11 +106,7 @@ export function changeStopsTheme(map: Map, darkMode: boolean) {
 	);
 
 	// Tram osm stops
-	map.setPaintProperty(
-		layerspercategory.tram.osmstops,
-		'circle-color',
-		getCircleInside(darkMode)
-	);
+	map.setPaintProperty(layerspercategory.tram.osmstops, 'circle-color', getCircleInside(darkMode));
 	map.setPaintProperty(
 		layerspercategory.tram.osmstops,
 		'circle-stroke-color',
@@ -302,11 +294,11 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 		},
 		minzoom: 9,
 		filter: [
-			"all",
-			["==", ["get", "local_ref"], null],
-			["==", ["get", "station_type"], "station"],
+			'all',
+			['==', ['get', 'local_ref'], null],
+			['==', ['get', 'station_type'], 'station'],
 			['==', ['get', 'mode_type'], 'subway']
-		],
+		]
 	});
 
 	map.addLayer({
@@ -340,9 +332,9 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			//'text-emissive-strength': 1
 		},
 		filter: [
-			"all",
-			["==", ["get", "local_ref"], null],
-			["==", ["get", "station_type"], "station"],
+			'all',
+			['==', ['get', 'local_ref'], null],
+			['==', ['get', 'station_type'], 'station'],
 			['==', ['get', 'mode_type'], 'subway']
 		],
 		minzoom: 11
@@ -424,18 +416,15 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 		},
 		minzoom: 9,
 		filter: [
-			"all",
-			["==", ["get", "local_ref"], null],
+			'all',
+			['==', ['get', 'local_ref'], null],
 			[
 				'any',
-				["==", ["get", "station_type"], "station"],
-				["==", ["get", "station_type"], "tram_stop"],
+				['==', ['get', 'station_type'], 'station'],
+				['==', ['get', 'station_type'], 'tram_stop']
 			],
-			['any',
-				['==', ['get', 'mode_type'], 'tram'],
-				['==', ['get', 'mode_type'], 'light_rail']
-			]
-		],
+			['any', ['==', ['get', 'mode_type'], 'tram'], ['==', ['get', 'mode_type'], 'light_rail']]
+		]
 	});
 
 	map.addLayer({
@@ -446,7 +435,23 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 		layout: {
 			'text-field': ['get', 'name'],
 			'text-variable-anchor': ['left', 'right', 'top', 'bottom'],
-			'text-size': ['interpolate', ['linear'], ['zoom'], 9, 7, 11, 7, 12, 9, 14, 10, 16, 12, 18, 14],
+			'text-size': [
+				'interpolate',
+				['linear'],
+				['zoom'],
+				9,
+				7,
+				11,
+				7,
+				12,
+				9,
+				14,
+				10,
+				16,
+				12,
+				18,
+				14
+			],
 			'text-radial-offset': ['interpolate', ['linear'], ['zoom'], 7, 0.2, 10, 0.3, 12, 0.5],
 			'text-font': [
 				'step',
@@ -464,17 +469,14 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			'text-halo-width': 1
 		},
 		filter: [
-			"all",
-			["==", ["get", "local_ref"], null],
+			'all',
+			['==', ['get', 'local_ref'], null],
 			[
 				'any',
-				["==", ["get", "station_type"], "station"],
-				["==", ["get", "station_type"], "tram_stop"],
+				['==', ['get', 'station_type'], 'station'],
+				['==', ['get', 'station_type'], 'tram_stop']
 			],
-			['any',
-				['==', ['get', 'mode_type'], 'tram'],
-				['==', ['get', 'mode_type'], 'light_rail']
-			]
+			['any', ['==', ['get', 'mode_type'], 'tram'], ['==', ['get', 'mode_type'], 'light_rail']]
 		],
 		minzoom: 13
 	});
@@ -557,12 +559,9 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			//'circle-emissive-strength': 1
 		},
 		filter: [
-			"all",
-			["==", ["get", "local_ref"], null],
-			['any',
-				["==", ["get", "station_type"], "station"],
-				["==", ["get", "station_type"], "halt"]
-			],
+			'all',
+			['==', ['get', 'local_ref'], null],
+			['any', ['==', ['get', 'station_type'], 'station'], ['==', ['get', 'station_type'], 'halt']],
 			['==', ['get', 'mode_type'], 'rail']
 		],
 		minzoom: 7.5
@@ -599,12 +598,9 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			//'text-emissive-strength': 1
 		},
 		filter: [
-			"all",
-			["==", ["get", "local_ref"], null],
-			['any',
-				["==", ["get", "station_type"], "station"],
-				["==", ["get", "station_type"], "halt"]
-			],
+			'all',
+			['==', ['get', 'local_ref'], null],
+			['any', ['==', ['get', 'station_type'], 'station'], ['==', ['get', 'station_type'], 'halt']],
 			['==', ['get', 'mode_type'], 'rail']
 		],
 		minzoom: 8
@@ -614,7 +610,6 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 	let debugmode = !!urlParams.get('debug');
 
 	if (debugmode) {
-
 		map.addLayer({
 			id: 'debugosmpoint',
 			type: 'circle',
@@ -622,15 +617,15 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			'source-layer': 'data',
 			layout: {},
 			paint: {
-				'circle-color': "#ffffff",
+				'circle-color': '#ffffff',
 				'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 0.8, 12, 3.5, 15, 5],
-				'circle-stroke-color': "#41ffca",
+				'circle-stroke-color': '#41ffca',
 				'circle-stroke-width': ['step', ['zoom'], 0.4, 10.5, 0.8, 11, 1.2, 13.2, 1.5],
 				'circle-stroke-opacity': ['step', ['zoom'], 0.5, 15, 0.6],
 				'circle-opacity': ['interpolate', ['linear'], ['zoom'], 10, 0.7, 16, 0.8]
 				//'circle-emissive-strength': 1
 			},
-			minzoom: 9,
+			minzoom: 9
 		});
 
 		map.addLayer({
@@ -642,12 +637,12 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 				'text-field': [
 					'concat',
 					['get', 'station_type'],
-					" - ",
+					' - ',
 					['get', 'mode_type'],
-					" - ",
+					' - ',
 					['get', 'local_ref'],
-					" - ",
-					['get', "parent_osm_id"]
+					' - ',
+					['get', 'parent_osm_id']
 				],
 				'text-variable-anchor': ['left', 'right', 'top', 'bottom'],
 				'text-size': internationalIntercityLabelSize,
@@ -708,21 +703,16 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 	});*/
 
 	map.addLayer({
-		id: "platformlabels_osm_intercity",
+		id: 'platformlabels_osm_intercity',
 		type: 'symbol',
 		source: 'osmstations',
 		'source-layer': 'data',
 		layout: {
-			'text-field': [
-				'case',
-				['has', 'local_ref'],
-				['get', 'local_ref'],
-				['get', 'ref']
-			],
+			'text-field': ['case', ['has', 'local_ref'], ['get', 'local_ref'], ['get', 'ref']],
 			'text-variable-anchor': ['left', 'right', 'top', 'bottom'],
 			'text-size': ['interpolate', ['linear'], ['zoom'], 14, 4, 15, 6, 16, 11, 17, 14, 18, 18],
 			'text-radial-offset': 0,
-			"text-allow-overlap": true,
+			'text-allow-overlap': true,
 			'text-ignore-placement': true,
 			//'icon-ignore-placement': false,
 			//'symbol-avoid-edges': false,
@@ -731,24 +721,20 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 				['zoom'],
 				['literal', ['Arimo-Medium']],
 				8.5,
-				['literal', ['Arimo-Bold']],
+				['literal', ['Arimo-Bold']]
 			]
 		},
 		paint: {
-			'text-color': "#ffffff",
-			'text-halo-color': "#2d327d",
-			'text-halo-width': 10,
+			'text-color': '#ffffff',
+			'text-halo-color': '#2d327d',
+			'text-halo-width': 10
 			//'text-emissive-strength': 1
 		},
 		filter: [
-			"all",
-			["==", ["get", "station_type"], "stop_position"],
-			[
-				'any',
-				['has', 'local_ref'],
-				['has', 'ref']
-			],
-			['==', ['get', 'mode_type'], 'rail'],
+			'all',
+			['==', ['get', 'station_type'], 'stop_position'],
+			['any', ['has', 'local_ref'], ['has', 'ref']],
+			['==', ['get', 'mode_type'], 'rail']
 		],
 		minzoom: 14
 	});

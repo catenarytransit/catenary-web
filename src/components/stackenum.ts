@@ -39,7 +39,9 @@ export class MapSelectionScreen {
 export class MapSelectionOption {
 	public data: StopMapSelector | RouteMapSelector | VehicleMapSelector | OsmStationMapSelector;
 
-	constructor(data: StopMapSelector | RouteMapSelector | VehicleMapSelector | OsmStationMapSelector) {
+	constructor(
+		data: StopMapSelector | RouteMapSelector | VehicleMapSelector | OsmStationMapSelector
+	) {
 		this.data = data;
 	}
 }
@@ -219,7 +221,7 @@ export class VehicleSelectedStack {
 }
 
 export class SettingsStack {
-	constructor() { }
+	constructor() {}
 }
 
 export class OsmStationStack {
@@ -229,7 +231,13 @@ export class OsmStationStack {
 	public lat: number | null;
 	public lon: number | null;
 
-	constructor(osm_id: string, name: string | null, mode_type: string | null, lat: number | null = null, lon: number | null = null) {
+	constructor(
+		osm_id: string,
+		name: string | null,
+		mode_type: string | null,
+		lat: number | null = null,
+		lon: number | null = null
+	) {
 		this.osm_id = osm_id;
 		this.name = name;
 		this.mode_type = mode_type;
@@ -245,7 +253,13 @@ export class OsmStationMapSelector {
 	public lat: number | null;
 	public lon: number | null;
 
-	constructor(osm_id: string, name: string | null, mode_type: string | null, lat: number | null = null, lon: number | null = null) {
+	constructor(
+		osm_id: string,
+		name: string | null,
+		mode_type: string | null,
+		lat: number | null = null,
+		lon: number | null = null
+	) {
 		this.osm_id = osm_id;
 		this.name = name;
 		this.mode_type = mode_type;

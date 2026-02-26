@@ -372,28 +372,30 @@ $icon-padding: 0.4em;
 }
 
 @theme {
-  /* 1. Override the default 'gray' palette with 'neutral'.
+	/* 1. Override the default 'gray' palette with 'neutral'.
      In v4, simply mapping the color name updates the namespace. 
      The '--color-gray-*' variables now point to the neutral values.
   */
-  --color-gray-50: var(--color-neutral-50);
-  --color-gray-100: var(--color-neutral-100);
-  --color-gray-200: var(--color-neutral-200);
-  --color-gray-300: var(--color-neutral-300);
-  --color-gray-400: var(--color-neutral-400);
-  --color-gray-500: var(--color-neutral-500);
-  --color-gray-600: var(--color-neutral-600);
-  --color-gray-700: var(--color-neutral-700);
-  --color-gray-800: var(--color-neutral-800);
-  --color-gray-900: var(--color-neutral-900);
-  --color-gray-950: var(--color-neutral-950);
+	--color-gray-50: var(--color-neutral-50);
+	--color-gray-100: var(--color-neutral-100);
+	--color-gray-200: var(--color-neutral-200);
+	--color-gray-300: var(--color-neutral-300);
+	--color-gray-400: var(--color-neutral-400);
+	--color-gray-500: var(--color-neutral-500);
+	--color-gray-600: var(--color-neutral-600);
+	--color-gray-700: var(--color-neutral-700);
+	--color-gray-800: var(--color-neutral-800);
+	--color-gray-900: var(--color-neutral-900);
+	--color-gray-950: var(--color-neutral-950);
 
-  /* 2. Define Font Families.
+	/* 2. Define Font Families.
      v4 allows direct definition. The default sans/mono stacks 
      are automatically appended if you don't fully overwrite, 
      but listing them explicitly ensures order.
   */
-  --font-sans: "Arimo", "Noto Sans", "Noto Sans JP", "Noto Sans KR", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  
-  --font-mono: "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", monospace;
+	--font-sans:
+		'Arimo', 'Noto Sans', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans SC', ui-sans-serif, system-ui,
+		sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+	--font-mono: 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', monospace;
 }

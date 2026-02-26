@@ -42,7 +42,10 @@ export function fetch_realtime_vehicle_locations(
 
 	// Filter chateaus based on whether they have a realtime feed
 	const realtime_chateaus_in_frame = get(chateaus_in_frame).filter((chateau_id: string) => {
-		return chateau_to_realtime_feed_lookup[chateau_id] && chateau_to_realtime_feed_lookup[chateau_id].length > 0;
+		return (
+			chateau_to_realtime_feed_lookup[chateau_id] &&
+			chateau_to_realtime_feed_lookup[chateau_id].length > 0
+		);
 	});
 
 	const bounds = bounds_input_calculate(map);

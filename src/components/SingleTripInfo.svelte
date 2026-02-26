@@ -1455,26 +1455,25 @@
 											/>
 										</div>
 									{/if}
-
-									<!-- Arrival Countdown -->
-									{#if show_countdown_to_stop}
-										<div
-											class="leading-none text-xs italic opacity-80
-										"
-										>
-											<TimeDiff
-												diff={(stoptime.rt_arrival_time ||
-													stoptime.scheduled_arrival_time_unix_seconds ||
-													stoptime.interpolated_stoptime_unix_seconds) -
-													current_time / 1000}
-												{show_seconds}
-												show_brackets={false}
-												use_ticks={true}
-											/>
-										</div>
-									{/if}
 								</div>
 							</td>
+
+							<!-- Arrival Countdown -->
+							{#if show_countdown_to_stop}
+								<td class="align-top text-right border-r-0 whitespace-nowrap">
+									<div class="leading-none text-xs italic opacity-80">
+										<TimeDiff
+											diff={(stoptime.rt_arrival_time ||
+												stoptime.scheduled_arrival_time_unix_seconds ||
+												stoptime.interpolated_stoptime_unix_seconds) -
+												current_time / 1000}
+											{show_seconds}
+											show_brackets={false}
+											use_ticks={false}
+										/>
+									</div>
+								</td>
+							{/if}
 
 							<!-- Pearl Chain Column: Just the line -->
 							<td class="w-4 relative p-0 align-top">
@@ -1546,23 +1545,30 @@
 										/>
 									</div>
 								{/if}
-
-								{#if show_countdown_to_stop}
-									<div class="leading-none text-xs italic opacity-75">
-										<TimeDiff
-											diff={(stoptime.rt_departure_time ||
-												stoptime.scheduled_departure_time_unix_seconds ||
-												stoptime.interpolated_stoptime_unix_seconds) -
-												current_time / 1000}
-											{show_seconds}
-											show_brackets={false}
-											use_ticks={true}
-											textclass={'text-xs slashed-zero tabular-nums'}
-										/>
-									</div>
-								{/if}
 							</div>
 						</td>
+
+						<!-- Countdown Column -->
+						{#if show_countdown_to_stop}
+							<td
+								class="align-top text-right whitespace-nowrap {i <= last_inactive_stop_idx
+									? 'opacity-70'
+									: ''}"
+							>
+								<div class="leading-none text-xs italic opacity-75">
+									<TimeDiff
+										diff={(stoptime.rt_departure_time ||
+											stoptime.scheduled_departure_time_unix_seconds ||
+											stoptime.interpolated_stoptime_unix_seconds) -
+											current_time / 1000}
+										{show_seconds}
+										show_brackets={false}
+										use_ticks={false}
+										textclass={'text-xs slashed-zero tabular-nums'}
+									/>
+								</div>
+							</td>
+						{/if}
 
 						<!-- Pearl Chain Column -->
 						<td class="w-4 relative p-0 align-top">

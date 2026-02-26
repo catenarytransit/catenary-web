@@ -120,9 +120,9 @@ export function fixRunNumber(
 	trip_id: string | null
 ): string | null {
 	if (
-		(chateau == 'san-diego-mts' &&
-			route.toString().length == 3 &&
-			route.toString().startsWith('5'))
+		chateau == 'san-diego-mts' &&
+		route.toString().length == 3 &&
+		route.toString().startsWith('5')
 	)
 		return vehicle;
 	if (chateau == 'northcountytransitdistrict' && route != 398) return null;
@@ -130,16 +130,33 @@ export function fixRunNumber(
 	return tripname;
 }
 
-
 function toTitleCaseEnglish(str: string) {
-	const minorWords = ['a', 'an', 'and', 'at', 'but', 'by', 'for', 'in', 'nor', 'of', 'on', 'or', 'so', 'the', 'to', 'up', 'yet'];
+	const minorWords = [
+		'a',
+		'an',
+		'and',
+		'at',
+		'but',
+		'by',
+		'for',
+		'in',
+		'nor',
+		'of',
+		'on',
+		'or',
+		'so',
+		'the',
+		'to',
+		'up',
+		'yet'
+	];
 	const preferredSpellings: Record<string, string> = {
-		'uc': 'UC',
-		'uci': 'UCI',
-		'ucla': 'UCLA',
-		'ucsd': 'UCSD',
-		'ii': 'II',
-		'iii': 'III'
+		uc: 'UC',
+		uci: 'UCI',
+		ucla: 'UCLA',
+		ucsd: 'UCSD',
+		ii: 'II',
+		iii: 'III'
 	};
 
 	return str.toLowerCase().replace(/\w+/g, (word, index) => {
@@ -160,12 +177,9 @@ export function fixHeadsignText(name: string | null, chateau: string | null, rou
 		return '';
 	}
 
-	if (chateau == "orangecountytransportationauthority") {
-
-		return toTitleCaseEnglish(name)
+	if (chateau == 'orangecountytransportationauthority') {
+		return toTitleCaseEnglish(name);
 	}
-
-
 
 	name = name.replace('Counterclockwise', translate('anticlockwise'));
 	name = name.replace('Clockwise', translate('clockwise'));

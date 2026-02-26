@@ -247,7 +247,7 @@ export function new_query(text: string) {
 		})
 		.catch((e) => {
 			if (e.name !== 'AbortError') {
-				console.error('Cypress fetch error', e)
+				console.error('Cypress fetch error', e);
 			}
 		});
 

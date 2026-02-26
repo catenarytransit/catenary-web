@@ -36,7 +36,6 @@ export function init_stores() {
 			window.localStorage.setItem('topography', value.toString());
 		});
 
-
 		if (window.localStorage.getItem('show_gtfs_ids') == 'true') {
 			show_gtfs_ids_store.set(true);
 		} else {

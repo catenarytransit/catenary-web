@@ -48,7 +48,8 @@ const STOP_SOURCES = [
 	{ id: 'railstops', url: 'https://birch5.catenarymaps.org/unmatched_railstops' },
 	{ id: 'otherstops', url: 'https://birch8.catenarymaps.org/otherstops' },
 	{
-		"id": "osmstations", url: "https://birch.catenarymaps.org/osm_stations"
+		id: 'osmstations',
+		url: 'https://birch.catenarymaps.org/osm_stations'
 	}
 ];
 
@@ -79,7 +80,7 @@ export async function setup_load_map(
 		// Subscribe to map data updates from WebSocket
 		// We use a singleton store, so it fires whenever data comes.
 		// We need to pair it with the latest bounds we asked for (or close enough) to process it correctly.
-		spruce_map_data.subscribe(data => {
+		spruce_map_data.subscribe((data) => {
 			if (data && current_request_bounds) {
 				process_realtime_vehicle_locations_v2(data, map, current_request_bounds);
 			}
