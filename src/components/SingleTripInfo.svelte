@@ -1462,7 +1462,7 @@
 													stoptime.scheduled_arrival_time_unix_seconds ||
 													stoptime.interpolated_stoptime_unix_seconds) -
 													current_time / 1000}
-												show_seconds={false}
+												{show_seconds}
 												show_brackets={false}
 												use_ticks={true}
 											/>
@@ -1545,7 +1545,7 @@
 												stoptime.scheduled_departure_time_unix_seconds ||
 												stoptime.interpolated_stoptime_unix_seconds) -
 												current_time / 1000}
-											show_seconds={false}
+											{show_seconds}
 											show_brackets={false}
 											use_ticks={true}
 										/>
