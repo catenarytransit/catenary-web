@@ -19,6 +19,8 @@
 
 	export let unitsclass: string = '';
 
+	export let numbertextclass: string = 'text-sm';
+
 	let h: number = 0;
 	let m: number = 0;
 	let s: number = 0;
@@ -149,15 +151,17 @@
 
 	{#if diff != 0}
 		{#if h > 0}
-			<span class="text-sm {alltextclass}">{h}</span>
+			<span class="{numbertextclass} {alltextclass}">{h}</span>
 			<span class="text-xs {alltextclass}  {unitsclass}">{locale_hour_marking(this_locale)}</span>
 		{/if}{#if h > 0 || m > 0 || (!show_seconds && m >= 0 && diff != 0)}
-			<span class="text-sm {alltextclass}">{!show_seconds && Math.abs(diff) < 60 ? '0' : m}</span>
+			<span class="{numbertextclass} {alltextclass}"
+				>{!show_seconds && Math.abs(diff) < 60 ? '0' : m}</span
+			>
 			<span class="text-xs {alltextclass} {unitsclass}">{locale_min_marking(this_locale)}</span
 			>{/if}
 		{#if show_seconds}
 			{#if Math.abs(diff) > 0}
-				<span class="text-sm">{s}</span>
+				<span class="{numbertextclass} {alltextclass}">{s}</span>
 				<span class="text-xs {alltextclass}  {unitsclass}">{locale_s_marking(this_locale)}</span>
 			{/if}
 		{/if}

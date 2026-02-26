@@ -9,7 +9,7 @@
 
 	export let large: boolean = false;
 
-	let textclass: string = 'slashed-zero tabular-nums';
+	export let textclass: string = 'slashed-zero tabular-nums';
 
 	export let use_ticks = false;
 

@@ -1447,7 +1447,12 @@
 									<!-- Arrival Delay -->
 									{#if stoptime.rt_arrival_diff}
 										<div class="leading-none">
-											<DelayDiff use_symbol_sign={true} diff={stoptime.rt_arrival_diff} />
+											<DelayDiff
+												alltextclass="text-xs"
+												use_symbol_sign={true}
+												{show_seconds}
+												diff={stoptime.rt_arrival_diff}
+											/>
 										</div>
 									{/if}
 
@@ -1530,14 +1535,18 @@
 									</div>
 								</div>
 
-								<!-- Departure Delay -->
+								<!-- Arrival Delay -->
 								{#if stoptime.rt_departure_diff}
 									<div class="leading-none">
-										<DelayDiff use_symbol_sign={true} diff={stoptime.rt_departure_diff} />
+										<DelayDiff
+											alltextclass="text-xs"
+											use_symbol_sign={true}
+											{show_seconds}
+											diff={stoptime.rt_departure_diff}
+										/>
 									</div>
 								{/if}
 
-								<!-- Departure Countdown -->
 								{#if show_countdown_to_stop}
 									<div class="leading-none text-xs italic opacity-75">
 										<TimeDiff
@@ -1548,6 +1557,7 @@
 											{show_seconds}
 											show_brackets={false}
 											use_ticks={true}
+											textclass={'text-xs slashed-zero tabular-nums'}
 										/>
 									</div>
 								{/if}
