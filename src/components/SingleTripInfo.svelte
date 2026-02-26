@@ -1292,7 +1292,7 @@
 			<div>
 				<span class="text-xs">
 					{$_('lastupdated')}: <TimeDiff
-						show_seconds={false}
+						show_seconds={true}
 						show_brackets={false}
 						diff={vehicle_data.timestamp - current_time / 1000}
 					/>
