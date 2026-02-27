@@ -41,7 +41,7 @@
 				layout: {
 					'text-size': 24,
 					'text-field': '𔐃𔐈𔐀𔐄𔙆f🐟f▦✺╬∅█☹',
-					'text-font': ['NotoSans-Regular']
+					'text-font': ['Arimo-Regular']
 				},
 				paint: {
 					'text-color': 'white',

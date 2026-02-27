@@ -638,23 +638,23 @@
 					if (shortest_side >= 1600) {
 						mapglobal.setLayoutProperty(categoryvalues.labeldots, 'text-font', {
 							stops: [
-								[6, ['NotoSans-Medium']],
-								[12, ['NotoSans-SemiBold']]
+								[6, ['Arimo-Medium']],
+								[12, ['Arimo-SemiBold']]
 							]
 						});
 					} else {
 						mapglobal.setLayoutProperty(categoryvalues.labeldots, 'text-font', {
 							stops: [
-								[6, ['NotoSans-Regular']],
-								[14.5, ['NotoSans-Medium']]
+								[6, ['Arimo-Regular']],
+								[14.5, ['Arimo-Medium']]
 							]
 						});
 					}
 				} else {
 					mapglobal.setLayoutProperty(categoryvalues.labeldots, 'text-font', {
 						stops: [
-							[6, ['NotoSans-Medium']],
-							[11, ['NotoSans-SemiBold']]
+							[6, ['Arimo-Medium']],
+							[11, ['Arimo-SemiBold']]
 						]
 					});
 
@@ -1607,7 +1607,7 @@
 						'symbol-placement': 'line',
 						'text-size': 10,
 						'text-field': ['concat', ['number-format', ['get', 'ele'], {}], 'm'],
-						'text-font': ['NotoSans-Bold'],
+						'text-font': ['Arimo-Bold'],
 						'text-pitch-alignment': 'viewport'
 					},
 					paint: {
