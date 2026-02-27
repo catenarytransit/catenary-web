@@ -279,7 +279,7 @@ function addStationLayers(
 					'text-size': ['interpolate', ['linear'], ['zoom'], 15, 5, 17, 8, 19, 9.5],
 					'text-radial-offset': 1,
 					'text-allow-overlap': true,
-					'text-font': ['NotoSans-Bold']
+					'text-font': ['Arimo-Bold']
 				},
 				paint: {
 					'text-color': darkMode ? '#bae6fd' : '#1d4ed8',

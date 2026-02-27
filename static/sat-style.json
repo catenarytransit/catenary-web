@@ -1429,7 +1429,7 @@
 					["concat", ["get", "name:latin"], " ", ["get", "name:nonlatin"]],
 					["coalesce", ["get", "name"], ["get", "name_en"]]
 				],
-				"text-font": ["Barlow-Italic", "NotoSans-Italic"],
+				"text-font": ["Arimo-Italic", "Arimo-Italic"],
 				"text-letter-spacing": 0.2,
 				"text-max-width": 5,
 				"text-size": 14
@@ -1453,7 +1453,7 @@
 					["concat", ["get", "name:latin"], "\n", ["get", "name:nonlatin"]],
 					["coalesce", ["get", "name"], ["get", "name_en"]]
 				],
-				"text-font": ["Barlow-Italic", "NotoSans-Italic"],
+				"text-font": ["Arimo-Italic", "Arimo-Italic"],
 				"text-letter-spacing": 0.2,
 				"text-max-width": 5,
 				"text-size": ["interpolate", ["linear"], ["zoom"], 0, 10, 8, 14]
@@ -1479,7 +1479,7 @@
 					["concat", ["get", "name:latin"], " ", ["get", "name:nonlatin"]],
 					["coalesce", ["get", "name"], ["get", "name_en"]]
 				],
-				"text-font": ["Barlow-Italic", "NotoSans-Italic"],
+				"text-font": ["Arimo-Italic", "Arimo-Italic"],
 				"text-letter-spacing": 0.2,
 				"text-max-width": 5,
 				"text-size": 14
@@ -1511,7 +1511,7 @@
 					["get", "name"],
 					["coalesce", ["get", "name"], ["get", "name_en"]]
 				],
-				"text-font": ["Barlow-Italic", "NotoSans-Italic"],
+				"text-font": ["Arimo-Italic", "Arimo-Italic"],
 				"text-max-width": 9,
 				"text-offset": [0, 0.6],
 				"text-size": 12,
@@ -1590,7 +1590,7 @@
 					["get", "name"],
 					["coalesce", ["get", "name"], ["get", "name_en"]]
 				],
-				"text-font": ["Barlow-Italic", "NotoSans-Italic"],
+				"text-font": ["Arimo-Italic", "Arimo-Italic"],
 				"text-max-width": 9,
 				"text-offset": [0, 0.6],
 				"text-size": 12,
@@ -1687,7 +1687,7 @@
 				],
 				"text-anchor": "top",
 				"text-field": ["get", "name"],
-				"text-font": ["Barlow-Italic", "NotoSans-Italic"],
+				"text-font": ["Arimo-Italic", "Arimo-Italic"],
 				"text-max-width": 9,
 				"text-offset": [0, 0.6],
 				"text-size": 12,
@@ -1716,7 +1716,7 @@
 					["concat", ["get", "name:latin"], "\n", ["get", "name:nonlatin"]],
 					["coalesce", ["get", "name"], ["get", "name_en"]]
 				],
-				"text-font": ["Barlow-Italic", "NotoSans-Italic"],
+				"text-font": ["Arimo-Italic", "Arimo-Italic"],
 				"text-max-width": 9,
 				"text-offset": [0.9, 0],
 				"text-size": 12
@@ -1743,7 +1743,7 @@
 					["concat", ["get", "name:latin"], " ", ["get", "name:nonlatin"]],
 					["coalesce", ["get", "name"], ["get", "name_en"]]
 				],
-				"text-font": ["NotoSans-Regular"],
+				"text-font": ["Arimo-Regular"],
 				"text-rotation-alignment": "map",
 				"text-size": ["interpolate", ["linear"], ["zoom"], 13, 12, 14, 13]
 			},
@@ -1772,7 +1772,7 @@
 					["concat", ["get", "name:latin"], " ", ["get", "name:nonlatin"]],
 					["coalesce", ["get", "name"], ["get", "name_en"]]
 				],
-				"text-font": ["NotoSans-Regular"],
+				"text-font": ["Arimo-Regular"],
 				"text-rotation-alignment": "map",
 				"text-size": ["interpolate", ["linear"], ["zoom"], 13, 12, 14, 13]
 			},
@@ -1804,7 +1804,7 @@
 					["concat", ["get", "name:nonlatin"]],
 					["coalesce", ["get", "name"], ["get", "name_en"]]
 				],
-				"text-font": ["NotoSans-Medium"],
+				"text-font": ["Arimo-Medium"],
 				"text-rotation-alignment": "map",
 				"text-size": ["interpolate", ["linear"], ["zoom"], 13, 12, 14, 13]
 			},
@@ -1834,7 +1834,7 @@
 				"symbol-placement": ["step", ["zoom"], "point", 11, "line"],
 				"symbol-spacing": 200,
 				"text-field": ["to-string", ["get", "ref"]],
-				"text-font": ["NotoSans-Regular"],
+				"text-font": ["Arimo-Regular"],
 				"text-rotation-alignment": "viewport",
 				"text-size": 8,
 				"visibility": "none"
@@ -1859,7 +1859,7 @@
 				"symbol-placement": ["step", ["zoom"], "point", 7, "line", 8, "line"],
 				"symbol-spacing": 200,
 				"text-field": ["to-string", ["get", "ref"]],
-				"text-font": ["NotoSans-Regular"],
+				"text-font": ["Arimo-Regular"],
 				"text-rotation-alignment": "viewport",
 				"text-size": 10,
 				"visibility": "none"
@@ -1885,7 +1885,7 @@
 				"symbol-placement": ["step", ["zoom"], "point", 11, "line"],
 				"symbol-spacing": 200,
 				"text-field": ["to-string", ["get", "ref"]],
-				"text-font": ["NotoSans-Regular"],
+				"text-font": ["Arimo-Regular"],
 				"text-rotation-alignment": "viewport",
 				"text-size": 10,
 				"visibility": "none"
@@ -1908,7 +1908,7 @@
 					["concat", ["get", "name:latin"], "\n", ["get", "name:nonlatin"]],
 					["coalesce", ["get", "name"], ["get", "name_en"]]
 				],
-				"text-font": ["NotoSans-Regular"],
+				"text-font": ["Arimo-Regular"],
 				"text-max-width": 9,
 				"text-offset": [0, 0.6],
 				"text-optional": true,
@@ -1942,7 +1942,7 @@
 					["concat", ["get", "name:latin"], "\n", ["get", "name:nonlatin"]],
 					["coalesce", ["get", "name"], ["get", "name_en"]]
 				],
-				"text-font": ["Barlow-Italic", "NotoSans-Italic"],
+				"text-font": ["Arimo-Italic", "Arimo-Italic"],
 				"text-letter-spacing": 0.1,
 				"text-max-width": 9,
 				"text-size": ["interpolate", ["linear"], ["zoom"], 8, 9, 12, 10],
@@ -1974,7 +1974,7 @@
 					["concat", ["get", "name:latin"], "\n", ["get", "name:nonlatin"]],
 					["coalesce", ["get", "name"], ["get", "name_en"]]
 				],
-				"text-font": ["NotoSans-Regular"],
+				"text-font": ["Arimo-Regular"],
 				"text-max-width": 8,
 				"text-size": ["interpolate", ["exponential", 1.2], ["zoom"], 7, 10, 11, 12]
 			},
@@ -2004,7 +2004,7 @@
 					["concat", ["get", "name:latin"], "\n", ["get", "name:nonlatin"]],
 					["coalesce", ["get", "name"], ["get", "name_en"]]
 				],
-				"text-font": ["NotoSans-Regular"],
+				"text-font": ["Arimo-Regular"],
 				"text-max-width": 8,
 				"text-size": ["interpolate", ["exponential", 1.2], ["zoom"], 7, 12, 11, 14]
 			},
@@ -2030,7 +2030,7 @@
 					["concat", ["get", "name:latin"], "\n", ["get", "name:nonlatin"]],
 					["coalesce", ["get", "name"], ["get", "name_en"]]
 				],
-				"text-font": ["Barlow-Italic", "NotoSans-Italic"],
+				"text-font": ["Arimo-Italic", "Arimo-Italic"],
 				"text-letter-spacing": 0.2,
 				"text-max-width": 9,
 				"text-size": ["interpolate", ["linear"], ["zoom"], 5, 10, 8, 14],
@@ -2062,7 +2062,7 @@
 					["concat", ["get", "name:latin"], "\n", ["get", "name:nonlatin"]],
 					["coalesce", ["get", "name"], ["get", "name_en"]]
 				],
-				"text-font": ["NotoSans-Regular"],
+				"text-font": ["Arimo-Regular"],
 				"text-max-width": 8,
 				"text-offset": [0, -0.1],
 				"text-size": ["interpolate", ["exponential", 1.2], ["zoom"], 4, 11, 7, 13, 11, 18]
@@ -2088,7 +2088,7 @@
 				"icon-size": 0.5,
 				"text-anchor": "bottom",
 				"text-field": ["get", "name"],
-				"text-font": ["NotoSans-Bold", "NotoSans-Bold"],
+				"text-font": ["Arimo-Bold", "Arimo-Bold"],
 				"text-max-width": 8,
 				"text-offset": [0, -0.2],
 				"text-size": ["interpolate", ["exponential", 1.2], ["zoom"], 4, 12, 7, 14, 11, 20]
@@ -2110,7 +2110,7 @@
 			"filter": ["all", ["==", ["get", "class"], "country"], [">=", ["get", "rank"], 3]],
 			"layout": {
 				"text-field": ["get", "name"],
-				"text-font": ["NotoSans-Bold", "NotoSans-Bold"],
+				"text-font": ["Arimo-Bold", "Arimo-Bold"],
 				"text-max-width": 6.25,
 				"text-size": ["interpolate", ["linear"], ["zoom"], 3, 9, 7, 17]
 			},
@@ -2130,7 +2130,7 @@
 			"filter": ["all", ["==", ["get", "class"], "country"], ["==", ["get", "rank"], 2]],
 			"layout": {
 				"text-field": ["get", "name"],
-				"text-font": ["NotoSans-Bold", "NotoSans-Bold"],
+				"text-font": ["Arimo-Bold", "Arimo-Bold"],
 				"text-max-width": 6.25,
 				"text-size": ["interpolate", ["linear"], ["zoom"], 2, 9, 5, 17]
 			},
@@ -2150,7 +2150,7 @@
 			"filter": ["all", ["==", ["get", "class"], "country"], ["==", ["get", "rank"], 1]],
 			"layout": {
 				"text-field": ["get", "name"],
-				"text-font": ["NotoSans-Medium"],
+				"text-font": ["Arimo-Medium"],
 				"text-max-width": 6.25,
 				"text-size": ["interpolate", ["linear"], ["zoom"], 1, 9, 4, 17]
 			},

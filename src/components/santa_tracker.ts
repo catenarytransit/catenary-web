@@ -286,7 +286,7 @@ function initializeSantaLayer(map: maplibregl.Map): void {
 					'icon-allow-overlap': true,
 					'icon-ignore-placement': true,
 					'text-field': '🎅 Santa',
-					'text-font': ['NotoSans-Bold'],
+					'text-font': ['Arimo-Bold'],
 					'text-size': 14,
 					'text-offset': [0, 1.5],
 					'text-anchor': 'top'
