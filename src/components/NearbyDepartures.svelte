@@ -29,7 +29,9 @@
 	const offbutton = '';
 
 	export let is_inside_eurostyle = false;
+	export let is_inside_switzerland = false;
 	let eurostyle_geojson: any = null;
+	let switzerland_geojson: any = null;
 
 	const TIME_CUTOFF = 64800;
 	const TIME_PREVIOUS_CUTOFF = 10 * 60;
@@ -319,6 +321,15 @@
 				})
 				.catch((e) => console.error('Failed to load eurostyle geojson', e));
 
+			fetch('/switzerland.geojson')
+				.then((res) => res.json())
+				.then((data) => {
+					switzerland_geojson = data;
+					let ref = currentReferenceCoord();
+					if (ref) checkSwitzerland(ref.lat, ref.lng);
+				})
+				.catch((e) => console.error('Failed to load switzerland geojson', e));
+
 			if (current_nearby_pick_state == 1) {
 				let map = get(map_pointer_store);
 				if (map) {
@@ -443,6 +454,7 @@
 
 		if (lat != 0 && lng != 0) {
 			checkEurostyle(lat, lng);
+			checkSwitzerland(lat, lng);
 			first_attempt_sent = true;
 			let url = `https://birch_nearby.catenarymaps.org/nearbydeparturesfromcoordsv3?lat=${lat}&lon=${lng}&limit_per_station=30`;
 
@@ -531,6 +543,23 @@
 			is_inside_eurostyle = inside;
 		} catch (e) {
 			console.error('Error checking eurostyle inclusion', e);
+		}
+	}
+
+	function checkSwitzerland(lat: number, lng: number) {
+		if (!switzerland_geojson) return;
+		try {
+			const pt = point([lng, lat]);
+			let inside = false;
+			for (const feature of switzerland_geojson.features) {
+				if (booleanPointInPolygon(pt, feature)) {
+					inside = true;
+					break;
+				}
+			}
+			is_inside_switzerland = inside;
+		} catch (e) {
+			console.error('Error checking switzerland inclusion', e);
 		}
 	}
 </script>
@@ -703,6 +732,7 @@
 									<StationScreenTrainRowCompact
 										platform={departure.platform}
 										eurostyle={is_inside_eurostyle}
+										swiss_style={is_inside_switzerland}
 										event={{
 											chateau: departure.chateau_id,
 											trip_id: departure.trip_id,

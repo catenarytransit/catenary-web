@@ -45,6 +45,8 @@
 
 	let eurostyle_geojson: any = null;
 	let is_inside_eurostyle: boolean = false;
+	let switzerland_geojson: any = null;
+	let is_inside_switzerland: boolean = false;
 
 	// ---------- Paging controls ----------
 	const OVERLAP_SECONDS = 5 * 60; // small overlap to help dedupe across pages
@@ -524,7 +526,27 @@
 		}
 	}
 
-	$: checkEurostyle(displayLat, displayLon);
+	function checkSwitzerland(lat: number | null, lng: number | null) {
+		if (!switzerland_geojson || lat == null || lng == null) return;
+		try {
+			const pt = point([lng, lat]);
+			let inside = false;
+			for (const feature of switzerland_geojson.features) {
+				if (booleanPointInPolygon(pt, feature)) {
+					inside = true;
+					break;
+				}
+			}
+			is_inside_switzerland = inside;
+		} catch (e) {
+			console.error('Error checking switzerland inclusion', e);
+		}
+	}
+
+	$: {
+		checkEurostyle(displayLat, displayLon);
+		checkSwitzerland(displayLat, displayLon);
+	}
 
 	onMount(() => {
 		current_time = Date.now();
@@ -537,6 +559,14 @@
 				checkEurostyle(displayLat, displayLon);
 			})
 			.catch((e) => console.error('Failed to load eurostyle geojson', e));
+
+		fetch('/switzerland.geojson')
+			.then((res) => res.json())
+			.then((data) => {
+				switzerland_geojson = data;
+				checkSwitzerland(displayLat, displayLon);
+			})
+			.catch((e) => console.error('Failed to load switzerland geojson', e));
 
 		const map = get(map_pointer_store);
 
@@ -669,6 +699,7 @@
 										{#each filtered_dates_to_events[date_code] as event}
 											<StationScreenTrainRow
 												eurostyle={is_inside_eurostyle}
+												swiss_style={is_inside_switzerland}
 												{event}
 												data_from_server={data_meta}
 												{current_time}

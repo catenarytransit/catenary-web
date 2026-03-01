@@ -18,6 +18,7 @@
 	export let show_timediff: boolean = true;
 	export let show_agency_name: boolean = true;
 	export let eurostyle: boolean = false;
+	export let swiss_style: boolean = false;
 
 	$: shared_rt_time = event.last_stop ? event.realtime_arrival : event.realtime_departure;
 	$: shared_scheduled_time = event.last_stop ? event.scheduled_arrival : event.scheduled_departure;
@@ -54,7 +55,7 @@
 	}}
 >
 	<!-- Leftmost: Route Name -->
-	{#if eurostyle}
+	{#if swiss_style}
 		<td class="px-1 py-0.5 w-[40px] align-middle text-left">
 			{#if show_route_name && routeDef?.short_name}
 				<StationScreenRouteBadge
@@ -119,6 +120,20 @@
 		</div>
 	</td>
 
+	<!-- Middle: Route Name for Eurostyle -->
+	{#if eurostyle && !swiss_style}
+		<td class="px-1 py-0.5 w-[40px] align-middle text-left">
+			{#if show_route_name && routeDef?.short_name}
+				<StationScreenRouteBadge
+					{routeDef}
+					chateau={event.chateau}
+					remove_line={true}
+					extra_classes="inline-block min-w-[24px]"
+				/>
+			{/if}
+		</td>
+	{/if}
+
 	<!-- Middle: Info -->
 	<td class="px-2 py-2 align-top">
 		<div class="flex flex-col justify-start">
@@ -134,7 +149,7 @@
 			<div
 				class="flex flex-row text-sm text-gray-600 dark:text-gray-400 gap-2 items-center flex-wrap"
 			>
-				{#if show_route_name && routeDef && !eurostyle}
+				{#if show_route_name && routeDef && !eurostyle && !swiss_style}
 					<StationScreenRouteBadge {routeDef} chateau={event.chateau} fallback_long_name={true} />
 				{/if}
 
