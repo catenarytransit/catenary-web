@@ -2048,7 +2048,7 @@
 					["get", "name"],
 					["coalesce", ["get", "name"], ["get", "name_en"]]
 				],
-				"text-font": ["NotoSans"],
+				"text-font": ["Arimo"],
 				"text-max-width": 9,
 				"text-offset": [0, 0.6],
 				"text-size": 12,
@@ -2129,7 +2129,7 @@
 					["get", "name"],
 					["coalesce", ["get", "name"], ["get", "name_en"]]
 				],
-				"text-font": ["NotoSans"],
+				"text-font": ["Arimo"],
 				"text-max-width": 9,
 				"text-offset": [0, 0.6],
 				"text-size": 12,

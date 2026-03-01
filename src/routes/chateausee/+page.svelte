@@ -109,7 +109,7 @@
 					'text-line-height': 1.2,
 					'text-letter-spacing': 0.01,
 					'text-max-width': 10,
-					'text-font': ['NotoSans-Medium'],
+					'text-font': ['Arimo-Medium'],
 					'text-offset': [0, 0]
 				},
 				paint: {

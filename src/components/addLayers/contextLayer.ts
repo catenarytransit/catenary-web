@@ -167,7 +167,7 @@ export async function makeContextLayerDataset(map: maplibregl.Map) {
 			//'text-field': ['coalesce', ['get', 'route_label']],
 			'text-field': ['get', 'route_label'],
 			//'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
-			'text-font': ['literal', ['NotoSans-Regular']],
+			'text-font': ['literal', ['Arimo-Regular']],
 			'text-size': ['interpolate', ['linear'], ['zoom'], 5, 9, 9, 10, 11, 12, 13, 15],
 			'text-ignore-placement': false,
 			'text-allow-overlap': false,
@@ -251,9 +251,9 @@ export async function makeContextLayerDataset(map: maplibregl.Map) {
 			'text-font': [
 				'step',
 				['zoom'],
-				['literal', ['NotoSans-Regular']],
+				['literal', ['Arimo-Regular']],
 				13,
-				['literal', ['NotoSans-Medium']]
+				['literal', ['Arimo-Medium']]
 			]
 		},
 		paint: {
@@ -298,7 +298,7 @@ export async function makeContextLayerDataset(map: maplibregl.Map) {
 			//'icon-ignore-placement': false,
 			//'text-allow-overlap': true,
 			//'symbol-avoid-edges': false,
-			'text-font': ['NotoSans-Medium']
+			'text-font': ['Arimo-Medium']
 		},
 		paint: {
 			'text-color': darkMode ? '#ffffff' : '#1a1a1a',
@@ -345,9 +345,9 @@ export async function makeContextLayerDataset(map: maplibregl.Map) {
 			'text-font': [
 				'step',
 				['zoom'],
-				['literal', ['NotoSans-Regular']],
+				['literal', ['Arimo-Regular']],
 				6,
-				['literal', ['NotoSans-Medium']]
+				['literal', ['Arimo-Medium']]
 			]
 		},
 		paint: {
@@ -459,7 +459,7 @@ export async function makeContextLayerDots(map: maplibregl.Map) {
 			'text-variable-anchor': ['left', 'right'],
 			'text-radial-offset': 0.5,
 			'text-allow-overlap': false,
-			'text-font': ['NotoSans-SemiBold'],
+			'text-font': ['Arimo-SemiBold'],
 			'text-size': ['interpolate', ['linear'], ['zoom'], 9, 9, 11, 11, 13, 12, 15, 14],
 			'text-ignore-placement': ['step', ['zoom'], false, 10.5, true]
 		},

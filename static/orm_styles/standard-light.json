@@ -8493,7 +8493,7 @@
 					14,
 					["coalesce", ["get", "standard_label"], ""]
 				],
-				"text-font": ["NotoSans-Bold", "NotoSans-Bold"],
+				"text-font": ["Arimo-Bold", "Arimo-Bold"],
 				"text-size": 11,
 				"text-padding": 10,
 				"text-max-width": 5,
@@ -8537,7 +8537,7 @@
 					14,
 					["coalesce", ["get", "standard_label"], ""]
 				],
-				"text-font": ["NotoSans-Bold", "NotoSans-Bold"],
+				"text-font": ["Arimo-Bold", "Arimo-Bold"],
 				"text-size": 11,
 				"text-padding": 10,
 				"text-max-width": 5,
@@ -8581,7 +8581,7 @@
 					14,
 					["coalesce", ["get", "standard_label"], ""]
 				],
-				"text-font": ["NotoSans-Bold", "NotoSans-Bold"],
+				"text-font": ["Arimo-Bold", "Arimo-Bold"],
 				"text-size": 11,
 				"text-padding": 10,
 				"text-max-width": 5,
@@ -8624,7 +8624,7 @@
 					14,
 					["coalesce", ["get", "standard_label"], ""]
 				],
-				"text-font": ["NotoSans-Bold", "NotoSans-Bold"],
+				"text-font": ["Arimo-Bold", "Arimo-Bold"],
 				"text-size": 11,
 				"text-padding": 10,
 				"text-max-width": 5,
@@ -8667,7 +8667,7 @@
 					14,
 					["coalesce", ["get", "standard_label"], ""]
 				],
-				"text-font": ["NotoSans-Bold", "NotoSans-Bold"],
+				"text-font": ["Arimo-Bold", "Arimo-Bold"],
 				"text-size": 11,
 				"text-padding": 10,
 				"text-max-width": 5,
@@ -8701,7 +8701,7 @@
 					14,
 					["coalesce", ["get", "standard_label"], ""]
 				],
-				"text-font": ["NotoSans-Bold", "NotoSans-Bold"],
+				"text-font": ["Arimo-Bold", "Arimo-Bold"],
 				"text-size": 11,
 				"text-padding": 10,
 				"text-max-width": 5,
@@ -8748,7 +8748,7 @@
 					14,
 					["coalesce", ["get", "standard_label"], ""]
 				],
-				"text-font": ["NotoSans-Bold", "NotoSans-Bold"],
+				"text-font": ["Arimo-Bold", "Arimo-Bold"],
 				"text-size": 11,
 				"text-padding": 10,
 				"text-max-width": 5,
@@ -8791,7 +8791,7 @@
 					14,
 					["coalesce", ["get", "standard_label"], ""]
 				],
-				"text-font": ["NotoSans-Bold", "NotoSans-Bold"],
+				"text-font": ["Arimo-Bold", "Arimo-Bold"],
 				"text-size": 11,
 				"text-padding": 10,
 				"text-max-width": 5,
@@ -8840,7 +8840,7 @@
 					14,
 					["coalesce", ["get", "standard_label"], ""]
 				],
-				"text-font": ["NotoSans-Bold", "NotoSans-Bold"],
+				"text-font": ["Arimo-Bold", "Arimo-Bold"],
 				"text-size": 11,
 				"text-padding": 10,
 				"text-max-width": 5,
@@ -8887,7 +8887,7 @@
 					14,
 					["coalesce", ["get", "standard_label"], ""]
 				],
-				"text-font": ["NotoSans-Bold", "NotoSans-Bold"],
+				"text-font": ["Arimo-Bold", "Arimo-Bold"],
 				"text-size": 11,
 				"text-padding": 10,
 				"text-max-width": 5,
@@ -8931,7 +8931,7 @@
 					14,
 					["coalesce", ["get", "standard_label"], ""]
 				],
-				"text-font": ["NotoSans-Bold", "NotoSans-Bold"],
+				"text-font": ["Arimo-Bold", "Arimo-Bold"],
 				"text-size": 11,
 				"text-padding": 10,
 				"text-max-width": 5,
@@ -8978,7 +8978,7 @@
 					14,
 					["coalesce", ["get", "standard_label"], ""]
 				],
-				"text-font": ["NotoSans-Bold", "NotoSans-Bold"],
+				"text-font": ["Arimo-Bold", "Arimo-Bold"],
 				"text-size": 11,
 				"text-padding": 10,
 				"text-max-width": 5,
@@ -9021,7 +9021,7 @@
 					14,
 					["coalesce", ["get", "standard_label"], ""]
 				],
-				"text-font": ["NotoSans-Bold", "NotoSans-Bold"],
+				"text-font": ["Arimo-Bold", "Arimo-Bold"],
 				"text-size": 11,
 				"text-padding": 10,
 				"text-max-width": 5,
@@ -9064,7 +9064,7 @@
 					14,
 					["coalesce", ["get", "standard_label"], ""]
 				],
-				"text-font": ["NotoSans-Bold", "NotoSans-Bold"],
+				"text-font": ["Arimo-Bold", "Arimo-Bold"],
 				"text-size": 11,
 				"text-padding": 10,
 				"text-max-width": 5,
@@ -9124,7 +9124,7 @@
 				"icon-image": ["image", ["concat", "ormsdf:general/station-", ["get", "station_size"]]],
 				"icon-overlap": "always",
 				"text-field": "{label}",
-				"text-font": ["NotoSans-Bold", "NotoSans-Bold"],
+				"text-font": ["Arimo-Bold", "Arimo-Bold"],
 				"text-size": 11,
 				"text-padding": 10,
 				"text-max-width": 5,
@@ -9162,7 +9162,7 @@
 				"icon-image": ["image", ["concat", "ormsdf:general/station-", ["get", "station_size"]]],
 				"icon-overlap": "always",
 				"text-field": "{label}",
-				"text-font": ["NotoSans-Bold", "NotoSans-Bold"],
+				"text-font": ["Arimo-Bold", "Arimo-Bold"],
 				"text-size": 11,
 				"text-padding": 10,
 				"text-max-width": 5,
@@ -9397,7 +9397,7 @@
 				"symbol-z-order": "source",
 				"symbol-placement": "line",
 				"text-field": "{track_ref}",
-				"text-font": ["NotoSans-Bold", "NotoSans-Bold"],
+				"text-font": ["Arimo-Bold", "Arimo-Bold"],
 				"text-size": 10,
 				"text-padding": 10
 			}
@@ -9603,7 +9603,7 @@
 				"icon-image": ["image", ["concat", "ormsdf:general/station-", ["get", "station_size"]]],
 				"icon-overlap": "always",
 				"text-field": ["step", ["zoom"], ["get", "label"], 10, ["get", "name"]],
-				"text-font": ["NotoSans-Bold", "NotoSans-Bold"],
+				"text-font": ["Arimo-Bold", "Arimo-Bold"],
 				"text-size": 11,
 				"text-padding": 10,
 				"text-max-width": 5,
@@ -9661,7 +9661,7 @@
 						["get", "name"]
 					]
 				],
-				"text-font": ["NotoSans-Bold", "NotoSans-Bold"],
+				"text-font": ["Arimo-Bold", "Arimo-Bold"],
 				"text-variable-anchor": ["center", "top", "bottom", "left", "right"],
 				"text-size": 11,
 				"text-padding": 10,
