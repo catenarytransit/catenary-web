@@ -256,14 +256,16 @@ export function new_query(text: string) {
 		.then((response) => response.json())
 		.then((data: CypressFeatureCollection) => {
 			cypress_response_queries.update((existing_map) => {
-				existing_map[text] = data;
-				return existing_map;
+				return {
+					...existing_map,
+					[text]: data
+				};
 			});
 
-			// Update if the input text starts with the query text (allow intermediate results)
-			// This fixes the issue where fast typing prevents results from showing.
+			// Only update visible results if this response matches the current input exactly
+			// to avoid older/slower requests overwriting newer queries.
 			const current_input = get(text_input_store);
-			if (current_input.startsWith(text)) {
+			if (current_input === text) {
 				latest_cypress_data.set(data);
 				selected_result_index_store.set(-1);
 
@@ -299,12 +301,14 @@ export function new_query(text: string) {
 			.then((response) => response.json())
 			.then((data: OsmStationSearchResponse) => {
 				data_store_osm_station_queries.update((existing_map) => {
-					existing_map[text] = data;
-					return existing_map;
+					return {
+						...existing_map,
+						[text]: data
+					};
 				});
 
 				const current_input = get(text_input_store);
-				if (current_input.startsWith(text)) {
+				if (current_input === text) {
 					latest_osm_station_data.set(data);
 				}
 			})
@@ -317,18 +321,19 @@ export function new_query(text: string) {
 		.then((response) => response.json())
 		.then((data) => {
 			data_store_text_queries.update((existing_map) => {
-				existing_map[text] = data;
-				return existing_map;
+				return {
+					...existing_map,
+					[text]: data
+				};
 			});
 
-			if (get(text_input_store) == text) {
+			// Only update visible text-search results if this response matches
+			// the current input exactly, so older/slower queries can't overwrite
+			// results for the latest query.
+			if (get(text_input_store) === text) {
 				latest_query_data.set(data);
 				text_input_matches_current_result.set(true);
 				selected_result_index_store.set(-1);
-			} else {
-				if (get(text_input_matches_current_result) == false) {
-					latest_query_data.set(data);
-				}
 			}
 		});
 }

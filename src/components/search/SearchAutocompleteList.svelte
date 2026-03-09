@@ -134,7 +134,8 @@
 					) {
 						if (
 							!latest_query_data_local.stops_section.stops[stop_ranked.chateau][stop_ranked.gtfs_id]
-								.parent_station
+								.parent_station && latest_query_data_local.stops_section.stops[stop_ranked.chateau][stop_ranked.gtfs_id]
+								.osm_station_id	== null
 						) {
 							items.push({
 								type: 'stop',
@@ -203,6 +204,7 @@
 					on:click={() => select_result_item(item)}
 				>
 					{#key item.gtfs_id}
+						{#if item.data.osm.station_id == null}
 						<StopRankingInfo
 							stop={item.data}
 							stops_section={latest_query_data_local?.stops_section}
@@ -211,7 +213,8 @@
 								gtfs_id: item.gtfs_id,
 								score: 0 // Score not strictly needed for display here
 							}}
-						/>
+							
+						/>{/if}
 					{/key}
 				</button>
 			{:else if item.type === 'osm_station'}
