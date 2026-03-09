@@ -138,10 +138,10 @@
 	<td class="px-2 py-2 align-top">
 		<div class="flex flex-col justify-start">
 			<div class="flex flex-row items-center gap-2 mb-1">
-				<div class="text-base font-normal leading-tight">
+				<div class="text-base font-medium font-normal leading-tight">
 					{event.headsign}
 					{#if event.trip_short_name}
-						<span class="font-bold ml-1">{event.trip_short_name}</span>
+						<span class="ml-1">{event.trip_short_name}</span>
 					{/if}
 				</div>
 			</div>
