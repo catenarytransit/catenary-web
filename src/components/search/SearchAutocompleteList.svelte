@@ -7,6 +7,7 @@
 		autocomplete_focus_state,
 		show_back_button_recalc,
 		latest_cypress_data,
+		latest_osm_station_data,
 		selected_result_index_store,
 		displayed_results_store,
 		select_result_item,
@@ -42,6 +43,11 @@
 	latest_cypress_data.subscribe((n) => {
 		latest_cypress_data_local = n;
 		// console.log(n);
+	});
+
+	let latest_osm_station_data_local = get(latest_osm_station_data);
+	latest_osm_station_data.subscribe((n) => {
+		latest_osm_station_data_local = n;
 	});
 
 	text_input_store.subscribe((n) => (text_input = n));
@@ -84,6 +90,14 @@
 	$: {
 		let items: SearchResultItem[] = [];
 		if (text_input.length > 0) {
+			if (latest_osm_station_data_local && latest_osm_station_data_local.results) {
+				items = items.concat(
+					latest_osm_station_data_local.results
+						.slice(0, length)
+						.map((f) => ({ type: 'osm_station', data: f }))
+				);
+			}
+
 			if (latest_cypress_data_local && latest_cypress_data_local.features) {
 				items = items.concat(
 					latest_cypress_data_local.features
@@ -199,6 +213,43 @@
 							}}
 						/>
 					{/key}
+				</button>
+			{:else if item.type === 'osm_station'}
+				<button
+					class="px-3 cursor-pointer w-full flex flex-row items-center gap-2 py-2 {index ===
+					$selected_result_index_store
+						? 'bg-gray-200 dark:bg-gray-700'
+						: 'hover:bg-gray-200 dark:hover:bg-gray-700'}"
+					on:click={() => select_result_item(item)}
+				>
+					<div class="flex-1 flex flex-col text-left">
+						<p class="font-medium dark:text-white leading-tight">
+							{item.data.name}
+						</p>
+						{#if item.data.admin_hierarchy}
+							{#if item.data.admin_hierarchy.neighbourhood || item.data.admin_hierarchy.county || item.data.admin_hierarchy.region}
+								<p class="text-[11px] text-gray-600 dark:text-gray-400 -mt-0.5 leading-tight whitespace-break-spaces">
+									{[
+										item.data.admin_hierarchy.neighbourhood?.name,
+										item.data.admin_hierarchy.county?.name,
+										item.data.admin_hierarchy.region?.name
+									].filter(Boolean).join(', ')}
+								</p>
+							{/if}
+						{/if}
+						<div class="flex flex-row flex-wrap gap-1 mt-1">
+							{#if item.data.routes && item.data.routes.length > 0}
+								{#each item.data.routes as route}
+									<div 
+										class="px-1.5 py-0.5 text-[10px] font-bold rounded"
+										style="background-color: {route.color || '#cccccc'}; color: {route.text_color || '#000000'};"
+									>
+										{route.short_name || route.route_id}
+									</div>
+								{/each}
+							{/if}
+						</div>
+					</div>
 				</button>
 			{/if}
 		{/each}

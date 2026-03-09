@@ -7,7 +7,23 @@ import {
 	map_pointer_store,
 	data_stack_store
 } from '../../globalstores';
-import { StackInterface, OsmItemStack, RouteStack, StopStack } from '../stackenum';
+import { StackInterface, OsmItemStack, RouteStack, StopStack, OsmStationStack } from '../stackenum';
+
+export interface OsmStationSearchResult {
+	osm_id: number;
+	name: string | null;
+	point: { x: number; y: number } | null;
+	mode_type: string;
+	operator: string | null;
+	network: string | null;
+	admin_hierarchy: any;
+	routes: any[];
+	confidence: number;
+}
+
+export interface OsmStationSearchResponse {
+	results: OsmStationSearchResult[];
+}
 
 interface SearchQueryResponse {
 	stops_section: StopsSection;
@@ -59,11 +75,13 @@ interface CypressFeatureCollection {
 }
 
 export const data_store_text_queries: Writable<Record<string, SearchQueryResponse>> = writable({});
+export const data_store_osm_station_queries: Writable<Record<string, OsmStationSearchResponse>> = writable({});
 export const cypress_response_queries: Writable<Record<string, CypressFeatureCollection>> =
 	writable({});
 
 export const latest_query_data: Writable<SearchQueryResponse | null> = writable(null);
 export const latest_cypress_data: Writable<CypressFeatureCollection | null> = writable(null);
+export const latest_osm_station_data: Writable<OsmStationSearchResponse | null> = writable(null);
 
 let geolocation: GeolocationPosition | null;
 
@@ -74,7 +92,7 @@ export const text_input_store: Writable<string> = writable('');
 export const text_input_matches_current_result: Writable<boolean> = writable(true);
 
 export interface SearchResultItem {
-	type: 'cypress' | 'route' | 'stop';
+	type: 'cypress' | 'route' | 'stop' | 'osm_station';
 	data: any;
 	chateau?: string;
 	gtfs_id?: string;
@@ -130,6 +148,19 @@ export function select_result_item(item: SearchResultItem) {
 			data_stack_store.update((data_stack) => {
 				data_stack.push(new StackInterface(new StopStack(item.chateau!, item.gtfs_id!)));
 				return data_stack;
+			});
+		}
+	} else if (item.type === 'osm_station') {
+		data_stack_store.update((data_stack) => {
+			let lat = item.data.point ? item.data.point.y : null;
+			let lon = item.data.point ? item.data.point.x : null;
+			data_stack.push(new StackInterface(new OsmStationStack(item.data.osm_id.toString(), item.data.name, item.data.mode_type, lat, lon)));
+			return data_stack;
+		});
+		if (item.data.point) {
+			map.flyTo({
+				center: [item.data.point.x, item.data.point.y],
+				zoom: 16
 			});
 		}
 	}
@@ -250,6 +281,37 @@ export function new_query(text: string) {
 				console.error('Cypress fetch error', e);
 			}
 		});
+
+	// OSM Station Search
+	const cached_osm_station_data = get(data_store_osm_station_queries)[text];
+	if (cached_osm_station_data) {
+		latest_osm_station_data.set(cached_osm_station_data);
+	} else {
+		const osm_station_url = new URL('https://birch_search.catenarymaps.org/osm_station_search');
+		osm_station_url.searchParams.append('text', text);
+		if (geolocation_active) {
+			osm_station_url.searchParams.append('focus_lat', centerCoordinates.lat.toString());
+			osm_station_url.searchParams.append('focus_lon', centerCoordinates.lng.toString());
+			osm_station_url.searchParams.append('focus_weight', focus_weight.toString());
+		}
+
+		fetch(osm_station_url.toString(), { signal: abortController.signal })
+			.then((response) => response.json())
+			.then((data: OsmStationSearchResponse) => {
+				data_store_osm_station_queries.update((existing_map) => {
+					existing_map[text] = data;
+					return existing_map;
+				});
+
+				const current_input = get(text_input_store);
+				if (current_input.startsWith(text)) {
+					latest_osm_station_data.set(data);
+				}
+			})
+			.catch((e) => {
+				if (e.name !== 'AbortError') console.error('OSM fetch error', e);
+			});
+	}
 
 	fetch(url, { signal: abortController.signal })
 		.then((response) => response.json())
