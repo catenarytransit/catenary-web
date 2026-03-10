@@ -335,6 +335,11 @@ export function new_query(text: string) {
 				text_input_matches_current_result.set(true);
 				selected_result_index_store.set(-1);
 			}
+		})
+		.catch((e) => {
+			if (e.name !== 'AbortError') {
+				console.error('Text search fetch error', e);
+			}
 		});
 }
 
@@ -359,6 +364,11 @@ export function perform_full_search(text: string) {
 				if (map && map.getSource('cypress_results')) {
 					(map.getSource('cypress_results') as maplibregl.GeoJSONSource).setData(data);
 				}
+			}
+		})
+		.catch((e) => {
+			if (e.name !== 'AbortError') {
+				console.error('Cypress full search fetch error', e);
 			}
 		});
 }
