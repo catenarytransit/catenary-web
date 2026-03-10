@@ -35,23 +35,6 @@
 	import StopRankingInfo from './StopRankingInfo.svelte';
 	import { locale } from 'svelte-i18n';
 
-	let latest_query_data_local = get(latest_query_data);
-	let text_input = get(text_input_store);
-
-	let latest_cypress_data_local = get(latest_cypress_data);
-
-	latest_cypress_data.subscribe((n) => {
-		latest_cypress_data_local = n;
-		// console.log(n);
-	});
-
-	let latest_osm_station_data_local = get(latest_osm_station_data);
-	latest_osm_station_data.subscribe((n) => {
-		latest_osm_station_data_local = n;
-	});
-
-	text_input_store.subscribe((n) => (text_input = n));
-
 	let current_locale_value: string | null = null;
 	locale.subscribe((val) => {
 		current_locale_value = val;
@@ -61,11 +44,6 @@
 	import RouteResultItem from './RouteResultItem.svelte';
 
 	export let length = 16;
-
-	latest_query_data.subscribe((new_data) => {
-		latest_query_data_local = new_data;
-		// console.log('new data in search', new_data);
-	});
 
 	let geolocation: GeolocationPosition | null;
 
@@ -89,34 +67,32 @@
 
 	$: {
 		let items: SearchResultItem[] = [];
-		if (text_input.length > 0) {
-			if (latest_osm_station_data_local && latest_osm_station_data_local.results) {
+		if ($text_input_store.length > 0) {
+			if ($latest_osm_station_data && $latest_osm_station_data.results) {
 				items = items.concat(
-					latest_osm_station_data_local.results
+					$latest_osm_station_data.results
 						.slice(0, length)
 						.map((f) => ({ type: 'osm_station', data: f }))
-				);
+					);
 			}
 
-			if (latest_cypress_data_local && latest_cypress_data_local.features) {
+			if ($latest_cypress_data && $latest_cypress_data.features) {
 				items = items.concat(
-					latest_cypress_data_local.features
+					$latest_cypress_data.features
 						.slice(0, length)
 						.map((f) => ({ type: 'cypress', data: f }))
-				);
+					);
 			}
 
-			if (latest_query_data_local && latest_query_data_local.routes_section) {
-				latest_query_data_local.routes_section.ranking.slice(0, length).forEach((route_ranked) => {
+			if ($latest_query_data && $latest_query_data.routes_section) {
+				$latest_query_data.routes_section.ranking.slice(0, length).forEach((route_ranked) => {
 					if (
-						latest_query_data_local?.routes_section.routes[route_ranked.chateau] &&
-						latest_query_data_local.routes_section.routes[route_ranked.chateau][
-							route_ranked.gtfs_id
-						]
+						$latest_query_data?.routes_section.routes[route_ranked.chateau] &&
+						$latest_query_data.routes_section.routes[route_ranked.chateau][route_ranked.gtfs_id]
 					) {
 						items.push({
 							type: 'route',
-							data: latest_query_data_local.routes_section.routes[route_ranked.chateau][
+							data: $latest_query_data.routes_section.routes[route_ranked.chateau][
 								route_ranked.gtfs_id
 							],
 							chateau: route_ranked.chateau,
@@ -126,20 +102,21 @@
 				});
 			}
 
-			if (latest_query_data_local && latest_query_data_local.stops_section) {
-				latest_query_data_local.stops_section.ranking.slice(0, length).forEach((stop_ranked) => {
+			if ($latest_query_data && $latest_query_data.stops_section) {
+				$latest_query_data.stops_section.ranking.slice(0, length).forEach((stop_ranked) => {
 					if (
-						latest_query_data_local?.stops_section.stops[stop_ranked.chateau] &&
-						latest_query_data_local.stops_section.stops[stop_ranked.chateau][stop_ranked.gtfs_id]
+						$latest_query_data?.stops_section.stops[stop_ranked.chateau] &&
+						$latest_query_data.stops_section.stops[stop_ranked.chateau][stop_ranked.gtfs_id]
 					) {
 						if (
-							!latest_query_data_local.stops_section.stops[stop_ranked.chateau][stop_ranked.gtfs_id]
-								.parent_station && latest_query_data_local.stops_section.stops[stop_ranked.chateau][stop_ranked.gtfs_id]
-								.osm_station_id	== null
+							!$latest_query_data.stops_section.stops[stop_ranked.chateau][stop_ranked.gtfs_id]
+								.parent_station &&
+							$latest_query_data.stops_section.stops[stop_ranked.chateau][stop_ranked.gtfs_id]
+								.osm_station_id == null
 						) {
 							items.push({
 								type: 'stop',
-								data: latest_query_data_local.stops_section.stops[stop_ranked.chateau][
+								data: $latest_query_data.stops_section.stops[stop_ranked.chateau][
 									stop_ranked.gtfs_id
 								],
 								chateau: stop_ranked.chateau,
