@@ -181,7 +181,7 @@
 					on:click={() => select_result_item(item)}
 				>
 					{#key item.gtfs_id}
-						{#if item.data.osm.station_id == null}
+						{#if item.data.osm_station_id == null}
 						<StopRankingInfo
 							stop={item.data}
 							stops_section={latest_query_data_local?.stops_section}
