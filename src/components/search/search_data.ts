@@ -188,7 +188,11 @@ export const autocomplete_focus_state: Writable<boolean> = writable(false);
 let abortController = new AbortController();
 
 export function new_query(text: string) {
-	abortController.abort();
+	// Abort any in-flight search requests with an explicit AbortError reason
+	// so external error handlers don't treat it as an unhandled "signal is aborted without reason".
+	if (!abortController.signal.aborted) {
+		abortController.abort(new DOMException('Search query aborted', 'AbortError'));
+	}
 	abortController = new AbortController();
 
 	let map = get(map_pointer_store);

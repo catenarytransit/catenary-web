@@ -184,7 +184,7 @@
 						{#if item.data.osm_station_id == null}
 						<StopRankingInfo
 							stop={item.data}
-							stops_section={latest_query_data_local?.stops_section}
+							stops_section={$latest_query_data?.stops_section}
 							stop_ranked={{
 								chateau: item.chateau,
 								gtfs_id: item.gtfs_id,
