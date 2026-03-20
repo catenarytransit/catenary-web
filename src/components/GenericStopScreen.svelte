@@ -33,6 +33,10 @@
 	import MtaBullet from './mtabullet.svelte';
 	import { booleanPointInPolygon, point } from '@turf/turf';
 	import RatpBullet from './ratpbullet.svelte';
+	import DatePicker from './DatePicker.svelte';
+
+	let is_now = true;
+	let selected_unix_time = Date.now() / 1000;
 
 	export let buildUrl: (startSec: number, endSec: number) => string;
 	export let key: any; // Unique identifier to trigger reset (e.g. stop_id or osm_id)
@@ -169,15 +173,17 @@
 		return result;
 	})();
 
-	function resetState() {
+	function resetState(clearMeta = true) {
 		// clear paging and data when stop changes
 		pages = [];
 		eventIndex = new Map();
 		mergedEvents = [];
 		filtered_dates_to_events = {};
 		raw_grouped_events = {};
-		data_meta = null;
-		fly_to_already = false;
+		if (clearMeta) {
+			data_meta = null;
+			fly_to_already = false;
+		}
 		currentPageHours = 1;
 	}
 
@@ -444,9 +450,9 @@
 	}
 
 	async function loadInitialPages() {
-		const nowSec = Math.floor(Date.now() / 1000);
-		// Start a little bit in the past for continuity
-		const start = nowSec - 30 * 60; // 30m back
+		const baseTime = is_now ? Math.floor(Date.now() / 1000) : selected_unix_time;
+		// Start a little bit in the past for continuity if is_now, otherwise exactly at the picked baseTime
+		const start = is_now ? Math.floor(baseTime) - 30 * 60 : Math.floor(baseTime); 
 		const end = start + currentPageHours * 3600;
 		await fetchPage(start, end);
 	}
@@ -505,7 +511,7 @@
 
 	// React to input changes
 	$: if (key) {
-		resetState();
+		resetState(true);
 		loadInitialPages();
 	}
 
@@ -616,6 +622,18 @@
 						</p>
 					</div>
 					<p class="text-sm ml-1 mb-2">{displayTimezone}</p>
+
+					<div class="ml-1 mb-3">
+						<DatePicker
+							bind:unixTime={selected_unix_time}
+							bind:isNow={is_now}
+							timezone={displayTimezone}
+							on:change={() => {
+								resetState(false);
+								loadInitialPages();
+							}}
+						/>
+					</div>
 
 					{#if available_modes.length > 1}
 						<div

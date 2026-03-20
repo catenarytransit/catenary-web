@@ -24,6 +24,10 @@
 	import { booleanPointInPolygon, point } from '@turf/turf';
 	import TidbitSidebarCard from './SidebarParts/tidbits.svelte';
 	import StationScreenTrainRowCompact from './StationScreenTrainRowCompact.svelte';
+	import DatePicker from './DatePicker.svelte';
+
+	let is_now = true;
+	let selected_unix_time = Date.now() / 1000;
 
 	const onbutton = 'bg-blue-300 dark:bg-blue-500 bg-opacity-80';
 	const offbutton = '';
@@ -457,6 +461,9 @@
 			checkSwitzerland(lat, lng);
 			first_attempt_sent = true;
 			let url = `https://birch_nearby.catenarymaps.org/nearbydeparturesfromcoordsv3?lat=${lat}&lon=${lng}&limit_per_station=30`;
+			if (!is_now) {
+				url += `&departure_time=${Math.floor(selected_unix_time)}`;
+			}
 
 			if (abort_controller) {
 				/* abort_controller.abort(); */
@@ -648,6 +655,15 @@
 				<span class="material-symbols-outlined translate-y-1">filter_alt</span>
 			</button>
 		</div>
+	</div>
+
+	<div class="px-3 mb-1 mt-1">
+		<DatePicker 
+			bind:unixTime={selected_unix_time} 
+			bind:isNow={is_now} 
+			timezone={'Local Time'} 
+			on:change={getNearbyDepartures} 
+		/>
 	</div>
 
 	{#if !first_attempt_sent && current_nearby_pick_state == 0}

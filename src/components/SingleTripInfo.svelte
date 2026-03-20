@@ -143,6 +143,7 @@
 	let show_floating_controls = false;
 	let show_original_timetable = false;
 	let show_connections = false;
+	let initial_load_done = false;
 
 	onMount(() => {
 		if (window.localStorage.getItem('show_original_timetable') !== null) {
@@ -151,9 +152,10 @@
 		if (window.localStorage.getItem('show_connections') !== null) {
 			show_connections = window.localStorage.getItem('show_connections') === 'true';
 		}
+		initial_load_done = true;
 	});
 
-	$: if (typeof window !== 'undefined') {
+	$: if (initial_load_done && typeof window !== 'undefined') {
 		window.localStorage.setItem('show_original_timetable', show_original_timetable.toString());
 		window.localStorage.setItem('show_connections', show_connections.toString());
 	}
