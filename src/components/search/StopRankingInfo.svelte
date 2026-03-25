@@ -69,7 +69,7 @@
 			{/if}
 		</p>
 
-		{#if stops_section.routes[stop_ranked.chateau]}
+		{#if stops_section && stops_section.routes && stops_section.routes[stop_ranked.chateau]}
 			{#each stop.routes as route_id}
 				{#if stops_section.routes[stop_ranked.chateau][route_id]}
 					{@const routeInfo = stops_section.routes[stop_ranked.chateau][route_id]}

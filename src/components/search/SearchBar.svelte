@@ -141,7 +141,7 @@
 			<input
 				type="text"
 				on:input={handle_text_change}
-				on:focusout={focus_on_input}
+				on:focus={focus_on_input}
 				on:blur={on_blur_input}
 				on:keydown={handle_keydown}
 				bind:value={text_input}

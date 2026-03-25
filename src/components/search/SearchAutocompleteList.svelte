@@ -34,6 +34,7 @@
 	} from '../../globalstores';
 	import StopRankingInfo from './StopRankingInfo.svelte';
 	import { locale } from 'svelte-i18n';
+	import { getTopHistory } from './station_history';
 
 	let current_locale_value: string | null = null;
 	locale.subscribe((val) => {
@@ -126,6 +127,10 @@
 					}
 				});
 			}
+		} else {
+			// Empty input - display history
+			const topHistory = getTopHistory(10);
+			items = topHistory;
 		}
 		visible_items = items;
 		displayed_results_store.set(visible_items);
@@ -184,7 +189,7 @@
 						{#if item.data.osm_station_id == null}
 						<StopRankingInfo
 							stop={item.data}
-							stops_section={$latest_query_data?.stops_section}
+							stops_section={$latest_query_data?.stops_section || ((item as any).saved_routes ? { routes: (item as any).saved_routes } : null)}
 							stop_ranked={{
 								chateau: item.chateau,
 								gtfs_id: item.gtfs_id,

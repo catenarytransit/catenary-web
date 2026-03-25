@@ -47,6 +47,8 @@
 	export let stationLon: number | null = null;
 	export let stationTimezone: string | null = null;
 
+	import { recordStationVisit } from './search/station_history';
+
 	let eurostyle_geojson: any = null;
 	let is_inside_eurostyle: boolean = false;
 	let switzerland_geojson: any = null;
@@ -322,6 +324,10 @@
 
 				// Force reactivity
 				data_meta = data_meta;
+			}
+
+			if (data_meta) {
+				recordStationVisit(data_meta, key, stationName, stationLat, stationLon);
 			}
 
 			// Yield after parsing and meta merge
