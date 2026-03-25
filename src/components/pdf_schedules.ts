@@ -19,7 +19,7 @@ export function has_schedule_pdf(chateau_id: string) {
 
 export function find_schedule_pdf_initial(chateau_id: string, route_id: string) {
 	if (chateau_id == 'metrolinktrains') {
-		return `https://metrolinktrains.com/globalassets/schedules/timetables/2023/web_alllines_23-11-06_spreads.pdf`;
+		return `https://metrolinktrains.com/globalassets/schedules/timetables/2026/metrolink-all-lines-timetable-03-2026-temp-schedule.pdf`;
 	} else if (chateau_id == 'san-diego-mts') {
 		return `https://www.sdmts.com/sites/default/files/routes/pdf/${route_id}.pdf`;
 	} else if (chateau_id == 'northcountytransitdistrict') {
