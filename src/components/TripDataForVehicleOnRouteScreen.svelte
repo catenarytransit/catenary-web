@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { _ } from 'svelte-i18n';
+	import DelayDiff from './DelayDiff.svelte';
 
 	export let possible_trip_list: any[] = [];
 
@@ -43,6 +45,10 @@
 			}
 		}
 	}
+
+	onMount(() => {
+		console.log(vehicle)
+	})
 </script>
 
 <p>
@@ -51,6 +57,16 @@
 			{#if stops[likely_trip.stop_time_update[0].stop_id]}
 				<p class="text-xs">
 					{$_('next_stop')}: {stops[likely_trip.stop_time_update[0].stop_id].name}
+				</p>
+				
+				
+			{/if}
+			{#if vehicle.trip.delay != null}
+			<p class="text-xs">
+					<DelayDiff
+					use_symbol_sign={true}
+					diff={vehicle.trip.delay}
+					/>
 				</p>
 			{/if}
 		{/if}
