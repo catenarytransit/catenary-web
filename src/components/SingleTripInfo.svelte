@@ -1120,10 +1120,10 @@
 				<div slot="controls" class="relative">
 					<button
 						on:click={() => (show_floating_controls = !show_floating_controls)}
-						class="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 focus:outline-none transition-colors"
+						class="p- rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 focus:outline-none transition-colors"
 						title={$_('settings', { default: 'Settings' })}
 					>
-						<span class="material-symbols-outlined"> discover_tune </span>
+						<span class="material-symbols-outlined text-xs"> discover_tune </span>
 					</button>
 
 					{#if show_floating_controls}
