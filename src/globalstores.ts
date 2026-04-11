@@ -79,10 +79,10 @@ export interface NearbySelectionFilterRouteType {
 }
 
 export const nearby_departures_filter: Writable<NearbySelectionFilterRouteType> = writable({
-	bus: true,
-	metro: true,
-	rail: true,
-	other: true
+	bus: false,
+	metro: false,
+	rail: false,
+	other: false
 });
 
 //depreciated

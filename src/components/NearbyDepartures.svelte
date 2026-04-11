@@ -148,6 +148,17 @@
 		route_type: number,
 		nearby_departures_filter_local: NearbySelectionFilterRouteType
 	) {
+		const has_any_selected =
+			nearby_departures_filter_local.bus ||
+			nearby_departures_filter_local.metro ||
+			nearby_departures_filter_local.rail ||
+			nearby_departures_filter_local.other;
+
+		// No filters selected means show everything.
+		if (!has_any_selected) {
+			return true;
+		}
+
 		if ([3, 11, 700].includes(route_type)) {
 			return nearby_departures_filter_local.bus;
 		}
@@ -157,7 +168,7 @@
 		if ([2, 106, 107, 101, 100, 102, 103].includes(route_type)) {
 			return nearby_departures_filter_local.rail;
 		}
-		return true; // Default
+		return nearby_departures_filter_local.other;
 	}
 
 	import { SingleTrip, StackInterface, StopStack, RouteStack } from './stackenum';
@@ -177,7 +188,7 @@
 	import MtaBullet from './mtabullet.svelte';
 	import RatpBullet from './ratpbullet.svelte';
 
-	let nearby_departures_filter_local = { rail: true, bus: true, metro: true, other: true };
+	let nearby_departures_filter_local = { rail: false, bus: false, metro: false, other: false };
 
 	let nearby_rail_show = nearby_departures_filter_local.rail;
 	let nearby_bus_show = nearby_departures_filter_local.bus;
