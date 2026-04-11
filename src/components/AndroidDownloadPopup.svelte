@@ -2,20 +2,25 @@
 	import { _ } from 'svelte-i18n';
 	import { onMount } from 'svelte';
 
-	let showAndroidDownloadPopup = false;
+	const androidPopupDismissUntilStorage = 'androidPopupDismissedUntil';
+	const oneDayInMs = 24 * 60 * 60 * 1000;
+
+	let showAndroidDownloadPopup = true;
 	let isAndroid = false;
 	let isChrome = false;
 
 	onMount(() => {
-		const androidPopupDismissed = localStorage.getItem('androidPopupDismissed');
-		if (androidPopupDismissed !== 'true') {
-			isAndroid = /Android/i.test(navigator.userAgent);
-			isChrome = /Chrome/i.test(navigator.userAgent);
-			if (isAndroid) {
-				showAndroidDownloadPopup = true;
-			}
-		}
+		isAndroid = /Android/i.test(navigator.userAgent);
+		isChrome = /Chrome/i.test(navigator.userAgent);
 	});
+
+	function dismissAndroidPopupFor24Hours() {
+		const dismissUntil = Date.now() + oneDayInMs;
+		localStorage.setItem(androidPopupDismissUntilStorage, String(dismissUntil));
+		localStorage.removeItem('androidPopupDismissed');
+		localStorage.removeItem('androidPopupDismissed2');
+		showAndroidDownloadPopup = false;
+	}
 </script>
 
 {#if showAndroidDownloadPopup}
@@ -33,10 +38,7 @@
 			</p>
 			<div class="flex justify-center gap-4 mt-3">
 				<button
-					on:click={() => {
-						showAndroidDownloadPopup = false;
-						localStorage.setItem('androidPopupDismissed', 'true');
-					}}
+					on:click={dismissAndroidPopupFor24Hours}
 					class="px-4 py-2 rounded-full font-semibold bg-transparent text-black dark:text-white border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
 				>
 					{$_('keepusingweb')}

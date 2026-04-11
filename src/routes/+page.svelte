@@ -132,6 +132,34 @@
 	let showAndroidDownloadPopup = false;
 	let isAndroid: boolean = false;
 	let isChrome: boolean = false;
+	const androidPopupDismissUntilStorage = 'androidPopupDismissedUntil';
+	const oneDayInMs = 24 * 60 * 60 * 1000;
+
+	function hasActiveAndroidPopupDismissal() {
+		const now = Date.now();
+		const dismissedUntilRaw = localStorage.getItem(androidPopupDismissUntilStorage);
+		const dismissedUntil = dismissedUntilRaw ? Number(dismissedUntilRaw) : NaN;
+
+		if (!Number.isNaN(dismissedUntil)) {
+			if (dismissedUntil > now) {
+				return true;
+			}
+			localStorage.removeItem(androidPopupDismissUntilStorage);
+		}
+
+		const legacyDismissed =
+			localStorage.getItem('androidPopupDismissed') === 'true' ||
+			localStorage.getItem('androidPopupDismissed2') === 'true';
+
+		if (legacyDismissed) {
+			localStorage.setItem(androidPopupDismissUntilStorage, String(now + oneDayInMs));
+			localStorage.removeItem('androidPopupDismissed');
+			localStorage.removeItem('androidPopupDismissed2');
+			return true;
+		}
+
+		return false;
+	}
 
 	let autocomplete_focus_state_local = get(autocomplete_focus_state);
 
@@ -1838,13 +1866,12 @@
 			isChrome = /chrome/i.test(navigator.userAgent);
 
 			if (isAndroid) {
-				const dismissed = localStorage.getItem('androidPopupDismissed');
-				if (dismissed !== 'true') {
+				if (!hasActiveAndroidPopupDismissal()) {
 					console.log('This is an Android device, showing download popup.');
 					showAndroidDownloadPopup = true;
 					// Run Android-specific code here
 				} else {
-					console.log('This is an Android device, but popup was dismissed.');
+					console.log('This is an Android device, popup is dismissed for now.');
 				}
 			} else {
 				console.log('This is not an Android device.');
