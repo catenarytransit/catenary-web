@@ -140,5 +140,6 @@
 	"show_arrivals": "Mostrar arribades a l'última estació",
 	"stations": "Estacions",
 	"show_countdown": "Mostrar el compte enrere per aturar",
-	"more_departures": "Més sortides"
+	"more_departures": "Més sortides",
+	"earlier": "Abans"
 }

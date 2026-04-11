@@ -159,5 +159,6 @@
 	"stop_cancelled": "Stop cancelled",
 	"show_arrivals": "Show Arrivals at Last Station",
 	"stations": "Stations",
-	"more_departures": "More departures"
+	"more_departures": "More departures",
+	"earlier": "Earlier"
 }

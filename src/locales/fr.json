@@ -159,5 +159,6 @@
 	"show_arrivals": "Afficher les arrivées à la dernière station",
 	"stations": "Stations",
 	"show_countdown": "Afficher le compte à rebours jusqu'à l'arrêt",
-	"more_departures": "Plus de départs"
+	"more_departures": "Plus de départs",
+	"earlier": "Plus tôt"
 }

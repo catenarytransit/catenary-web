@@ -122,5 +122,6 @@
 	"show_arrivals": "顯示最後一站到達",
 	"stations": "車站",
 	"show_countdown": "顯示到站倒數",
-	"more_departures": "更多班次"
+	"more_departures": "更多班次",
+	"earlier": "更早"
 }

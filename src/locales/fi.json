@@ -145,5 +145,6 @@
 	"show_arrivals": "Näytä saapumiset viimeisellä asemalla",
 	"stations": "Asemat",
 	"show_countdown": "Näytä lähtölaskenta pysäkille",
-	"more_departures": "Lisää lähtöjä"
+	"more_departures": "Lisää lähtöjä",
+	"earlier": "Aiemmin"
 }

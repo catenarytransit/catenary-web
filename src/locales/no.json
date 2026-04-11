@@ -141,5 +141,6 @@
 	"show_arrivals": "Vis ankomster ved siste stasjon",
 	"stations": "Stasjoner",
 	"show_countdown": "Vis nedtelling til stopp",
-	"more_departures": "Flere avganger"
+	"more_departures": "Flere avganger",
+	"earlier": "Tidligere"
 }

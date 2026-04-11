@@ -137,5 +137,6 @@
 	"show_arrivals": "마지막 역 도착 보기",
 	"stations": "역",
 	"show_countdown": "정류장까지 카운트다운 표시",
-	"more_departures": "더 많은 출발"
+	"more_departures": "더 많은 출발",
+	"earlier": "이전"
 }

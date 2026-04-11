@@ -127,5 +127,6 @@
 	"show_arrivals": "Mostrar llegadas en la última estación",
 	"stations": "Estaciones",
 	"show_countdown": "Mostrar cuenta atrás para la parada",
-	"more_departures": "Más salidas"
+	"more_departures": "Más salidas",
+	"earlier": "Antes"
 }

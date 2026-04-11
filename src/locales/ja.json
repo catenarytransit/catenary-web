@@ -125,5 +125,6 @@
 	"show_arrivals": "終着駅の到着を表示",
 	"stations": "駅",
 	"show_countdown": "停車までのカウントダウンを表示",
-	"more_departures": "その他の出発"
+	"more_departures": "その他の出発",
+	"earlier": "前へ"
 }

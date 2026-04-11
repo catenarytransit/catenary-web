@@ -124,5 +124,6 @@
 	"show_arrivals": "Vis ankomster ved sidste station",
 	"stations": "Stationer",
 	"show_countdown": "Vis nedtælling til stop",
-	"more_departures": "Flere afgange"
+	"more_departures": "Flere afgange",
+	"earlier": "Tidligere"
 }

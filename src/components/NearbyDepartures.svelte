@@ -292,6 +292,10 @@
 		current_time = Date.now();
 	}, 500);
 
+	// Reference time for countdowns: always the actual current time
+	let reference_time_sec: number = Date.now() / 1000;
+	$: reference_time_sec = current_time / 1000;
+
 	let first_load = false;
 	let first_attempt_sent = false;
 	let timeout_first_attempt: NodeJS.Timeout | null = null;
@@ -462,7 +466,10 @@
 			first_attempt_sent = true;
 			let url = `https://birch_nearby.catenarymaps.org/nearbydeparturesfromcoordsv3?lat=${lat}&lon=${lng}&limit_per_station=30`;
 			if (!is_now) {
-				url += `&departure_time=${Math.floor(selected_unix_time)}`;
+				// When using the date picker, allow some trips before the selected time
+				// by shifting the reference time backwards by TIME_PREVIOUS_CUTOFF.
+				const shifted = Math.max(0, Math.floor(selected_unix_time - TIME_PREVIOUS_CUTOFF));
+				url += `&departure_time=${shifted}`;
 			}
 
 			if (abort_controller) {
@@ -770,7 +777,7 @@
 											agencies: v3_agencies,
 											stops: v3_stops
 										}}
-										current_time={current_time / 1000}
+										current_time={reference_time_sec}
 										show_seconds={false}
 										timezone={station.timezone}
 									/>
@@ -957,15 +964,15 @@
 									>
 										<div class="text-center">
 											<span
-												class={`font-semibold leading-none ${getEffectiveDepartureTime(trip) - current_time / 1000 < -60 ? 'text-gray-600 dark:text-gray-400' : trip.departure_realtime != null || (trip.arrival_realtime != null && trip.arrival_realtime > trip.departure_schedule) ? 'text-seashore dark:text-seashoredark' : ''}`}
+												class={`font-semibold leading-none ${getEffectiveDepartureTime(trip) - reference_time_sec < -60 ? 'text-gray-600 dark:text-gray-400' : trip.departure_realtime != null || (trip.arrival_realtime != null && trip.arrival_realtime > trip.departure_schedule) ? 'text-seashore dark:text-seashoredark' : ''}`}
 											>
-												{#if !isRail && (getEffectiveDepartureTime(trip) - current_time / 1000 > 60 || getEffectiveDepartureTime(trip) - current_time / 1000 < -60)}
+												{#if !isRail && (getEffectiveDepartureTime(trip) - reference_time_sec > 60 || getEffectiveDepartureTime(trip) - reference_time_sec < -60)}
 													<TimeDiff
 														large={false}
 														show_brackets={false}
 														show_seconds={false}
 														space_between={false}
-														diff={getEffectiveDepartureTime(trip) - current_time / 1000}
+														diff={getEffectiveDepartureTime(trip) - reference_time_sec}
 														stylesForUnits={'font-medium'}
 													/>
 												{:else if isRail}

@@ -101,8 +101,6 @@
 	$: displayLon = data_meta?.primary?.stop_lon ?? stationLon;
 	$: displayTimezone =
 		data_meta?.primary?.timezone ?? data_meta?.stops?.[0]?.timezone ?? stationTimezone ?? 'UTC';
-	let show_previous_departures = false;
-	let previous_count = 0;
 	let show_arrivals_only = false; // Add missing state variable
 
 	// Filters
@@ -141,20 +139,12 @@
 		}
 	}
 
-	// Pre-filter events by mode, time cutoff, and arrivals_only — computed once reactively
+	// Pre-filter events by mode and arrivals_only — computed once reactively
 	$: filtered_dates_to_events = (() => {
 		const result: Record<string, any[]> = {};
-		const nowSec = current_time / 1000;
-		const cutoff = show_previous_departures ? 1800 : 60;
 
 		for (const [date_code, events] of Object.entries(raw_grouped_events)) {
 			const filtered = events.filter((event) => {
-				// Time filter
-				const relevant_time = event.last_stop
-					? event.realtime_arrival || event.scheduled_arrival
-					: event.realtime_departure || event.scheduled_departure;
-				if (relevant_time < nowSec - cutoff) return false;
-
 				// Arrivals filter
 				if (event.last_stop && !show_arrivals_only) return false;
 
@@ -273,12 +263,6 @@
 		}
 		raw_grouped_events = grouped;
 		console.log('Updated raw_grouped_events', Object.keys(grouped).length);
-
-		// Compute previous_count ≤30m ago for header toggle
-		const nowSec = Date.now() / 1000;
-		previous_count = mergedEvents.filter(
-			(ev) => (ev.realtime_departure || ev.scheduled_departure) < nowSec - 60
-		).length;
 	}
 
 	async function doFetch(
@@ -472,6 +456,42 @@
 		await fetchPage(start, end);
 	}
 
+	async function loadEarlier() {
+		if (!scrollContainer) return;
+		if (pages.length === 0) return;
+
+		// Avoid stacking multiple earlier loads while any page is loading
+		if (pages.some((p) => p.loading)) return;
+
+		const beforeHeight = scrollContainer.scrollHeight;
+		const beforeTop = scrollContainer.scrollTop;
+
+		// Roll the date picker back one hour from the current anchor time
+		const baseTimeSec = is_now
+			? Math.floor(Date.now() / 1000)
+			: Math.floor(selected_unix_time || Date.now() / 1000);
+		const newSelected = baseTimeSec - 3600;
+		is_now = false;
+		selected_unix_time = newSelected;
+
+		// Fetch one hour of data before the earliest loaded page, keeping existing range
+		const earliestStart = Math.min(...pages.map((p) => p.startSec));
+		const newStart = Math.max(0, earliestStart - 3600);
+		const newEnd = earliestStart;
+
+		// If we've already loaded this exact range, skip
+		if (pages.find((p) => p.startSec === newStart && p.endSec === newEnd)) {
+			return;
+		}
+
+		await fetchPage(newStart, newEnd);
+
+		// Keep the currently visible content anchored after new items are prepended
+		const afterHeight = scrollContainer.scrollHeight;
+		const delta = afterHeight - beforeHeight;
+		scrollContainer.scrollTop = beforeTop + delta;
+	}
+
 	// Infinite scroll detection
 	let scrollContainer: HTMLDivElement;
 	function onScroll(e: Event) {
@@ -606,240 +626,234 @@
 	});
 </script>
 
-<div class="h-full">
+<div class="h-full flex flex-col">
 	<HomeButton />
+	{#if data_meta || (stationName && stationLat != null && stationLon != null)}
+		<div class="flex flex-col border-b border-gray-200 dark:border-gray-700 pb-0 pr-2">
+			<div class="flex flex-row ml-1 items-baseline">
+				<h2 class="text-lg font-bold">{displayName}</h2>
+				<p class="ml-auto align-middle">
+					<Clock
+						time_seconds={current_time / 1000}
+						show_seconds={true}
+						timezone={displayTimezone}
+					/>
+				</p>
+			</div>
+			<p class="text-sm ml-1 mb-0">{displayTimezone}</p>
+
+			<div class="ml-1 mb-3">
+				<DatePicker
+					bind:unixTime={selected_unix_time}
+					bind:isNow={is_now}
+					timezone={displayTimezone}
+					on:change={() => {
+						resetState(false);
+						loadInitialPages();
+					}}
+				/>
+			</div>
+
+			{#if available_modes.length > 1}
+				<div
+					class="flex flex-row flex-wrap gap-2 ml-1 mb-2 items-center border-b border-gray-200 dark:border-gray-700 w-full"
+				>
+					{#each available_modes as mode}
+						{#if mode === 'rail'}
+							<button
+								class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'rail' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
+								on:click={() => (active_tab = 'rail')}
+							>
+								<span class="material-symbols-outlined text-lg">train</span>
+								{$_('headingIntercityRail')}
+							</button>
+						{:else if mode === 'metro'}
+							<button
+								class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'metro' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
+								on:click={() => (active_tab = 'metro')}
+							>
+								<span class="material-symbols-outlined text-lg">tram</span>
+								{$_('headingLocalRail')}
+							</button>
+						{:else if mode === 'bus'}
+							<button
+								class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'bus' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
+								on:click={() => (active_tab = 'bus')}
+							>
+								<span class="material-symbols-outlined text-lg">directions_bus</span>
+								{$_('headingBus')}
+							</button>
+						{:else if mode === 'other'}
+							<button
+								class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'other' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
+								on:click={() => (active_tab = 'other')}
+							>
+								<span class="material-symbols-outlined text-lg">more_horiz</span>
+								{$_('headingOther')}
+							</button>
+						{/if}
+					{/each}
+				</div>
+			{/if}
+
+		</div>
+	{:else}
+		<p class="ml-2">Loading …</p>
+	{/if}
 
 	<div
 		bind:this={scrollContainer}
-		class="catenary-scroll overflow-y-auto pb-64 h-full pr-2"
+		class="catenary-scroll overflow-y-auto pb-64 pr-2 flex-1"
 		on:scroll={onScroll}
 	>
 		<div class="flex flex-col">
-			<div>
-				{#if data_meta || (stationName && stationLat != null && stationLon != null)}
-					<div class="flex flex-row ml-1">
-						<h2 class="text-lg font-bold">{displayName}</h2>
-						<p class="ml-auto align-middle">
-							<Clock
-								time_seconds={current_time / 1000}
-								show_seconds={true}
-								timezone={displayTimezone}
-							/>
-						</p>
-					</div>
-					<p class="text-sm ml-1 mb-2">{displayTimezone}</p>
+				<div>
+				<button
+					class="mt-1 ml-1 mb-1 px-3 py-1.5 font-semibold border border-gray-400 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-[1px] inline-flex items-center w-auto"
+					on:click={loadEarlier}
+				>
+					<span class="inline-block align-bottom mr-1">
+						<span class="material-symbols-outlined"> keyboard_arrow_up </span>
+					</span>
+					<span>{$_('earlier')}</span>
+				</button>
+				</div>
 
-					<div class="ml-1 mb-3">
-						<DatePicker
-							bind:unixTime={selected_unix_time}
-							bind:isNow={is_now}
-							timezone={displayTimezone}
-							on:change={() => {
-								resetState(false);
-								loadInitialPages();
-							}}
-						/>
-					</div>
+			{#if Object.keys(filtered_dates_to_events).length > 0}
+				{#each Object.keys(filtered_dates_to_events) as date_code}
+					<p class="text-md font-semibold mt-0 mb-1 mx-3">
+						{new Date(date_code).toLocaleDateString(
+							timezone_to_locale(locale_inside_component, displayTimezone),
+							{
+								year: 'numeric',
+								month: 'numeric',
+								day: 'numeric',
+								weekday: 'long',
+								timeZone: 'UTC'
+							}
+						)}
+					</p>
 
-					{#if available_modes.length > 1}
-						<div
-							class="flex flex-row flex-wrap gap-2 ml-1 mb-4 items-center border-b border-gray-200 dark:border-gray-700 w-full"
-						>
-							{#each available_modes as mode}
-								{#if mode === 'rail'}
-									<button
-										class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'rail' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
-										on:click={() => (active_tab = 'rail')}
-									>
-										<span class="material-symbols-outlined text-lg">train</span>
-										{$_('headingIntercityRail')}
-									</button>
-								{:else if mode === 'metro'}
-									<button
-										class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'metro' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
-										on:click={() => (active_tab = 'metro')}
-									>
-										<span class="material-symbols-outlined text-lg">tram</span>
-										{$_('headingLocalRail')}
-									</button>
-								{:else if mode === 'bus'}
-									<button
-										class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'bus' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
-										on:click={() => (active_tab = 'bus')}
-									>
-										<span class="material-symbols-outlined text-lg">directions_bus</span>
-										{$_('headingBus')}
-									</button>
-								{:else if mode === 'other'}
-									<button
-										class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'other' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
-										on:click={() => (active_tab = 'other')}
-									>
-										<span class="material-symbols-outlined text-lg">more_horiz</span>
-										{$_('headingOther')}
-									</button>
-								{/if}
-							{/each}
-						</div>
-					{/if}
-
-					{#if previous_count > 0}
-						<button
-							class="px-0 py-3 font-bold"
-							on:click={() => (show_previous_departures = !show_previous_departures)}
-						>
-							<p class="align-middle flex flex-row">
-								<span class="inline-block align-bottom">
-									{#if show_previous_departures}
-										<span class="material-symbols-outlined"> keyboard_arrow_up </span>
-									{:else}
-										<span class="material-symbols-outlined"> keyboard_arrow_down </span>
-									{/if}
-								</span>
-								<span>{$_('previous_departures')}</span>
-							</p>
-						</button>
-					{/if}
-
-					{#if Object.keys(filtered_dates_to_events).length > 0}
-						{#each Object.keys(filtered_dates_to_events) as date_code}
-							<p class="text-md font-semibold mt-0 mb-1 mx-3">
-								{new Date(date_code).toLocaleDateString(
-									timezone_to_locale(locale_inside_component, displayTimezone),
-									{
-										year: 'numeric',
-										month: 'numeric',
-										day: 'numeric',
-										weekday: 'long',
-										timeZone: 'UTC'
-									}
-								)}
-							</p>
-
-							<!-- Correct Logic Implementation -->
-							{#if active_tab === 'rail'}
-								<table class="w-full border-collapse">
-									<tbody>
-										{#each filtered_dates_to_events[date_code] as event}
-											<StationScreenTrainRow
-												eurostyle={is_inside_eurostyle}
-												swiss_style={is_inside_switzerland}
-												{event}
-												data_from_server={data_meta}
-												{current_time}
-												{show_seconds}
-												use_symbol_sign={true}
-												timezone={displayTimezone}
-											/>
-										{/each}
-									</tbody>
-								</table>
-							{:else}
-								<!-- Non-Rail (Div) List -->
+					<!-- Correct Logic Implementation -->
+					{#if active_tab === 'rail'}
+						<table class="w-full border-collapse">
+							<tbody>
 								{#each filtered_dates_to_events[date_code] as event}
-									{@const shortName =
-										data_meta.routes?.[event.chateau]?.[event.route_id]?.short_name}
-									{@const longName = data_meta.routes?.[event.chateau]?.[event.route_id]?.long_name}
-									{@const routeColor = data_meta.routes?.[event.chateau]?.[event.route_id]?.color}
-									{@const textColor =
-										data_meta.routes?.[event.chateau]?.[event.route_id]?.text_color}
-									{@const isSubway =
-										event.chateau === MTA_CHATEAU_ID && isSubwayRouteId(event.route_id)}
-									{@const isRatp = event.chateau === IDFM_CHATEAU_ID && isRatpRoute(shortName)}
-									<div
-										class="mx-1 py-1 border-b-1 border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
-										on:click={() => {
-											data_stack_store.update((x) => {
-												x.push(
-													new StackInterface(
-														new SingleTrip(
-															event.chateau,
-															event.trip_id,
-															event.route_id,
-															null,
-															event.service_date.replace(/-/g, ''),
-															null,
-															null
-														)
-													)
-												);
-												return x;
-											});
-										}}
-									>
-										<div
-											class={`${(event.realtime_departure || event.scheduled_departure) < current_time / 1000 && event.scheduled_departure < current_time / 1000 ? 'opacity-80' : ''} ${event.trip_cancelled ? 'opacity-60' : ''}`}
-										>
-											<p>
-												{#if isSubway && shortName}
-													<MtaBullet route_short_name={shortName} matchTextHeight={true} />
-												{:else if isRatp && shortName}
-													<RatpBullet route_short_name={shortName} matchTextHeight={true} />
-												{:else if shortName}
-													<span
-														class="rounded-xs font-bold px-0.5 mx-1 py-0.5"
-														style={`background: ${routeColor}; color: ${textColor};`}
-													>
-														{shortName}
-													</span>
-												{:else if longName}
-													<span
-														class="rounded-xs font-semibold px-0.5 mx-1 py-0.5"
-														style={`background: ${routeColor}; color: ${textColor};`}
-													>
-														{longName}
-													</span>
-												{/if}
-												{#if event.trip_short_name}
-													<span class="font-bold">{event.trip_short_name}</span>
-												{/if}
-												{event.headsign}
-											</p>
-
-											{#if event.last_stop}
-												<p>
-													<span class="ml-1 text-xs font-bold align-middle">
-														{$_('last_stop')}</span
-													>
-												</p>
-											{/if}
-										</div>
-
-										<StopScreenRow
-											{event}
-											timezone={displayTimezone}
-											{current_time}
-											{show_seconds}
-											use_symbol_sign={true}
-											show_arrivals={event.last_stop}
-										/>
-
-										{#if event.platform_string_realtime}
-											<p>{$_('platform')} {event.platform_string_realtime}</p>
-										{/if}
-										{#if event.vehicle_number}
-											<p class="text-sm opacity-80">{$_('vehicle')}: {event.vehicle_number}</p>
-										{/if}
-									</div>
+									<StationScreenTrainRow
+										eurostyle={is_inside_eurostyle}
+										swiss_style={is_inside_switzerland}
+										{event}
+										data_from_server={data_meta}
+										{current_time}
+										{show_seconds}
+										use_symbol_sign={true}
+										timezone={displayTimezone}
+									/>
 								{/each}
-							{/if}
-						{/each}
-
-						<!-- Loader / pager hint -->
-						<div class="w-full text-center py-4 text-sm opacity-80">
-							{#if pages.some((p) => p.loading)}
-								<span>{$_('loadingmoredepartures')}…</span>
-							{:else}{/if}
-
-							<button class="underline" on:click={loadNextPage}>{$_('Load more')}</button>
-						</div>
+							</tbody>
+						</table>
 					{:else}
-						<p class="ml-2">Loading…</p>
+						<!-- Non-Rail (Div) List -->
+						{#each filtered_dates_to_events[date_code] as event}
+							{@const shortName =
+								data_meta.routes?.[event.chateau]?.[event.route_id]?.short_name}
+							{@const longName = data_meta.routes?.[event.chateau]?.[event.route_id]?.long_name}
+							{@const routeColor = data_meta.routes?.[event.chateau]?.[event.route_id]?.color}
+							{@const textColor =
+								data_meta.routes?.[event.chateau]?.[event.route_id]?.text_color}
+							{@const isSubway =
+									event.chateau === MTA_CHATEAU_ID && isSubwayRouteId(event.route_id)}
+							{@const isRatp = event.chateau === IDFM_CHATEAU_ID && isRatpRoute(shortName)}
+							<div
+								class="mx-1 py-1 border-b-1 border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
+								on:click={() => {
+									data_stack_store.update((x) => {
+										x.push(
+											new StackInterface(
+												new SingleTrip(
+													 event.chateau,
+													 event.trip_id,
+													 event.route_id,
+													 null,
+													 event.service_date.replace(/-/g, ''),
+													 null,
+													 null
+												)
+											)
+										);
+										return x;
+									});
+								}}
+							>
+								<div
+									class={`${(event.realtime_departure || event.scheduled_departure) < current_time / 1000 && event.scheduled_departure < current_time / 1000 ? 'opacity-80' : ''} ${event.trip_cancelled ? 'opacity-60' : ''}`}
+								>
+									<p>
+										{#if isSubway && shortName}
+											<MtaBullet route_short_name={shortName} matchTextHeight={true} />
+										{:else if isRatp && shortName}
+											<RatpBullet route_short_name={shortName} matchTextHeight={true} />
+										{:else if shortName}
+											<span
+												class="rounded-xs font-bold px-0.5 mx-1 py-0.5"
+												style={`background: ${routeColor}; color: ${textColor};`}
+											>
+												{shortName}
+											</span>
+										{:else if longName}
+											<span
+												class="rounded-xs font-semibold px-0.5 mx-1 py-0.5"
+												style={`background: ${routeColor}; color: ${textColor};`}
+											>
+												{longName}
+											</span>
+										{/if}
+										{#if event.trip_short_name}
+											<span class="font-bold">{event.trip_short_name}</span>
+										{/if}
+										{event.headsign}
+									</p>
+
+									{#if event.last_stop}
+										<p>
+											<span class="ml-1 text-xs font-bold align-middle">
+												{$_('last_stop')}</span
+											>
+										</p>
+									{/if}
+								</div>
+
+								<StopScreenRow
+									{event}
+									timezone={displayTimezone}
+									{current_time}
+									{show_seconds}
+									use_symbol_sign={true}
+									show_arrivals={event.last_stop}
+								/>
+
+								{#if event.platform_string_realtime}
+									<p>{$_('platform')} {event.platform_string_realtime}</p>
+								{/if}
+								{#if event.vehicle_number}
+									<p class="text-sm opacity-80">{$_('vehicle')}: {event.vehicle_number}</p>
+								{/if}
+							</div>
+						{/each}
 					{/if}
-				{:else}
-					<p class="ml-2">Loading …</p>
-				{/if}
-			</div>
+				{/each}
+
+				<!-- Loader / pager hint -->
+				<div class="w-full text-center py-4 text-sm opacity-80">
+					{#if pages.some((p) => p.loading)}
+						<span>{$_('loadingmoredepartures')}…</span>
+					{:else}{/if}
+
+					<button class="underline" on:click={loadNextPage}>{$_('loadmore')}</button>
+				</div>
+			{:else}
+				<p class="ml-2">Loading…</p>
+			{/if}
 		</div>
 	</div>
 </div>

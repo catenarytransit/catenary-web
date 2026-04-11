@@ -142,5 +142,6 @@
 	"show_arrivals": "Prikaži prihode na zadnji postaji",
 	"stations": "Postaje",
 	"show_countdown": "Prikaži odštevanje do postajališča",
-	"more_departures": "Več odhodov"
+	"more_departures": "Več odhodov",
+	"earlier": "Prej"
 }

@@ -137,5 +137,6 @@
 	"show_arrivals": "Visa ankomster vid sista stationen",
 	"stations": "Stationer",
 	"show_countdown": "Visa nedräkning till stopp",
-	"more_departures": "Fler avgångar"
+	"more_departures": "Fler avgångar",
+	"earlier": "Tidigare"
 }
