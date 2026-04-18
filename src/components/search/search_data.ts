@@ -247,7 +247,7 @@ export function new_query(text: string) {
 		}
 	}
 
-	const cypressUrl = new URL(`https://${randomCypressSubdomain}.catenarymaps.org/v1/autocomplete`);
+	const cypressUrl = new URL(`https://${randomCypressSubdomain}.catenarymaps.org/v2/search`);
 	cypressUrl.searchParams.append('text', text);
 	cypressUrl.searchParams.append('focus.point.lat', centerCoordinates.lat.toString());
 	cypressUrl.searchParams.append('focus.point.lon', centerCoordinates.lng.toString());
