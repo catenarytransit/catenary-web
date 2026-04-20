@@ -8,7 +8,8 @@
 		ui_theme_store,
 		show_seconds_store,
 		show_stop_codes_store,
-		show_countdown_to_stop_store
+		show_countdown_to_stop_store,
+		clock_skew_store
 	} from '../globalstores';
 
 	import { livedotscaling_store } from '../fontscalingstores';
@@ -46,6 +47,11 @@
 	let theme_selector = get(ui_theme_store);
 
 	let live_dots_scale = get(livedotscaling_store);
+
+	let clock_skew = get(clock_skew_store);
+	clock_skew_store.subscribe((val) => {
+		clock_skew = val;
+	});
 
 	show_seconds_store.subscribe((value) => {
 		show_seconds = value;
@@ -297,5 +303,9 @@
 	{/if}
 	{#if commitDate}
 		<p>{$_('commitdate')}: {commitDate}</p>
+	{/if}
+
+	{#if clock_skew !== null}
+		<p>Clock Skew: {(clock_skew / 1000).toFixed(2)} s</p>
 	{/if}
 </div>

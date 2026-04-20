@@ -16,6 +16,7 @@ import type { Writable } from 'svelte/store';
 
 export const data_stack_store: Writable<StackInterface[]> = writable([]);
 export const on_sidebar_trigger_store = writable(0);
+export const clock_skew_store = writable<number | null>(null);
 
 export const realtime_vehicle_locations_store: Writable<
 	Record<string, Record<string, Record<string, any>>>

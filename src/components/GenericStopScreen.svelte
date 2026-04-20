@@ -442,7 +442,7 @@
 	async function loadInitialPages() {
 		const baseTime = is_now ? Math.floor(Date.now() / 1000) : selected_unix_time;
 		// Start a little bit in the past for continuity if is_now, otherwise exactly at the picked baseTime
-		const start = is_now ? Math.floor(baseTime) - 30 * 60 : Math.floor(baseTime); 
+		const start = is_now ? Math.floor(baseTime) - 30 * 60 : Math.floor(baseTime);
 		const end = start + currentPageHours * 3600;
 		await fetchPage(start, end);
 	}
@@ -695,7 +695,6 @@
 					{/each}
 				</div>
 			{/if}
-
 		</div>
 	{:else}
 		<p class="ml-2">Loading …</p>
@@ -707,7 +706,7 @@
 		on:scroll={onScroll}
 	>
 		<div class="flex flex-col">
-				<div>
+			<div>
 				<button
 					class="mt-1 ml-1 mb-1 px-3 py-1.5 font-semibold border border-gray-400 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-[1px] inline-flex items-center w-auto"
 					on:click={loadEarlier}
@@ -717,7 +716,7 @@
 					</span>
 					<span>{$_('earlier')}</span>
 				</button>
-				</div>
+			</div>
 
 			{#if Object.keys(filtered_dates_to_events).length > 0}
 				{#each Object.keys(filtered_dates_to_events) as date_code}
@@ -755,14 +754,12 @@
 					{:else}
 						<!-- Non-Rail (Div) List -->
 						{#each filtered_dates_to_events[date_code] as event}
-							{@const shortName =
-								data_meta.routes?.[event.chateau]?.[event.route_id]?.short_name}
+							{@const shortName = data_meta.routes?.[event.chateau]?.[event.route_id]?.short_name}
 							{@const longName = data_meta.routes?.[event.chateau]?.[event.route_id]?.long_name}
 							{@const routeColor = data_meta.routes?.[event.chateau]?.[event.route_id]?.color}
-							{@const textColor =
-								data_meta.routes?.[event.chateau]?.[event.route_id]?.text_color}
+							{@const textColor = data_meta.routes?.[event.chateau]?.[event.route_id]?.text_color}
 							{@const isSubway =
-									event.chateau === MTA_CHATEAU_ID && isSubwayRouteId(event.route_id)}
+								event.chateau === MTA_CHATEAU_ID && isSubwayRouteId(event.route_id)}
 							{@const isRatp = event.chateau === IDFM_CHATEAU_ID && isRatpRoute(shortName)}
 							<div
 								class="mx-1 py-1 border-b-1 border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
@@ -771,13 +768,13 @@
 										x.push(
 											new StackInterface(
 												new SingleTrip(
-													 event.chateau,
-													 event.trip_id,
-													 event.route_id,
-													 null,
-													 event.service_date.replace(/-/g, ''),
-													 null,
-													 null
+													event.chateau,
+													event.trip_id,
+													event.route_id,
+													null,
+													event.service_date.replace(/-/g, ''),
+													null,
+													null
 												)
 											)
 										);
@@ -816,9 +813,7 @@
 
 									{#if event.last_stop}
 										<p>
-											<span class="ml-1 text-xs font-bold align-middle">
-												{$_('last_stop')}</span
-											>
+											<span class="ml-1 text-xs font-bold align-middle"> {$_('last_stop')}</span>
 										</p>
 									{/if}
 								</div>

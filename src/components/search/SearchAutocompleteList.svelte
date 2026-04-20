@@ -74,15 +74,13 @@
 					$latest_osm_station_data.results
 						.slice(0, length)
 						.map((f) => ({ type: 'osm_station', data: f }))
-					);
+				);
 			}
 
 			if ($latest_cypress_data && $latest_cypress_data.features) {
 				items = items.concat(
-					$latest_cypress_data.features
-						.slice(0, length)
-						.map((f) => ({ type: 'cypress', data: f }))
-					);
+					$latest_cypress_data.features.slice(0, length).map((f) => ({ type: 'cypress', data: f }))
+				);
 			}
 
 			if ($latest_query_data && $latest_query_data.routes_section) {
@@ -187,16 +185,16 @@
 				>
 					{#key item.gtfs_id}
 						{#if item.data.osm_station_id == null}
-						<StopRankingInfo
-							stop={item.data}
-							stops_section={$latest_query_data?.stops_section || ((item as any).saved_routes ? { routes: (item as any).saved_routes } : null)}
-							stop_ranked={{
-								chateau: item.chateau,
-								gtfs_id: item.gtfs_id,
-								score: 0 // Score not strictly needed for display here
-							}}
-							
-						/>{/if}
+							<StopRankingInfo
+								stop={item.data}
+								stops_section={$latest_query_data?.stops_section ||
+									((item as any).saved_routes ? { routes: (item as any).saved_routes } : null)}
+								stop_ranked={{
+									chateau: item.chateau,
+									gtfs_id: item.gtfs_id,
+									score: 0 // Score not strictly needed for display here
+								}}
+							/>{/if}
 					{/key}
 				</button>
 			{:else if item.type === 'osm_station'}
@@ -213,21 +211,26 @@
 						</p>
 						{#if item.data.admin_hierarchy}
 							{#if item.data.admin_hierarchy.neighbourhood || item.data.admin_hierarchy.county || item.data.admin_hierarchy.region}
-								<p class="text-[11px] text-gray-600 dark:text-gray-400 -mt-0.5 leading-tight whitespace-break-spaces">
+								<p
+									class="text-[11px] text-gray-600 dark:text-gray-400 -mt-0.5 leading-tight whitespace-break-spaces"
+								>
 									{[
 										item.data.admin_hierarchy.neighbourhood?.name,
 										item.data.admin_hierarchy.county?.name,
 										item.data.admin_hierarchy.region?.name
-									].filter(Boolean).join(', ')}
+									]
+										.filter(Boolean)
+										.join(', ')}
 								</p>
 							{/if}
 						{/if}
 						<div class="flex flex-row flex-wrap gap-1 mt-1">
 							{#if item.data.routes && item.data.routes.length > 0}
 								{#each item.data.routes as route}
-									<div 
+									<div
 										class="px-1.5 py-0.5 text-[10px] font-bold rounded"
-										style="background-color: {route.color || '#cccccc'}; color: {route.text_color || '#000000'};"
+										style="background-color: {route.color || '#cccccc'}; color: {route.text_color ||
+											'#000000'};"
 									>
 										{route.short_name || route.route_id}
 									</div>

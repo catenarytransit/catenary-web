@@ -95,9 +95,8 @@ export function recordStationVisit(
 			};
 		}
 
-		const id = item.type === 'stop'
-			? `stop-${item.chateau}-${item.gtfs_id}`
-			: `osm-${item.data.osm_id}`;
+		const id =
+			item.type === 'stop' ? `stop-${item.chateau}-${item.gtfs_id}` : `osm-${item.data.osm_id}`;
 
 		let existing = history.find((h) => {
 			const hId =

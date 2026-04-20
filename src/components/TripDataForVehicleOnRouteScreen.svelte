@@ -47,8 +47,8 @@
 	}
 
 	onMount(() => {
-		console.log(vehicle)
-	})
+		console.log(vehicle);
+	});
 </script>
 
 <p>
@@ -58,15 +58,10 @@
 				<p class="text-xs">
 					{$_('next_stop')}: {stops[likely_trip.stop_time_update[0].stop_id].name}
 				</p>
-				
-				
 			{/if}
 			{#if vehicle.trip.delay != null}
-			<p class="text-xs">
-					<DelayDiff
-					use_symbol_sign={true}
-					diff={vehicle.trip.delay}
-					/>
+				<p class="text-xs">
+					<DelayDiff use_symbol_sign={true} diff={vehicle.trip.delay} />
 				</p>
 			{/if}
 		{/if}

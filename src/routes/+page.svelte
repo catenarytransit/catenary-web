@@ -55,7 +55,8 @@
 		ui_theme_store,
 		show_topo_global_store,
 		consentGiven,
-		current_orm_layer_type_store
+		current_orm_layer_type_store,
+		clock_skew_store
 	} from '../globalstores';
 	import Layerbutton from '../components/layerbutton.svelte';
 	import {
@@ -78,7 +79,7 @@
 	import CloseButton from '../components/CloseButton.svelte';
 	import Layerselectionbox from '../components/layerselectionbox.svelte';
 	import { determineDarkModeToBool } from '../components/determineDarkModeToBool';
-	import { checkClockSync } from '../components/checkClockSync';
+	import { checkClockSkew } from '../components/timesync';
 	import SearchAutocompleteList from '../components/search/SearchAutocompleteList.svelte';
 
 	import ConsentBanner from '../components/ConsentBanner.svelte';
@@ -288,6 +289,12 @@
 	usunits_store.subscribe((value) => {
 		usunits = value;
 	});
+
+	let clock_skew: number | null = null;
+	clock_skew_store.subscribe((value) => {
+		clock_skew = value;
+	});
+	let clock_skew_ignored = false;
 
 	let announcermode = false;
 	//stores geojson data for currently rendered GeoJSON realtime vehicles data, indexed by realtime feed id
@@ -1435,7 +1442,7 @@
 		});
 
 		map.on('load', () => {
-			checkClockSync();
+			checkClockSkew();
 
 			deep_link_url_reader();
 
@@ -1991,10 +1998,40 @@
 					<div class="mx-auto rounded-lg px-8 py-1 bg-sky-500 dark:bg-sky-400"></div>
 				</div>
 
+				{#if clock_skew !== null && Math.abs(clock_skew) > 10000 && !clock_skew_ignored}
+					<div
+						class="md:hidden mx-3 mt-1 mb-2 px-3 py-2 border rounded text-sm flex justify-between items-center z-10 shrink-0 {Math.abs(clock_skew) > 15000 ? 'bg-red-100 dark:bg-red-900 border-red-400 dark:border-red-600 text-red-800 dark:text-red-200' : 'bg-yellow-100 dark:bg-yellow-900 border-yellow-400 dark:border-yellow-600 text-yellow-800 dark:text-yellow-200'}"
+					>
+						<div>
+							<span class="font-bold">{$_('clock_skew_warning', { values: { skew: (Math.abs(clock_skew) / 1000).toFixed(2) } })}</span>
+						</div>
+						<button
+							on:click={() => (clock_skew_ignored = true)}
+							class="underline ml-2 whitespace-nowrap {Math.abs(clock_skew) > 15000 ? 'text-red-600 dark:text-red-300' : 'text-yellow-700 dark:text-yellow-300'}"
+							>{$_('clock_skew_ignore')}</button
+						>
+					</div>
+				{/if}
+
 				<SidebarInternals {usunits} {latest_item_on_stack} {darkMode} />
 			</div>
 		{/if}
 	</div>
+
+	{#if clock_skew !== null && Math.abs(clock_skew) > 10000 && !clock_skew_ignored}
+		<div
+			class="hidden md:flex fixed top-4 left-[396px] right-20 px-4 py-2 border rounded shadow-md text-sm justify-between items-center z-40 {Math.abs(clock_skew) > 15000 ? 'bg-red-100 dark:bg-red-900 border-red-400 dark:border-red-600 text-red-800 dark:text-red-200' : 'bg-yellow-100 dark:bg-yellow-900 border-yellow-400 dark:border-yellow-600 text-yellow-800 dark:text-yellow-200'}"
+		>
+			<div>
+				<span class="font-bold">{$_('clock_skew_warning', { values: { skew: (Math.abs(clock_skew) / 1000).toFixed(2) } })}</span>
+			</div>
+			<button
+				on:click={() => (clock_skew_ignored = true)}
+				class="underline ml-4 whitespace-nowrap {Math.abs(clock_skew) > 15000 ? 'text-red-600 dark:text-red-300' : 'text-yellow-700 dark:text-yellow-300'}"
+				>{$_('clock_skew_ignore')}</button
+			>
+		</div>
+	{/if}
 
 	<div
 		class="fixed top-2 left-3 right-3 sm:right-auto z-40"
@@ -2127,7 +2164,7 @@
 	{/if}
 
 	{#if !$isLoading}
-		{#await import("../components/LayerSettingsBox.svelte") then { default: LayerSettingsBox }}
+		{#await import('../components/LayerSettingsBox.svelte') then { default: LayerSettingsBox }}
 			<LayerSettingsBox
 				bind:layersettingsBox
 				bind:layersettings

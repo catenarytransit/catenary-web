@@ -75,7 +75,8 @@ interface CypressFeatureCollection {
 }
 
 export const data_store_text_queries: Writable<Record<string, SearchQueryResponse>> = writable({});
-export const data_store_osm_station_queries: Writable<Record<string, OsmStationSearchResponse>> = writable({});
+export const data_store_osm_station_queries: Writable<Record<string, OsmStationSearchResponse>> =
+	writable({});
 export const cypress_response_queries: Writable<Record<string, CypressFeatureCollection>> =
 	writable({});
 
@@ -154,7 +155,17 @@ export function select_result_item(item: SearchResultItem) {
 		data_stack_store.update((data_stack) => {
 			let lat = item.data.point ? item.data.point.y : null;
 			let lon = item.data.point ? item.data.point.x : null;
-			data_stack.push(new StackInterface(new OsmStationStack(item.data.osm_id.toString(), item.data.name, item.data.mode_type, lat, lon)));
+			data_stack.push(
+				new StackInterface(
+					new OsmStationStack(
+						item.data.osm_id.toString(),
+						item.data.name,
+						item.data.mode_type,
+						lat,
+						lon
+					)
+				)
+			);
 			return data_stack;
 		});
 		if (item.data.point) {

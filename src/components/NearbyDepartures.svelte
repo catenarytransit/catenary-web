@@ -676,11 +676,11 @@
 	</div>
 
 	<div class="px-3 mb-1 mt-1">
-		<DatePicker 
-			bind:unixTime={selected_unix_time} 
-			bind:isNow={is_now} 
-			timezone={'Local Time'} 
-			on:change={getNearbyDepartures} 
+		<DatePicker
+			bind:unixTime={selected_unix_time}
+			bind:isNow={is_now}
+			timezone={'Local Time'}
+			on:change={getNearbyDepartures}
 		/>
 	</div>
 
