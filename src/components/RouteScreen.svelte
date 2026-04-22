@@ -156,26 +156,74 @@
 		}
 	}
 
-	async function fetch_shape(chateau: string, shape_id: string) {
-		if (fetched_shapes[shape_id]) {
-			return fetched_shapes[shape_id];
+	async function fetch_lazy_shapes() {
+		if (!route_data || !route_data.shape_ids) return;
+		for (const shape_id of route_data.shape_ids) {
+			if (!fetched_shapes[shape_id]) {
+				let url = new URL(`https://birch.catenarymaps.org/get_shape?chateau=${encodeURIComponent(routestack.chateau_id)}&shape_id=${encodeURIComponent(shape_id)}&format=geojson&simplify=10`);
+				fetch(url.toString())
+					.then((res) => res.json())
+					.then((data) => {
+						fetched_shapes[shape_id] = data;
+						// Update map shapes if activePattern is already set
+						if (activePattern) {
+							update_map_shapes();
+						}
+					})
+					.catch((e) => console.error('Error fetching lazy shape', e));
+			}
+		}
+	}
+
+	async function update_map_shapes() {
+		let map = get(map_pointer_store);
+		if (!map || !route_data || !activePattern) return;
+
+		let directionIdFirst = new_directions_from_parent_store[activePattern][0];
+		let directionReference = route_data.direction_patterns[directionIdFirst];
+		let active_shape_id = directionReference.direction_pattern.gtfs_shape_id;
+
+		let features = [];
+		for (let shape_id of route_data.shape_ids) {
+			let geojson_polyline = fetched_shapes[shape_id];
+			if (!geojson_polyline) continue;
+
+			let geometryCore = geojson_polyline.type === 'Feature' ? geojson_polyline.geometry : geojson_polyline;
+			if (!geometryCore.type && geometryCore.geometry) {
+				geometryCore = geometryCore.geometry;
+			}
+
+			let is_active = (shape_id === active_shape_id);
+
+			features.push({
+				type: 'Feature',
+				geometry: geometryCore,
+				properties: {
+					text_color: route_data.text_color,
+					color: route_data.color,
+					route_label: route_data.route_short_name || route_data.route_long_name,
+					is_active: is_active
+				}
+			});
 		}
 
-		try {
-			const result = await batchFetchShapes([{ chateau, shape_id }], {
-				format: 'geojson',
-				simplify: 10
-			});
-			// result is { [shape_id]: geometry }
-			if (result[shape_id]) {
-				const data = result[shape_id];
-				fetched_shapes[shape_id] = data;
-				return data;
-			}
-		} catch (e) {
-			console.error('Error fetching shape', e);
+		features.sort((a, b) => (a.properties.is_active === b.properties.is_active ? 0 : a.properties.is_active ? 1 : -1));
+
+		let geojson_source_new = {
+			type: 'FeatureCollection',
+			features: features
+		};
+
+		if (map.getSource('transit_shape_context')) {
+			map.getSource('transit_shape_context').setData(geojson_source_new);
 		}
-		return null;
+
+		if (map.getSource('transit_shape_context_detour')) {
+			map.getSource('transit_shape_context_detour').setData({
+				type: 'FeatureCollection',
+				features: []
+			});
+		}
 	}
 
 	async function change_active_pattern(pattern: string) {
@@ -188,66 +236,24 @@
 
 		let shape_id = directionReference.direction_pattern.gtfs_shape_id;
 
-		//console.log('shapeid', shape_id);
-
-		if (shape_id) {
-			let geojson_polyline: any = null;
-
-			// Check if we have the shape, or fetch it
-			if (fetched_shapes[shape_id]) {
-				geojson_polyline = fetched_shapes[shape_id];
-			} else {
-				// Fetch it
-				let shape_data = await fetch_shape(routestack.chateau_id, shape_id);
-				if (shape_data) {
-					geojson_polyline = shape_data;
+		if (shape_id && !fetched_shapes[shape_id]) {
+			// Await for it so it loads synchronously if it hasn't.
+			try {
+				let url = new URL(`https://birch.catenarymaps.org/get_shape?chateau=${encodeURIComponent(routestack.chateau_id)}&shape_id=${encodeURIComponent(shape_id)}&format=geojson&simplify=10`);
+				let res = await fetch(url.toString());
+				let data = await res.json();
+				if (activePattern === pattern) {
+					fetched_shapes[shape_id] = data;
 				}
+			} catch(e) {
+				console.error(e);
 			}
+		}
+		
+		if (activePattern !== pattern) return;
+		update_map_shapes();
 
-			if (geojson_polyline) {
-				// The new backend returns a Geometry (if asking for geojson), we need to wrap it in a Feature
-				// Or if it returns the full geojson structure from the tool description it says:
-				// "Default to GeoJSON ... GeoJson::Geometry(geometry)" which is just the geometry object if to_string() is called on that variant directly?
-				// Wait, the user provided backend says: `GeoJson::Geometry(geometry)` and `body(geojson.to_string())`.
-				// GeoJson enum to_string() usually produces `{"type": "LineString", "coordinates": [...]}` if it's a geometry variant.
-				// So we need to wrap it in a Feature.
-
-				let feature = {
-					type: 'Feature',
-					geometry: geojson_polyline.type ? geojson_polyline : geojson_polyline.geometry, // Handle if it returns geometry directly or wrapped
-					properties: {
-						text_color: route_data.text_color,
-						color: route_data.color,
-						route_label: route_data.route_short_name || route_data.route_long_name
-					}
-				};
-
-				// Double check if fetch_shape returns the geometry directly or a feature.
-				// The backend returns `GeoJson::Geometry`.
-				// So `data` will be `{ "type": "LineString", "coordinates": [...] }`.
-
-				if (!feature.geometry && geojson_polyline.coordinates) {
-					feature.geometry = geojson_polyline;
-				}
-
-				let geojson_source_new = {
-					type: 'FeatureCollection',
-					features: [feature]
-				};
-
-				if (map.getSource('transit_shape_context')) {
-					map.getSource('transit_shape_context').setData(geojson_source_new);
-				}
-
-				if (map.getSource('transit_shape_context_detour')) {
-					map.getSource('transit_shape_context_detour').setData({
-						type: 'FeatureCollection',
-						features: []
-					});
-				}
-			}
-
-			//now work on stops
+		//now work on stops
 
 			let already_seen_stop_ids: string[] = [];
 
@@ -581,6 +587,8 @@
 				});
 
 				sort_order_of_dir_parents_store = sort_order_of_dir_parents;
+
+				fetch_lazy_shapes();
 
 				if (activePattern == '') {
 					change_active_pattern(sort_order_of_dir_parents[0]);
