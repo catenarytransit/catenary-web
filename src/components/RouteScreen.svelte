@@ -160,7 +160,7 @@
 		if (!route_data || !route_data.shape_ids) return;
 		for (const shape_id of route_data.shape_ids) {
 			if (!fetched_shapes[shape_id]) {
-				let url = new URL(`https://birch.catenarymaps.org/get_shape?chateau=${encodeURIComponent(routestack.chateau_id)}&shape_id=${encodeURIComponent(shape_id)}&format=geojson&simplify=10`);
+				let url = new URL(`https://birch.catenarymaps.org/get_shape?chateau=${encodeURIComponent(routestack.chateau_id)}&shape_id=${encodeURIComponent(shape_id)}&format=geojson`);
 				fetch(url.toString())
 					.then((res) => res.json())
 					.then((data) => {
@@ -188,8 +188,14 @@
 			let geojson_polyline = fetched_shapes[shape_id];
 			if (!geojson_polyline) continue;
 
-			let geometryCore = geojson_polyline.type === 'Feature' ? geojson_polyline.geometry : geojson_polyline;
-			if (!geometryCore.type && geometryCore.geometry) {
+			let geometryCore = geojson_polyline;
+			if (geometryCore.type === 'FeatureCollection' && geometryCore.features && geometryCore.features.length > 0) {
+				geometryCore = geometryCore.features[0].geometry;
+			} else if (geometryCore.type === 'Feature') {
+				geometryCore = geometryCore.geometry;
+			}
+			
+			if (geometryCore && !geometryCore.type && geometryCore.geometry) {
 				geometryCore = geometryCore.geometry;
 			}
 
@@ -324,7 +330,6 @@
 
 			refilter_stops();
 		}
-	}
 
 	async function fetch_vehicles_for_route() {
 		let map = get(map_pointer_store);
