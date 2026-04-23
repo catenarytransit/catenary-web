@@ -89,6 +89,8 @@
 				<StopScreen
 					chateau={latest_item_on_stack.data.chateau_id}
 					stop_id={latest_item_on_stack.data.stop_id}
+					initial_is_now={latest_item_on_stack.data.is_now}
+					initial_selected_unix_time={latest_item_on_stack.data.selected_unix_time}
 				/>
 			{/key}
 		{/await}
@@ -101,6 +103,8 @@
 					stationName={latest_item_on_stack.data.name}
 					stationLat={latest_item_on_stack.data.lat}
 					stationLon={latest_item_on_stack.data.lon}
+					initial_is_now={latest_item_on_stack.data.is_now}
+					initial_selected_unix_time={latest_item_on_stack.data.selected_unix_time}
 				/>
 			{/key}
 		{/await}
@@ -184,7 +188,7 @@
 	</div>-->
 	<div class="py-1 flex flex-col h-full">
 		<div class="flex flex-col h-full select-text">
-			<NearbyDepartures {usunits} {darkMode} />
+			<NearbyDepartures {usunits} {darkMode} initial_is_now={(latest_item_on_stack.data as any).is_now} initial_selected_unix_time={(latest_item_on_stack.data as any).selected_unix_time} />
 		</div>
 	</div>
 {/if}

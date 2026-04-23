@@ -4,6 +4,8 @@
 	export let stationName: string | null = null;
 	export let stationLat: number | null = null;
 	export let stationLon: number | null = null;
+	export let initial_is_now: boolean = true;
+	export let initial_selected_unix_time: number = Date.now() / 1000;
 
 	$: buildUrl = (startSec: number, endSec: number) => {
 		const base = 'https://birch.catenarymaps.org/departures_at_osm_station';
@@ -17,4 +19,4 @@
 	};
 </script>
 
-<GenericStopScreen {buildUrl} key={osm_id} {stationName} {stationLat} {stationLon} />
+<GenericStopScreen {buildUrl} key={osm_id} {stationName} {stationLat} {stationLon} {initial_is_now} {initial_selected_unix_time} />

@@ -189,10 +189,14 @@ export class RouteStack {
 export class StopStack {
 	public chateau_id: string;
 	public stop_id: string;
+	public is_now?: boolean;
+	public selected_unix_time?: number;
 
-	constructor(chateau_id: string, stop_id: string) {
+	constructor(chateau_id: string, stop_id: string, is_now?: boolean, selected_unix_time?: number) {
 		this.chateau_id = chateau_id;
 		this.stop_id = stop_id;
+		this.is_now = is_now;
+		this.selected_unix_time = selected_unix_time;
 	}
 }
 
@@ -200,11 +204,15 @@ export class NearbyDeparturesStack {
 	public chateau_id: string;
 	public lat: number;
 	public lon: number;
+	public is_now?: boolean;
+	public selected_unix_time?: number;
 
-	constructor(chateau_id: string, lat: number, lon: number) {
+	constructor(chateau_id: string, lat: number, lon: number, is_now?: boolean, selected_unix_time?: number) {
 		this.chateau_id = chateau_id;
 		this.lat = lat;
 		this.lon = lon;
+		this.is_now = is_now;
+		this.selected_unix_time = selected_unix_time;
 	}
 }
 
@@ -230,19 +238,25 @@ export class OsmStationStack {
 	public mode_type: string | null;
 	public lat: number | null;
 	public lon: number | null;
+	public is_now?: boolean;
+	public selected_unix_time?: number;
 
 	constructor(
 		osm_id: string,
 		name: string | null,
 		mode_type: string | null,
 		lat: number | null = null,
-		lon: number | null = null
+		lon: number | null = null,
+		is_now?: boolean,
+		selected_unix_time?: number
 	) {
 		this.osm_id = osm_id;
 		this.name = name;
 		this.mode_type = mode_type;
 		this.lat = lat;
 		this.lon = lon;
+		this.is_now = is_now;
+		this.selected_unix_time = selected_unix_time;
 	}
 }
 

@@ -27,7 +27,7 @@
 	import Clock from './Clock.svelte';
 	import StopScreenRow from './StopScreenRow.svelte';
 	import StationScreenTrainRow from './StationScreenTrainRow.svelte';
-	import { SingleTrip, StackInterface } from './stackenum';
+	import { SingleTrip, StackInterface, StopStack, OsmStationStack, NearbyDeparturesStack } from './stackenum';
 	import { MTA_CHATEAU_ID, isSubwayRouteId } from '../utils/mta_subway_utils';
 	import { IDFM_CHATEAU_ID, isRatpRoute } from '../utils/ratp_utils';
 	import MtaBullet from './mtabullet.svelte';
@@ -35,8 +35,24 @@
 	import RatpBullet from './ratpbullet.svelte';
 	import DatePicker from './DatePicker.svelte';
 
-	let is_now = true;
-	let selected_unix_time = Date.now() / 1000;
+	export let initial_is_now: boolean = true;
+	export let initial_selected_unix_time: number = Date.now() / 1000;
+
+	let is_now = initial_is_now;
+	let selected_unix_time = initial_selected_unix_time;
+
+	$: {
+		data_stack_store.update(stack => {
+			if (stack.length > 0) {
+				let last = stack[stack.length - 1];
+				if (last.data instanceof StopStack || last.data instanceof OsmStationStack || last.data instanceof NearbyDeparturesStack) {
+					last.data.is_now = is_now;
+					last.data.selected_unix_time = selected_unix_time;
+				}
+			}
+			return stack;
+		});
+	}
 
 	export let buildUrl: (startSec: number, endSec: number) => string;
 	export let key: any; // Unique identifier to trigger reset (e.g. stop_id or osm_id)

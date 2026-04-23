@@ -5,6 +5,8 @@
 
 	export let chateau: string;
 	export let stop_id: string;
+	export let initial_is_now: boolean = true;
+	export let initial_selected_unix_time: number = Date.now() / 1000;
 
 	$: buildUrl = (startSec: number, endSec: number) => {
 		const base = 'https://birchdeparturesfromstop.catenarymaps.org/departures_at_stop';
@@ -30,7 +32,11 @@
 						new OsmStationStack(
 							String(data.osm_station_id),
 							data.osm_station_info?.name || null,
-							data.osm_station_info?.mode_type || null
+							data.osm_station_info?.mode_type || null,
+							null,
+							null,
+							initial_is_now,
+							initial_selected_unix_time
 						)
 					);
 					stack.pop();
@@ -48,4 +54,4 @@
 	}
 </script>
 
-<GenericStopScreen {buildUrl} key={stop_id} />
+<GenericStopScreen {buildUrl} key={stop_id} {initial_is_now} {initial_selected_unix_time} />

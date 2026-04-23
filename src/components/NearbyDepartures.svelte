@@ -26,8 +26,24 @@
 	import StationScreenTrainRowCompact from './StationScreenTrainRowCompact.svelte';
 	import DatePicker from './DatePicker.svelte';
 
-	let is_now = true;
-	let selected_unix_time = Date.now() / 1000;
+	export let initial_is_now: boolean = true;
+	export let initial_selected_unix_time: number = Date.now() / 1000;
+
+	let is_now = initial_is_now;
+	let selected_unix_time = initial_selected_unix_time;
+
+	$: {
+		data_stack_store.update(stack => {
+			if (stack.length > 0) {
+				let last = stack[stack.length - 1];
+				if (last.data instanceof NearbyDeparturesStack) {
+					last.data.is_now = is_now;
+					last.data.selected_unix_time = selected_unix_time;
+				}
+			}
+			return stack;
+		});
+	}
 
 	const onbutton = 'bg-blue-300 dark:bg-blue-500 bg-opacity-80';
 	const offbutton = '';
