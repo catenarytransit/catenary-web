@@ -434,7 +434,7 @@
 			class="flex items-center border border-gray-400 dark:border-gray-500 bg-white dark:bg-gray-800 rounded-[1px] focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500"
 		>
 			<button
-				class="px-1 py-1 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors dark:text-gray-300"
+				class="select-none px-1 py-1 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors dark:text-gray-300"
 				on:click={() => advanceTime(-15)}
 			>
 				<span class="material-symbols-outlined text-[1rem]">chevron_left</span>
@@ -449,7 +449,7 @@
 				on:keydown={handleTimeKeydown}
 			/>
 			<button
-				class="px-1 py-1 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors dark:text-gray-300"
+				class="select-none px-1 py-1 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors dark:text-gray-300"
 				on:click={() => advanceTime(15)}
 			>
 				<span class="material-symbols-outlined text-[1rem]">chevron_right</span>
