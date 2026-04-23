@@ -188,7 +188,7 @@
 	</div>-->
 	<div class="py-1 flex flex-col h-full">
 		<div class="flex flex-col h-full select-text">
-			<NearbyDepartures {usunits} {darkMode} initial_is_now={(latest_item_on_stack.data as any).is_now} initial_selected_unix_time={(latest_item_on_stack.data as any).selected_unix_time} />
+			<NearbyDepartures {usunits} {darkMode} initial_is_now={(latest_item_on_stack?.data as any)?.is_now ?? true} initial_selected_unix_time={(latest_item_on_stack?.data as any)?.selected_unix_time ?? (Date.now() / 1000)} />
 		</div>
 	</div>
 {/if}
