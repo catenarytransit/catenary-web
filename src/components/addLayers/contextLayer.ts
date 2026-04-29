@@ -400,6 +400,18 @@ export async function makeContextLayerDots(map: maplibregl.Map) {
 
 	map.addImage('bus_context_symbol', contextBusSymbol.data);
 
+	const contextTramSymbol = await map.loadImage('/icons/tram-context.png');
+
+	map.addImage('tram_context_symbol', contextTramSymbol.data);
+
+	const contextMetroSymbol = await map.loadImage('/icons/metro-context.png');
+
+	map.addImage('metro_context_symbol', contextMetroSymbol.data);
+
+	const contextTrainSymbol = await map.loadImage('/icons/train-context.png');
+
+	map.addImage('train_context_symbol', contextTrainSymbol.data);
+
 	/*
 	map.addLayer({
 		'id': "livedots_context_bus_major_dot",
@@ -474,6 +486,143 @@ export async function makeContextLayerDots(map: maplibregl.Map) {
 			'text-opacity': ['interpolate', ['linear'], ['zoom'], 7.9, 0.4, 8, 0.9, 11, 0.95, 12, 1]
 		},
 		filter: ['all', ['any', ['==', ['get', 'route_type'], 3]]]
+	});
+
+	map.addLayer({
+		id: 'livedots_context_metro_major_dot_context',
+		type: 'symbol',
+		source: 'livedots_context',
+		paint: {
+			'icon-opacity': 0.85
+		},
+		layout: {
+			'icon-image': 'metro_context_symbol',
+			'icon-size': 0.2,
+
+			'icon-allow-overlap': true,
+			'icon-ignore-placement': true,
+			'icon-offset': [0, 0]
+		},
+		filter: ['all', ['any', ['==', ['get', 'route_type'], 1]]],
+		minzoom: 5
+	});
+
+	map.addLayer({
+		id: 'livedots_context_metro_major_label',
+		type: 'symbol',
+		source: 'livedots_context',
+		layout: {
+			'text-field': ['get', 'maptag'],
+			'text-variable-anchor': ['left', 'right'],
+			'text-radial-offset': 0.5,
+			'text-allow-overlap': false,
+			'text-font': ['Arimo-SemiBold'],
+			'text-size': ['interpolate', ['linear'], ['zoom'], 9, 10, 11, 12, 13, 13, 15, 14],
+			'text-ignore-placement': ['step', ['zoom'], false, 10.5, true]
+		},
+		minzoom: 7,
+		paint: {
+			'text-color': ['get', 'text_color'],
+			//'text-color': ['get', 'color'],
+			//'text-halo-color': '#ededed',
+			'text-halo-color': ['get', 'color'],
+			'text-halo-width': 4,
+			'text-halo-blur': 0.6,
+			'text-opacity': ['interpolate', ['linear'], ['zoom'], 7.9, 0.4, 8, 0.9, 11, 0.95, 12, 1]
+		},
+		filter: ['all', ['any', ['==', ['get', 'route_type'], 1]]]
+	});
+
+	
+	map.addLayer({
+		id: 'livedots_context_tram_major_dot_context',
+		type: 'symbol',
+		source: 'livedots_context',
+		paint: {
+			'icon-opacity': 0.85
+		},
+		layout: {
+			'icon-image': 'tram_context_symbol',
+			'icon-size': 0.2,
+
+			'icon-allow-overlap': true,
+			'icon-ignore-placement': true,
+			'icon-offset': [0, 0]
+		},
+		filter: ['all', ['any', ['==', ['get', 'route_type'], 0]]],
+		minzoom: 5
+	});
+
+	map.addLayer({
+		id: 'livedots_context_tram_major_label',
+		type: 'symbol',
+		source: 'livedots_context',
+		layout: {
+			'text-field': ['get', 'maptag'],
+			'text-variable-anchor': ['left', 'right'],
+			'text-radial-offset': 0.5,
+			'text-allow-overlap': false,
+			'text-font': ['Arimo-SemiBold'],
+			'text-size': ['interpolate', ['linear'], ['zoom'], 9, 10, 11, 12, 13, 13, 15, 14],
+			'text-ignore-placement': ['step', ['zoom'], false, 10.5, true]
+		},
+		minzoom: 7,
+		paint: {
+			'text-color': ['get', 'text_color'],
+			//'text-color': ['get', 'color'],
+			//'text-halo-color': '#ededed',
+			'text-halo-color': ['get', 'color'],
+			'text-halo-width': 4,
+			'text-halo-blur': 0.6,
+			'text-opacity': ['interpolate', ['linear'], ['zoom'], 7.9, 0.4, 8, 0.9, 11, 0.95, 12, 1]
+		},
+		filter: ['all', ['any', ['==', ['get', 'route_type'], 0]]]
+	});
+
+	
+	map.addLayer({
+		id: 'livedots_context_train_major_dot_context',
+		type: 'symbol',
+		source: 'livedots_context',
+		paint: {
+			'icon-opacity': 0.85
+		},
+		layout: {
+			'icon-image': 'train_context_symbol',
+			'icon-size': 0.2,
+
+			'icon-allow-overlap': true,
+			'icon-ignore-placement': true,
+			'icon-offset': [0, 0]
+		},
+		filter: ['all', ['any', ['==', ['get', 'route_type'], 2]]],
+		minzoom: 5
+	});
+
+	map.addLayer({
+		id: 'livedots_context_train_major_label',
+		type: 'symbol',
+		source: 'livedots_context',
+		layout: {
+			'text-field': ['get', 'maptag'],
+			'text-variable-anchor': ['left', 'right'],
+			'text-radial-offset': 0.5,
+			'text-allow-overlap': false,
+			'text-font': ['Arimo-SemiBold'],
+			'text-size': ['interpolate', ['linear'], ['zoom'], 9, 10, 11, 12, 13, 13, 15, 14],
+			'text-ignore-placement': ['step', ['zoom'], false, 10.5, true]
+		},
+		minzoom: 7,
+		paint: {
+			'text-color': ['get', 'text_color'],
+			//'text-color': ['get', 'color'],
+			//'text-halo-color': '#ededed',
+			'text-halo-color': ['get', 'color'],
+			'text-halo-width': 4,
+			'text-halo-blur': 0.6,
+			'text-opacity': ['interpolate', ['linear'], ['zoom'], 7.9, 0.4, 8, 0.9, 11, 0.95, 12, 1]
+		},
+		filter: ['all', ['any', ['==', ['get', 'route_type'], 2]]]
 	});
 }
 

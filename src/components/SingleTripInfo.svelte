@@ -202,7 +202,7 @@
 						}
 
 						if (vehicle_data) {
-							if (trip_data.route_type == 3) {
+							if ([0,1,2,3].includes(trip_data.route_type)) {
 								additional_filter_for_vehicles_store.set([
 									'all',
 									[
@@ -224,6 +224,15 @@
 
 							let feature_id =
 								'livedots_context' + '-' + trip_selected.chateau_id + '-' + trip_selected.trip_id;
+
+								let vehicle_number = "";
+
+								if (vehicle_data.vehicle.label) {
+									vehicle_number = vehicle_data.vehicle.label;
+
+								} else {
+									vehicle_number = vehicle_data.vehicle.id;
+								}
 
 							if (map != null) {
 								let livedots_context = map.getSource('livedots_context');
@@ -251,7 +260,8 @@
 											delay_label: makeDelayLabel(vehicle_data.trip?.delay),
 											delay: vehicle_data.trip?.delay,
 											route_type: trip_data.route_type,
-											headsign: trip_data.trip_headsign
+											headsign: trip_data.trip_headsign,
+											vehicleIdLabel: fix_vehicle_number(trip_selected.chateau_id, vehicle_number),
 										},
 										geometry: {
 											type: 'Point',

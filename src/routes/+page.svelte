@@ -713,7 +713,40 @@
 					'text-field',
 					interpretLabelsToCode(this_layer_settings.label, usunits)
 				);
+
+
 			}
+
+			if (category == 'tram') {
+				mapglobal.setLayoutProperty(
+					'livedots_context_tram_major_label',
+					'text-field',
+					interpretLabelsToCode(this_layer_settings.label, usunits)
+				);
+
+				
+			}
+
+			if (category == 'metro') {
+				mapglobal.setLayoutProperty(
+					'livedots_context_metro_major_label',
+					'text-field',
+					interpretLabelsToCode(this_layer_settings.label, usunits)
+				);
+
+				
+			}
+
+			if (category == 'train') {
+				mapglobal.setLayoutProperty(
+					'livedots_context_train_major_label',
+					'text-field',
+					interpretLabelsToCode(this_layer_settings.label, usunits)
+				);
+
+				
+			}
+
 
 			applyVehicleFilters(categoryvalues);
 		} else {
