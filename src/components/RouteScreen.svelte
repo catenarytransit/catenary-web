@@ -60,6 +60,7 @@
 	import { determineDarkModeToBool } from './determineDarkModeToBool';
 	import { refilter_stops, delete_filter_stops_background } from './makeFiltersForStop';
 	import { occupancy_to_symbol } from './occupancy_to_symbol';
+	import { getContrastColours, makeDelayLabel } from './processVehicleFeature';
 	import TripDataForVehicleOnRouteScreen from './TripDataForVehicleOnRouteScreen.svelte';
 	import ConsolidatedRouteList from './ConsolidatedRouteList.svelte';
 
@@ -428,6 +429,72 @@
 					vehicles_under_direction_id_parent = vehicles_under_direction_id_parent_temp;
 					trip_updates_by_trip_id = trip_updates_by_trip_id_tmp;
 					count_per_direction_parent_store = count_per_direction_id_parent;
+
+					// Inject vehicle positions into livedots_context source
+					if (map && route_data && vehicle_positions) {
+						let contrasedcolors = getContrastColours(route_data.color, darkMode);
+						let context_features: any[] = [];
+
+						for (const vehicle_key in vehicle_positions) {
+							let vp = vehicle_positions[vehicle_key];
+							if (!vp.position) continue;
+
+							let vehicle_number = '';
+							if (vp.vehicle?.label) {
+								vehicle_number = vp.vehicle.label;
+							} else if (vp.vehicle?.id) {
+								vehicle_number = vp.vehicle.id;
+							}
+
+							let delay = null;
+							let trip_update_list = trip_updates_by_trip_id_tmp[vp.trip?.trip_id];
+							if (trip_update_list && trip_update_list.length > 0) {
+								delay = trip_update_list[0].trip?.delay;
+							}
+
+							let delay_label = '';
+
+							if (delay != null) {
+								delay_label = makeDelayLabel(delay);
+							}
+
+							context_features.push({
+								type: 'Feature',
+								id: 'livedots_context-' + routestack.chateau_id + '-' + (vp.trip?.trip_id || vehicle_key),
+								properties: {
+									chateau: routestack.chateau_id,
+									trip_id: vp.trip?.trip_id,
+									color: route_data.color,
+									text_color: route_data.text_color,
+									maptag: route_data.short_name || route_data.long_name || '',
+									route_short_name: route_data.short_name,
+									route_long_name: route_data.long_name,
+									contrastlightmode: contrasedcolors.contrastlightmode,
+									contrastdarkmode: contrasedcolors.contrastdarkmode,
+									contrastdarkmodebearing: contrasedcolors.contrastdarkmodebearing,
+									routeId: routestack.route_id,
+									crowd_symbol: occupancy_to_symbol(vp.occupancy_status),
+									delay_label: delay_label,
+									delay: delay,
+									route_type: route_data.route_type,
+									headsign: vp.trip?.headsign || '',
+									vehicleIdLabel: vehicle_number,
+								},
+								geometry: {
+									type: 'Point',
+									coordinates: [vp.position.longitude, vp.position.latitude]
+								}
+							});
+						}
+
+						let livedots_source = map.getSource('livedots_context');
+						if (livedots_source) {
+							livedots_source.setData({
+								type: 'FeatureCollection',
+								features: context_features
+							});
+						}
+					}
 				} catch (e) {}
 			});
 		}
@@ -658,6 +725,10 @@
 
 				map
 					.getSource('transit_shape_context')
+					?.setData({ type: 'FeatureCollection', features: [] });
+
+				map
+					.getSource('livedots_context')
 					?.setData({ type: 'FeatureCollection', features: [] });
 			}
 		};
