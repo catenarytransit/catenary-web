@@ -22,6 +22,10 @@
 		fixRunNumber,
 		fixStationName
 	} from './agencyspecific';
+	import {
+		resetAdditionalVehicleFilter,
+		additional_filter_for_vehicles_store
+	} from './filterState';
 	let is_loading_trip_data: boolean = true;
 	let trip_data: Record<string, any> | null = null;
 	let init_loaded = 0;
@@ -457,7 +461,6 @@
 							if (delay != null) {
 								delay_label = makeDelayLabel(delay);
 							}
-
 							context_features.push({
 								type: 'Feature',
 								id: 'livedots_context-' + routestack.chateau_id + '-' + (vp.trip?.trip_id || vehicle_key),
@@ -485,6 +488,7 @@
 									coordinates: [vp.position.longitude, vp.position.latitude]
 								}
 							});
+	
 						}
 
 						let livedots_source = map.getSource('livedots_context');
@@ -493,6 +497,20 @@
 								type: 'FeatureCollection',
 								features: context_features
 							});
+
+							if ([0,1,2,3].includes(route_data.route_type)) {
+								additional_filter_for_vehicles_store.set([
+									'all',
+									[
+										'!',
+										[
+											'all',
+											['==', ['get', 'chateau'], route_data.chateau_id],
+											['==', ['get', 'routeId'], route_data.route_id]
+										]
+									]
+								]);
+							}
 						}
 					}
 				} catch (e) {}
@@ -697,6 +715,13 @@
 			fetch_vehicles_for_route();
 		}, 1000);
 	}
+
+	onDestroy(() => {
+		if (fetchtimeout) {clearTimeout(fetchtimeout)};
+		resetAdditionalVehicleFilter();
+		clearInterval(vehicle_interval);
+		delete_filter_stops_background();
+	})
 
 	onMount(() => {
 		console.log('component mounted');
