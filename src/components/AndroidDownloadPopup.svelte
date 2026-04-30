@@ -3,19 +3,33 @@
 	import { onMount } from 'svelte';
 
 	const androidPopupDismissUntilStorage = 'androidPopupDismissedUntil';
-	const oneDayInMs = 24 * 60 * 60 * 1000;
+	const oneWeekInMs = 7* 24 * 60 * 60 * 1000;
 
-	let showAndroidDownloadPopup = true;
+	let showAndroidDownloadPopup = false;
 	let isAndroid = false;
 	let isChrome = false;
 
 	onMount(() => {
 		isAndroid = /Android/i.test(navigator.userAgent);
 		isChrome = /Chrome/i.test(navigator.userAgent);
+
+		if (isAndroid) {
+			let storageLookupDismissal = localStorage.getItem(androidPopupDismissUntilStorage);
+			if (storageLookupDismissal) {
+				const dismissedUntil = Number(storageLookupDismissal);
+				if (dismissedUntil > Date.now()) {
+					showAndroidDownloadPopup = false;
+				} else {
+					showAndroidDownloadPopup = true;
+				}
+			} else {
+				showAndroidDownloadPopup = true;
+			}
+		}
 	});
 
 	function dismissAndroidPopupFor24Hours() {
-		const dismissUntil = Date.now() + oneDayInMs;
+		const dismissUntil = Date.now() + oneWeekInMs;
 		localStorage.setItem(androidPopupDismissUntilStorage, String(dismissUntil));
 		localStorage.removeItem('androidPopupDismissed');
 		localStorage.removeItem('androidPopupDismissed2');
@@ -23,7 +37,7 @@
 	}
 </script>
 
-{#if showAndroidDownloadPopup}
+{#if showAndroidDownloadPopup && isAndroid}
 	<!-- Backdrop -->
 	<div class="fixed inset-0 bg-black opacity-20 z-40"></div>
 
