@@ -16,6 +16,7 @@
 	import BullseyeArrow from './svg_icons/bullseye_arrow.svelte';
 	import ProgressStrip from './ProgessStrip.svelte';
 	import { refilter_stops } from './makeFiltersForStop';
+	import CoachSequence from './CoachSequencePage.svelte'
 	import TimelineClockOutline from './icons/TimelineClockOutline.svelte';
 	import { getContrastColours, getTripInfo, makeDelayLabel } from './processVehicleFeature';
 	import {
@@ -54,6 +55,8 @@
 	let show_previous_stops: boolean = false;
 	let bind_scrolling_div: null | HTMLElement = null;
 	let stop_connections: Record<string, any[]> = {};
+
+	let coach_sequence_screen_shown: boolean = false;
 
 	export let window_height_known: number = 500;
 	onMount(() => {
@@ -95,6 +98,7 @@
 	import Clock from './Clock.svelte';
 	import VehicleInfo from './vehicle_info.svelte';
 	import ConsolidatedRouteList from './ConsolidatedRouteList.svelte';
+	import CoachSequencePage from './CoachSequencePage.svelte';
 
 	function fix_vehicle_number(chateau_id: string, vehicle_id: string) {
 		if (chateau_id == 'translink-queensland-au') {
@@ -1300,6 +1304,38 @@
 			</div>
 		{/if}
 
+		{#if trip_data.consist}
+			<div class="px-3 my-2">
+				<div class="flex p-1 bg-gray-200 dark:bg-gray-800 rounded-[30px] w-full">
+					<button
+						class="flex-1 py-1.5 text-center text-sm font-semibold rounded-[30px] transition-colors { !coach_sequence_screen_shown ? 'bg-white dark:bg-gray-600 text-black dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200' }"
+						on:click={() => { coach_sequence_screen_shown = false; }}
+					>
+						{$_('cs_journey_info', { default: 'Journey information' })}
+					</button>
+					<button
+						class="flex-1 py-1.5 text-center text-sm font-semibold rounded-[30px] transition-colors { coach_sequence_screen_shown ? 'bg-white dark:bg-gray-600 text-black dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200' }"
+						on:click={() => { coach_sequence_screen_shown = true; }}
+					>
+						{$_('cs_train_formation', { default: 'Train formation' })}
+					</button>
+				</div>
+			</div>
+		{/if}
+
+		{#if coach_sequence_screen_shown && trip_data.consist}
+			<CoachSequencePage
+			coach_sequence={trip_data.consist}
+			close_coach_page={() => {
+				coach_sequence_screen_shown = false;
+			}}
+			/>
+		{/if}
+
+		{
+			#if !coach_sequence_screen_shown
+		} 
+		
 		{#if vehicle_data}
 			<div>
 				<span class="text-xs">
@@ -1709,6 +1745,10 @@
 			{/each}
 		</table>
 
+
+		{
+			/if
+		}
 		<!--
 			<br/>
 
