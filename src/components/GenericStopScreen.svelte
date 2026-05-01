@@ -118,6 +118,7 @@
 	$: displayTimezone =
 		data_meta?.primary?.timezone ?? data_meta?.stops?.[0]?.timezone ?? stationTimezone ?? 'UTC';
 	let show_arrivals_only = false; // Add missing state variable
+	let hide_past_events = true;
 
 	// Filters
 	type Mode = 'rail' | 'metro' | 'bus' | 'other';
@@ -159,6 +160,10 @@
 	$: filtered_dates_to_events = (() => {
 		const result: Record<string, any[]> = {};
 
+		let cutoff_time = hide_past_events 
+			? (is_now ? Date.now() / 1000 : selected_unix_time) - (5 * 60)
+			: 0;
+
 		for (const [date_code, events] of Object.entries(raw_grouped_events)) {
 			const filtered = events.filter((event) => {
 				// Arrivals filter
@@ -169,6 +174,11 @@
 					const routeDef = data_meta?.routes?.[event.chateau]?.[event.route_id];
 					const rType = routeDef?.route_type ?? event.route_type ?? 3;
 					if (get_mode_for_route_type(rType) !== active_tab) return false;
+				}
+
+				if (hide_past_events) {
+					const event_time = event.realtime_departure ?? event.realtime_arrival ?? event.scheduled_departure ?? event.scheduled_arrival ?? 0;
+					if (event_time < cutoff_time) return false;
 				}
 
 				return true;
@@ -188,6 +198,7 @@
 		mergedEvents = [];
 		filtered_dates_to_events = {};
 		raw_grouped_events = {};
+		hide_past_events = true;
 		if (clearMeta) {
 			data_meta = null;
 			fly_to_already = false;
@@ -481,6 +492,17 @@
 
 		const beforeHeight = scrollContainer.scrollHeight;
 		const beforeTop = scrollContainer.scrollTop;
+
+		if (hide_past_events) {
+			hide_past_events = false;
+			await tick();
+			
+			// Keep the currently visible content anchored after new items are prepended
+			const afterHeight = scrollContainer.scrollHeight;
+			const delta = afterHeight - beforeHeight;
+			scrollContainer.scrollTop = beforeTop + delta;
+			return;
+		}
 
 		// Roll the date picker back one hour from the current anchor time
 		const baseTimeSec = is_now
