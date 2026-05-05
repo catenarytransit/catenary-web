@@ -97,7 +97,7 @@
 		<p class="text-sm text-sky-800 dark:text-gray-300 leading-snug">
 			We want to bring a native optimised experience to iOS but require a Mac Mini to code, compile,
 			and test. If 15 people this week just donated the cost of 1 train ticket, we'd reach our goal
-			and release the app in June. We're completely independent and don't have adverts, so please
+			and release the app in June. We're completely independent, free, and don't have adverts, so please
 			take one moment to help us keep Catenary growing. Thank you.
 		</p>
 
