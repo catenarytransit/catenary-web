@@ -24,8 +24,18 @@
 		const isEnglish = lang.toLowerCase().startsWith('en');
 		const params = new URLSearchParams(window.location.search);
 
-		if (((isIOS || isSafari) && isEnglish) || params.get('ios_donation_preview') === 'true') {
-			showPopup = true;
+		const lastShown = localStorage.getItem('iosDonationLastShown');
+		const now = Date.now();
+		const oneDayMs = 24 * 60 * 60 * 1000;
+		const isPreview = params.get('ios_donation_preview') === 'true';
+
+		if (((isIOS || isSafari) && isEnglish) || isPreview) {
+			if (isPreview || !lastShown || now - parseInt(lastShown) > oneDayMs) {
+				showPopup = true;
+				if (!isPreview) {
+					localStorage.setItem('iosDonationLastShown', now.toString());
+				}
+			}
 		}
 
 		// Determine country from locale
