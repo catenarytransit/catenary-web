@@ -44,6 +44,7 @@
 	import { locales_options, locales_options_lookup } from '../i18n';
 	import { MTA_CHATEAU_ID, isSubwayRouteId } from '../utils/mta_subway_utils';
 	import MtaBullet from './mtabullet.svelte';
+	import IosDonationPopup from './IosDonationPopup.svelte';
 
 	import VehicleInfo from './vehicle_info.svelte';
 	export let latest_item_on_stack: StackInterface | null;
@@ -188,7 +189,14 @@
 	</div>-->
 	<div class="py-1 flex flex-col h-full">
 		<div class="flex flex-col h-full select-text">
-			<NearbyDepartures {usunits} {darkMode} initial_is_now={(latest_item_on_stack?.data as any)?.is_now ?? true} initial_selected_unix_time={(latest_item_on_stack?.data as any)?.selected_unix_time ?? (Date.now() / 1000)} />
+			<IosDonationPopup />
+			<NearbyDepartures
+				{usunits}
+				{darkMode}
+				initial_is_now={(latest_item_on_stack?.data as any)?.is_now ?? true}
+				initial_selected_unix_time={(latest_item_on_stack?.data as any)?.selected_unix_time ??
+					Date.now() / 1000}
+			/>
 		</div>
 	</div>
 {/if}
