@@ -214,7 +214,7 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			'text-halo-width': 0.4
 			//'text-emissive-strength': 1
 		},
-		minzoom: window?.innerWidth >= 768 ? 14.7 : 13.7
+		minzoom: window?.innerWidth >= 768 ? 15 : 14
 	});
 
 	//LOCAL RAIL
@@ -337,7 +337,7 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			['==', ['get', 'station_type'], 'station'],
 			['==', ['get', 'mode_type'], 'subway']
 		],
-		minzoom: 11
+		minzoom: 12
 	});
 
 	// TRAMS
@@ -397,7 +397,7 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			//'text-emissive-strength': 1
 		},
 		filter: default_tram_filter,
-		minzoom: 12
+		minzoom: 13
 	});
 
 	map.addLayer({
@@ -410,11 +410,11 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			'circle-color': getCircleInside(darkMode),
 			'circle-radius': ['interpolate', ['linear'], ['zoom'], 9, 0.9, 10, 1, 12, 3, 15, 4, 16, 5],
 			'circle-stroke-color': getCircleOutside(darkMode),
-			'circle-stroke-width': ['step', ['zoom'], 1.2, 13.2, 1.5],
+			'circle-stroke-width': ['step', ['zoom'], 0.8, 12, 1.2, 13.2, 1.5],
 			'circle-stroke-opacity': ['step', ['zoom'], 0.4, 11, 0.5, 15, 0.6],
-			'circle-opacity': 0.8
+			'circle-opacity': ['step', ['zoom'], 0.4, 11, 0.5, 15, 0.8],
 		},
-		minzoom: 9,
+		minzoom: 12,
 		filter: [
 			'all',
 			['==', ['get', 'local_ref'], null],
@@ -457,7 +457,7 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 				'step',
 				['zoom'],
 				['literal', ['Arimo-Regular']],
-				12,
+				13,
 				['literal', ['Arimo-Medium']],
 				16,
 				['literal', ['Arimo-SemiBold']]
@@ -478,7 +478,7 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			],
 			['any', ['==', ['get', 'mode_type'], 'tram'], ['==', ['get', 'mode_type'], 'light_rail']]
 		],
-		minzoom: 13
+		minzoom: 14
 	});
 
 	//INTERCITY RAIL
