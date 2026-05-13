@@ -27,7 +27,13 @@
 	import Clock from './Clock.svelte';
 	import StopScreenRow from './StopScreenRow.svelte';
 	import StationScreenTrainRow from './StationScreenTrainRow.svelte';
-	import { SingleTrip, StackInterface, StopStack, OsmStationStack, NearbyDeparturesStack } from './stackenum';
+	import {
+		SingleTrip,
+		StackInterface,
+		StopStack,
+		OsmStationStack,
+		NearbyDeparturesStack
+	} from './stackenum';
 	import { MTA_CHATEAU_ID, isSubwayRouteId } from '../utils/mta_subway_utils';
 	import { IDFM_CHATEAU_ID, isRatpRoute } from '../utils/ratp_utils';
 	import MtaBullet from './mtabullet.svelte';
@@ -42,10 +48,14 @@
 	let selected_unix_time = initial_selected_unix_time;
 
 	$: {
-		data_stack_store.update(stack => {
+		data_stack_store.update((stack) => {
 			if (stack.length > 0) {
 				let last = stack[stack.length - 1];
-				if (last.data instanceof StopStack || last.data instanceof OsmStationStack || last.data instanceof NearbyDeparturesStack) {
+				if (
+					last.data instanceof StopStack ||
+					last.data instanceof OsmStationStack ||
+					last.data instanceof NearbyDeparturesStack
+				) {
 					last.data.is_now = is_now;
 					last.data.selected_unix_time = selected_unix_time;
 				}
@@ -69,6 +79,12 @@
 	let is_inside_eurostyle: boolean = false;
 	let switzerland_geojson: any = null;
 	let is_inside_switzerland: boolean = false;
+
+	let show_gtfs_ids = get(show_gtfs_ids_store);
+
+	show_gtfs_ids_store.subscribe((value) => {
+		show_gtfs_ids = value;
+	});
 
 	// ---------- Paging controls ----------
 	const OVERLAP_SECONDS = 5 * 60; // small overlap to help dedupe across pages
@@ -160,8 +176,8 @@
 	$: filtered_dates_to_events = (() => {
 		const result: Record<string, any[]> = {};
 
-		let cutoff_time = hide_past_events 
-			? (is_now ? Date.now() / 1000 : selected_unix_time) - (5 * 60)
+		let cutoff_time = hide_past_events
+			? (is_now ? Date.now() / 1000 : selected_unix_time) - 5 * 60
 			: 0;
 
 		for (const [date_code, events] of Object.entries(raw_grouped_events)) {
@@ -177,7 +193,12 @@
 				}
 
 				if (hide_past_events) {
-					const event_time = event.realtime_departure ?? event.realtime_arrival ?? event.scheduled_departure ?? event.scheduled_arrival ?? 0;
+					const event_time =
+						event.realtime_departure ??
+						event.realtime_arrival ??
+						event.scheduled_departure ??
+						event.scheduled_arrival ??
+						0;
 					if (event_time < cutoff_time) return false;
 				}
 
@@ -496,7 +517,7 @@
 		if (hide_past_events) {
 			hide_past_events = false;
 			await tick();
-			
+
 			// Keep the currently visible content anchored after new items are prepended
 			const afterHeight = scrollContainer.scrollHeight;
 			const delta = afterHeight - beforeHeight;
@@ -864,6 +885,10 @@
 									use_symbol_sign={true}
 									show_arrivals={event.last_stop}
 								/>
+
+								{#if show_gtfs_ids}
+									<p>trip id: {event.trip_id}</p>
+								{/if}
 
 								{#if event.platform_string_realtime}
 									<p>{$_('platform')} {event.platform_string_realtime}</p>
