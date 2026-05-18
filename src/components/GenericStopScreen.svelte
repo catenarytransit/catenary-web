@@ -40,6 +40,7 @@
 	import { booleanPointInPolygon, point } from '@turf/turf';
 	import RatpBullet from './ratpbullet.svelte';
 	import DatePicker from './DatePicker.svelte';
+	import ServiceAlerts from './serviceAlerts.svelte';
 
 	export let initial_is_now: boolean = true;
 	export let initial_selected_unix_time: number = Date.now() / 1000;
@@ -700,6 +701,14 @@
 				</p>
 			</div>
 			<p class="text-sm ml-1 mb-0">{displayTimezone}</p>
+
+			{#if data_meta?.alerts}
+				{#each Object.entries(data_meta.alerts) as [chateau, chateau_alerts]}
+					<div class="ml-1 mr-2 mt-2 mb-2">
+						<ServiceAlerts alerts={chateau_alerts} default_tz={displayTimezone} {chateau} expanded={false} />
+					</div>
+				{/each}
+			{/if}
 
 			<div class="ml-1 mb-3">
 				<DatePicker
