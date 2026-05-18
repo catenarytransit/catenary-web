@@ -12,7 +12,7 @@
 	let goalLocal = goalUSD;
 	let currentLocal = currentUSD;
 
-	let predefinedAmounts = [4, 10, 20, 50];
+	let predefinedAmounts = [4, 10, 15, 25];
 
 	onMount(async () => {
 		// Check if Safari or iPhone/iPad
