@@ -19,4 +19,12 @@
 	};
 </script>
 
-<GenericStopScreen {buildUrl} key={osm_id} {stationName} {stationLat} {stationLon} {initial_is_now} {initial_selected_unix_time} />
+<GenericStopScreen
+	{buildUrl}
+	key={osm_id}
+	{stationName}
+	{stationLat}
+	{stationLon}
+	{initial_is_now}
+	{initial_selected_unix_time}
+/>

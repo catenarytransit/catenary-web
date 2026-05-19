@@ -329,6 +329,29 @@
 			const data = await resp.json();
 			console.log(`Fetch ${id} returned items:`, data.events?.length);
 
+			if (data.redirect_to_osm_station_id) {
+				data_stack_store.update((stack) => {
+					if (stack.length > 0) {
+						let last = stack[stack.length - 1];
+						if (last.data instanceof OsmStationStack) {
+							stack[stack.length - 1] = new StackInterface(
+								new OsmStationStack(
+									String(data.redirect_to_osm_station_id),
+									last.data.name,
+									last.data.mode_type,
+									last.data.lat,
+									last.data.lon,
+									last.data.is_now,
+									last.data.selected_unix_time
+								)
+							);
+						}
+					}
+					return stack;
+				});
+				return;
+			}
+
 			let shouldPrimeMap = false;
 
 			// Establish/merge meta (primary/routes/shapes) — keep latest
