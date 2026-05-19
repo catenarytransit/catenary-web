@@ -421,7 +421,8 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			[
 				'any',
 				['==', ['get', 'station_type'], 'station'],
-				['==', ['get', 'station_type'], 'tram_stop']
+				['==', ['get', 'station_type'], 'tram_stop'],
+				['==', ['get', 'station_type', 'stop_position']]
 			],
 			['any', ['==', ['get', 'mode_type'], 'tram'], ['==', ['get', 'mode_type'], 'light_rail']]
 		]
@@ -474,7 +475,8 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			[
 				'any',
 				['==', ['get', 'station_type'], 'station'],
-				['==', ['get', 'station_type'], 'tram_stop']
+				['==', ['get', 'station_type'], 'tram_stop'],
+				['==', ['get', 'station_type', 'stop_position']]
 			],
 			['any', ['==', ['get', 'mode_type'], 'tram'], ['==', ['get', 'mode_type'], 'light_rail']]
 		],
