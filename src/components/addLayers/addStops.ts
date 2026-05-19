@@ -418,6 +418,7 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 		filter: [
 			'all',
 			['==', ['get', 'local_ref'], null],
+			['==', ['get', 'parent_osm_id'], null],
 			[
 				'any',
 				['==', ['get', 'station_type'], 'station'],
@@ -472,6 +473,7 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 		filter: [
 			'all',
 			['==', ['get', 'local_ref'], null],
+			['==', ['get', 'parent_osm_id'], null],
 			[
 				'any',
 				['==', ['get', 'station_type'], 'station'],
