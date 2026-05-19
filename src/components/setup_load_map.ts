@@ -66,7 +66,7 @@ export async function setup_load_map(
 	setSidebarOpen: () => void
 ) {
 	let updateInterval: NodeJS.Timeout;
-	const minZoomThreshold = window.innerWidth >= 1023 ? 14 : 15;
+	const minZoomThresholdStationEnter = 16;
 
 	map.on('load', async () => {
 		recompute_map_padding();
@@ -168,7 +168,7 @@ export async function setup_load_map(
 
 		if (stationImage) {
 			map.addImage('station-enter', stationImage.data);
-			addStationLayers(map, layerspercategory, darkMode, minZoomThreshold);
+			addStationLayers(map, layerspercategory, darkMode, minZoomThresholdStationEnter);
 		}
 
 		if (geoNavImage) {
