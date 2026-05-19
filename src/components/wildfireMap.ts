@@ -103,8 +103,8 @@ export function makeFireMap(map: maplibregl.Map, chateaus_in_frame: Writable<str
 	const modis_url =
 		'https://raw.githubusercontent.com/catenarytransit/fire-bounds-cache/refs/heads/main/data/modis.json';
 
-	const viirs_mw_url =
-		'https://raw.githubusercontent.com/catenarytransit/fire-bounds-cache/refs/heads/main/data/viirs_nw.json';
+	const viirs_nw_url =
+		'https://fireboundscache.catenarymaps.org/data/viirs_nw.json';
 	//const national_usa_fire_arcgis_url =	'https://raw.githubusercontent.com/catenarytransit/fire-bounds-cache/refs/heads/main/data/wfigs_fire_bounds.json';
 	const california_firis_arcgis_url =
 		'https://raw.githubusercontent.com/catenarytransit/fire-bounds-cache/refs/heads/main/data/ca_fire_bounds.json';
@@ -280,7 +280,7 @@ export function makeFireMap(map: maplibregl.Map, chateaus_in_frame: Writable<str
 
 	map.addSource('viirs_nw', {
 		type: 'geojson',
-		data: viirs_mw_url
+		data: viirs_nw_url
 	});
 
 	/*
