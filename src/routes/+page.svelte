@@ -90,7 +90,7 @@
 
 	let centerinit: LngLatLike = [10.46, 51.89];
 
-	let zoominit = 3;
+	let zoominit = 10;
 
 	/*
 	const decode = (textToDecode: string) => {
