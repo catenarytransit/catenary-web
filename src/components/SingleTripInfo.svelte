@@ -1234,8 +1234,11 @@
 		<span class={`block ${window_height_known < 600 ? 'leading-none text-xs' : 'mt-1 text-sm'}`} />
 
 		<p class={`${window_height_known < 600 ? ' text-xs' : 'text-sm'} leading-none`}>
+			{#if show_gtfs_ids}
 			{$_('tripid')}
-			{trip_selected.trip_id}{#if trip_data.block_id != null}
+			{trip_selected.trip_id}
+			{/if}
+			{#if trip_data.block_id != null}
 				<span>{' | '}</span>
 				<span
 					on:click={() => {
