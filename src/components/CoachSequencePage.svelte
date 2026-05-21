@@ -126,7 +126,7 @@
 												? 'text-red-500'
 												: ''}"
 										></i>
-									{:else}
+									{:else if vehicle.occupancy}
 										<i class="fas fa-user"></i>
 									{/if}
 								</div>
