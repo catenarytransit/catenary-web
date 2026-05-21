@@ -96,7 +96,7 @@ export const bus_label_with_headsign = [
 	11
 ];
 
-const bus_label_text_size = ['interpolate', ['linear'], ['zoom'], 9, 5, 11, 7, 13, 10, 15, 13];
+const bus_label_text_size = ['interpolate', ['linear'], ['zoom'], 9, 5, 11, 6, 13, 9, 15, 13];
 const other_label_text_size = ['interpolate', ['linear'], ['zoom'], 9, 8.5, 11, 13, 13, 16];
 const tram_label_text_size = [
 	'interpolate',
