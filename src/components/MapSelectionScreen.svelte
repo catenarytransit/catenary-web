@@ -160,7 +160,7 @@
 					}}
 					role="menuitem"
 					tabindex="0"
-					class="px-1 py-0.5 md:px-2 md:py-2 bg-gray-100 dark:bg-gray-900 hover:bg-gray-100 hover:dark:bg-hover text-sm md:text-base leading-snug rounded-lg bg-opacity-80"
+					class="px-1 py-0.5 md:px-2 md:py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-100 hover:dark:bg-hover text-sm md:text-base leading-snug rounded-lg bg-opacity-80"
 				>
 					{#if show_gtfs_ids}
 						<p>
@@ -264,7 +264,7 @@
 		<div class="flex flex-col gap-y-1 md:gap-y-2">
 			{#each map_selection_screen.arrayofoptions.filter((x) => x.data instanceof OsmStationMapSelector) as option}
 				<div
-					class="px-1 py-0.5 md:px-2 md:py-2 bg-gray-100 hover:bg-blue-100 dark:bg-gray-900 hover:dark:bg-hover text-sm md:text-base leading-snug rounded-lg bg-opacity-80"
+					class="px-1 py-0.5 md:px-2 md:py-2 bg-gray-100 hover:bg-blue-100 dark:bg-gray-800 hover:dark:bg-hover text-sm md:text-base leading-snug rounded-lg bg-opacity-80"
 					on:click={() => {
 						data_stack_store.update((data_stack) => {
 							data_stack.push(
@@ -324,7 +324,7 @@
 		<div class="flex flex-col gap-y-1 md:gap-y-2">
 			{#each map_selection_screen.arrayofoptions.filter((x) => x.data instanceof StopMapSelector) as option}
 				<div
-					class="px-1 py-0.5 md:px-2 md:py-2 bg-gray-100 hover:bg-blue-100 dark:bg-gray-900 hover:dark:bg-hover text-sm md:text-base leading-snug rounded-lg bg-opacity-80"
+					class="px-1 py-0.5 md:px-2 md:py-2 bg-gray-100 hover:bg-blue-100 dark:bg-gray-800 hover:dark:bg-hover text-sm md:text-base leading-snug rounded-lg bg-opacity-80"
 					on:click={() => {
 						data_stack_store.update((data_stack) => {
 							data_stack.push(
@@ -391,7 +391,7 @@
 		<div class="flex flex-col gap-y-1 md:gap-y-2">
 			{#each map_selection_screen.arrayofoptions.filter((x) => x.data instanceof RouteMapSelector) as option}
 				<div
-					class="px-1 py-0.5 md:px-2 md:py-2 bg-gray-100 hover:bg-blue-100 dark:bg-gray-900 hover:dark:bg-hover text-sm md:text-base leading-snug rounded-lg bg-opacity-80"
+					class="px-1 py-0.5 md:px-2 md:py-2 bg-gray-100 hover:bg-blue-100 dark:bg-gray-800 hover:dark:bg-hover text-sm md:text-base leading-snug rounded-lg bg-opacity-80"
 					on:click={() => {
 						data_stack_store.update((data_stack) => {
 							data_stack.push(
