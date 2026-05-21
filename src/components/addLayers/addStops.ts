@@ -214,7 +214,7 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			'text-halo-width': 0.4
 			//'text-emissive-strength': 1
 		},
-		minzoom: window?.innerWidth >= 768 ? 15 : 14
+		minzoom: 15.5
 	});
 
 	//LOCAL RAIL
