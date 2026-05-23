@@ -1689,7 +1689,13 @@
 											>
 												{cleanStationName(fixStationName(stoptime.name))}
 											</span>
+
 										{/if}
+
+											{#if stoptime.stop_id && show_gtfs_ids}
+											<span class="font-mono opacity-80">{stoptime.stop_id}</span>
+											{/if}
+
 									</div>
 
 									<!-- Platform -->
