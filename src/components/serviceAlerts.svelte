@@ -4,6 +4,7 @@
 	import TimeDiff from './TimeDiff.svelte';
 	import MtaBullet from './mtabullet.svelte';
 	import { onDestroy } from 'svelte';
+	import { condenseActivePeriods } from './alertTimeUtils'; // Adjust path accordingly
 
 	export let alerts = {};
 	export let default_tz: string | null = null;
@@ -107,6 +108,14 @@
 	});
 
 	$: currentAlert = Object.values(alerts)[currentIndex] as any;
+
+	// Automatically compute compressed schedules when parameters adjust
+	$: scheduleAnalysis = (alert: any) => {
+		if (alert && alert.active_period) {
+			return condenseActivePeriods(alert.active_period, locale_code, default_tz);
+		}
+		return null;
+	};
 </script>
 
 {#if Object.keys(alerts).length > 0}
@@ -177,9 +186,11 @@
 							{/if}
 
 							{#if !currentAlert.header_text && !currentAlert.description_text}
-								<p class="truncate text-gray-500 italic">
-									{$_(cause_id_str(currentAlert.cause))} // {$_(effect_id_str(currentAlert.effect))}
-								</p>
+								{#if cause_id_str(currentAlert.cause) !== 'alert_cause_unknown_cause' || effect_id_str(currentAlert.effect) !== 'alert_effect_unknown_effect'}
+									<p class="truncate text-gray-500 italic">
+										{$_(cause_id_str(currentAlert.cause))} // {$_(effect_id_str(currentAlert.effect))}
+									</p>
+								{/if}
 							{/if}
 						{/if}
 					</div>
@@ -200,11 +211,13 @@
 			{#each Object.values(alerts) as alert}
 				<div class="pt-1">
 					<hr class="border-[#F99C24] border-0.5 rounded-xl" />
-					<p class="text-base font-medium text-[#F99C24] pt-1">
-						<span class="">{$_(cause_id_str(alert.cause))}</span>
-						<span> // </span>
-						<span>{$_(effect_id_str(alert.effect))}</span>
-					</p>
+					{#if cause_id_str(alert.cause) !== 'alert_cause_unknown_cause' || effect_id_str(alert.effect) !== 'alert_effect_unknown_effect'}
+						<p class="text-base font-medium text-[#F99C24] pt-1">
+							<span class="">{$_(cause_id_str(alert.cause))}</span>
+							<span> // </span>
+							<span>{$_(effect_id_str(alert.effect))}</span>
+						</p>
+					{/if}
 
 					{#if alert.url}
 						{#each alert.url.translation as url_translation}
@@ -264,75 +277,48 @@
 					{/each}
 
 					{#if alert.active_period.length > 0}
-						{#each alert.active_period as active_period}
-							{#if active_period.start != null}
-								<p class="text-xs">
-									{$_('starting_time')}:
-									{#if default_tz}
-										{new Date(active_period.start * 1000).toLocaleString(locale_code, {
-											timeZone: default_tz,
-											year: 'numeric',
-											month: 'numeric',
-											day: 'numeric',
-											hour: '2-digit',
-											minute: '2-digit',
-											hour12: false
-										})}
-									{:else}
-										{new Date(active_period.start * 1000).toLocaleString(locale_code, {
-											year: 'numeric',
-											month: 'numeric',
-											day: 'numeric',
-											hour: '2-digit',
-											minute: '2-digit',
-											hour12: false
-										})}
-									{/if}
+						{@const schedule = scheduleAnalysis(alert)}
 
-									<TimeDiff
-										diff={active_period.start - new Date().getTime() / 1000}
-										show_seconds={false}
-										show_brackets={true}
-										show_plus={true}
-										show_days={true}
-									/>
+						<div
+							class="mt-2 pt-1 dark:border-gray-700 text-xs"
+						>
+							{#if schedule && schedule.isCondensed}
+								<p class="font-bold text-gray-800 dark:text-gray-200">
+									{schedule.baseRule}
 								</p>
-							{/if}
-
-							{#if active_period.end != null}
-								<p class="text-xs">
-									{$_('ending_time')}:
-									{#if default_tz}
-										{new Date(active_period.end * 1000).toLocaleString(locale_code, {
-											year: 'numeric',
-											month: 'numeric',
-											day: 'numeric',
-											hour: '2-digit',
-											minute: '2-digit',
-											hour12: false,
-											timeZone: default_tz
-										})}
-									{:else}
-										{new Date(active_period.end * 1000).toLocaleString(locale_code, {
-											year: 'numeric',
-											month: 'numeric',
-											day: 'numeric',
-											hour: '2-digit',
-											minute: '2-digit',
+								{#if schedule.weekdayRules}
+									<p class="font-bold text-gray-800 dark:text-gray-200">
+										{schedule.weekdayRules}
+									</p>
+								{/if}
+								{#if schedule.exceptions}
+									<p class="text-gray-800 dark:text-gray-200">
+										<span class="font-bold">{schedule.exceptions.split(': ')[0]}:</span> {schedule.exceptions.split(': ').slice(1).join(': ')}
+									</p>
+								{/if}
+							{:else if schedule}
+								{@const tz = default_tz || Intl.DateTimeFormat().resolvedOptions().timeZone}
+								{@const isNA = tz.startsWith('America/') || tz.startsWith('Canada/') || tz.startsWith('US/')}
+								{@const fallbackLocale = isNA ? 'en-CA' : 'en-GB'}
+								{#each schedule.fallbackPeriods as active_period}
+									<p class="leading-relaxed">
+										{new Date(active_period.start * 1000).toLocaleString(fallbackLocale, {
+											timeZone: tz,
+											dateStyle: 'short',
+											timeStyle: 'short',
 											hour12: false
-										})}
-									{/if}
-
-									<TimeDiff
-										diff={active_period.end - new Date().getTime() / 1000}
-										show_seconds={false}
-										show_brackets={true}
-										show_plus={true}
-										show_days={true}
-									/>
-								</p>
+										}).replace(/,/, '')}
+										–
+										{new Date(active_period.end * 1000).toLocaleString(fallbackLocale, {
+											timeZone: tz,
+											dateStyle: 'short',
+											timeStyle: 'short',
+											hour12: false
+										}).replace(/,/, '')}
+									</p>
+								{/each}
 							{/if}
-						{/each}
+						</div>
 					{/if}
 				</div>
 			{/each}
