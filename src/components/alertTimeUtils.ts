@@ -41,7 +41,7 @@ export function condenseActivePeriods(
 			const s = new Intl.DateTimeFormat(localeCode, { day: '2-digit', timeZone }).format(start);
 			return `${s}./${edf.format(end)}`;
 		} else if (lang === 'fr') {
-			const smf = new Intl.DateTimeFormat(localeCode, { month: 'short', timeZone }).format(start).toLowerCase();
+			const smf = new Intl.DateTimeFormat(localeCode, { month: 'long', timeZone }).format(start).toLowerCase();
 			if (isSameDay) return `${start.getDate()} ${smf}`;
 			return `${start.getDate()}/${end.getDate()} ${smf}`;
 		} else if (lang === 'it') {
@@ -49,18 +49,9 @@ export function condenseActivePeriods(
 			if (isSameDay) return `${start.getDate()} ${smf}`;
 			return `${start.getDate()}/${end.getDate()} ${smf}`;
 		} else {
-			const isNorthAmerica = timeZone.startsWith('America/') || timeZone.startsWith('Canada/') || timeZone.startsWith('US/');
-			if (isNorthAmerica) {
-				const startY = start.getFullYear();
-				const startM = String(start.getMonth() + 1).padStart(2, '0');
-				const startD = String(start.getDate()).padStart(2, '0');
-				const endD = String(end.getDate()).padStart(2, '0');
-				if (isSameDay) return `${startY}-${startM}-${startD}`;
-				return `${startY}-${startM}-${startD}/${endD}`;
-			}
 			const smf = new Intl.DateTimeFormat(localeCode, { month: 'short', timeZone }).format(start);
-			if (isSameDay) return `${start.getDate()} ${smf}`;
-			return `${start.getDate()}/${end.getDate()} ${smf}`;
+			if (isSameDay) return `${smf} ${start.getDate()}`;
+			return `${smf} ${start.getDate()}/${end.getDate()}`;
 		}
 	};
 
@@ -148,7 +139,15 @@ export function condenseActivePeriods(
 		}
 	}
 
-	const exceptionText = exceptions.map(e => `${e.label} ${timeReplace(e.startTime)}–${timeReplace(e.endTime)}`);
+	const exceptionText = exceptions.map(e => {
+		if (lang === 'fr') {
+			return `${e.label}, de ${timeReplace(e.startTime)} à ${timeReplace(e.endTime)}`;
+		} else if (lang === 'de') {
+			return `${e.label}, ${timeReplace(e.startTime)}–${timeReplace(e.endTime)} Uhr`;
+		} else {
+			return `${e.label}, ${timeReplace(e.startTime)}–${timeReplace(e.endTime)}`;
+		}
+	});
 
 	let baseRule = "";
 	let exceptionsStr = "";
@@ -156,18 +155,19 @@ export function condenseActivePeriods(
 
 	const bs = timeReplace(baseStart);
 	const be = timeReplace(baseEnd);
+	const lastYear = nights[nights.length - 1].originalStart.getFullYear();
 
 	if (lang === 'de') {
-		baseRule = `Nächte ${firstLabel}–${lastLabel}, jeweils ${bs}–${be} Uhr`;
+		baseRule = `Nächte ${firstLabel}–${lastLabel} ${lastYear}, jeweils ${bs}–${be} Uhr`;
 		exceptionsStr = exceptionText.length > 0 ? `Ausnahmen: ${exceptionText.join('; ')}` : "";
 	} else if (lang === 'fr') {
-		baseRule = `Nuits du ${firstLabel} au ${lastLabel}, de ${bs} à ${be}`;
-		exceptionsStr = exceptionText.length > 0 ? `Exceptions: ${exceptionText.join('; ')}` : "";
+		baseRule = `Nuits du ${firstLabel} au ${lastLabel} ${lastYear}, de ${bs} à ${be}`;
+		exceptionsStr = exceptionText.length > 0 ? `Exceptions : ${exceptionText.join('; ')}` : "";
 	} else if (lang === 'it') {
-		baseRule = `Notti dal ${firstLabel} all’${lastLabel}, ${bs}–${be}`;
+		baseRule = `Notti dal ${firstLabel} all’${lastLabel} ${lastYear}, ${bs}–${be}`;
 		exceptionsStr = exceptionText.length > 0 ? `Eccezioni: ${exceptionText.join('; ')}` : "";
 	} else {
-		baseRule = `Nights ${firstLabel}–${lastLabel}, ${bs}–${be}`;
+		baseRule = `Nights ${firstLabel}–${lastLabel}, ${lastYear}, ${bs}–${be}`;
 		exceptionsStr = exceptionText.length > 0 ? `Exceptions: ${exceptionText.join('; ')}` : "";
 	}
 
