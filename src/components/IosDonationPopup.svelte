@@ -7,7 +7,7 @@
 	let conversionRate = 1;
 
 	let goalUSD = 1200;
-	let currentUSD = 540.16;
+	let currentUSD = 566.26;
 
 	let goalLocal = goalUSD;
 	let currentLocal = currentUSD;
