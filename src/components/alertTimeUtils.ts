@@ -155,19 +155,25 @@ export function condenseActivePeriods(
 
 	const bs = timeReplace(baseStart);
 	const be = timeReplace(baseEnd);
+	const firstYear = nights[0].originalStart.getFullYear();
 	const lastYear = nights[nights.length - 1].originalStart.getFullYear();
+	const currentYear = new Date().getFullYear();
+
+	const showYear = firstYear !== lastYear || lastYear !== currentYear;
+	const yearStr = showYear ? ` ${lastYear}` : "";
+	const yearStrComma = showYear ? `, ${lastYear}` : "";
 
 	if (lang === 'de') {
-		baseRule = `Nächte ${firstLabel}–${lastLabel} ${lastYear}, jeweils ${bs}–${be} Uhr`;
+		baseRule = `Nächte ${firstLabel}–${lastLabel}${yearStr}, jeweils ${bs}–${be} Uhr`;
 		exceptionsStr = exceptionText.length > 0 ? `Ausnahmen: ${exceptionText.join('; ')}` : "";
 	} else if (lang === 'fr') {
-		baseRule = `Nuits du ${firstLabel} au ${lastLabel} ${lastYear}, de ${bs} à ${be}`;
+		baseRule = `Nuits du ${firstLabel} au ${lastLabel}${yearStr}, de ${bs} à ${be}`;
 		exceptionsStr = exceptionText.length > 0 ? `Exceptions : ${exceptionText.join('; ')}` : "";
 	} else if (lang === 'it') {
-		baseRule = `Notti dal ${firstLabel} all’${lastLabel} ${lastYear}, ${bs}–${be}`;
+		baseRule = `Notti dal ${firstLabel} all’${lastLabel}${yearStr}, ${bs}–${be}`;
 		exceptionsStr = exceptionText.length > 0 ? `Eccezioni: ${exceptionText.join('; ')}` : "";
 	} else {
-		baseRule = `Nights ${firstLabel}–${lastLabel}, ${lastYear}, ${bs}–${be}`;
+		baseRule = `Nights ${firstLabel}–${lastLabel}${yearStrComma}, ${bs}–${be}`;
 		exceptionsStr = exceptionText.length > 0 ? `Exceptions: ${exceptionText.join('; ')}` : "";
 	}
 
