@@ -98,16 +98,23 @@
 
 {#if showPopup}
 	<div
-		class="m-3 p-4 bg-sky-50 dark:bg-gray-800 border border-sky-300 dark:border-sky-700 rounded-xl shadow-md flex flex-col gap-3"
+		class="relative m-3 p-4 bg-sky-50 dark:bg-gray-800 border border-sky-300 dark:border-sky-700 rounded-xl shadow-md flex flex-col gap-3"
 	>
-		<h2 class="text-lg font-bold text-sky-900 dark:text-sky-100 leading-tight">
+		<button
+			class="absolute top-3 right-3 p-1 text-sky-900 hover:text-sky-700 dark:text-sky-100 dark:hover:text-white rounded-full hover:bg-sky-200 dark:hover:bg-gray-600 transition-colors"
+			on:click={() => (showPopup = false)}
+			aria-label="Close"
+		>
+			<svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" width="20" fill="currentColor"><path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/></svg>
+		</button>
+		<h2 class="text-lg font-bold text-sky-900 dark:text-sky-100 leading-tight pr-8">
 			Help us release Catenary Maps on iPhone & iPad!
 		</h2>
 
 		<p class="text-sm text-sky-800 dark:text-gray-300 leading-snug">
 			We want to bring a native optimised experience to iOS but require a Mac Mini to code, compile,
-			and test. If 15 people this week just donated the cost of 1 train ticket, we'd reach our goal
-			and release the app in June. We're completely independent, free, and don't have adverts, so please
+			and test. If 15 people this week just donated the cost of 1 train ticket, we'd reach our goal.
+			We're completely independent, free, and don't have adverts, so please
 			take one moment to help us keep Catenary growing. Thank you.
 		</p>
 
