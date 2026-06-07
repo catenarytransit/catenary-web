@@ -19,6 +19,7 @@
 	export let show_agency_name: boolean = true;
 	export let eurostyle: boolean = false;
 	export let swiss_style: boolean = false;
+	export let eventAlerts: any[] = [];
 
 	$: shared_rt_time = event.last_stop ? event.realtime_arrival : event.realtime_departure;
 	$: shared_scheduled_time = event.last_stop ? event.scheduled_arrival : event.scheduled_departure;
@@ -142,6 +143,11 @@
 					{event.headsign}
 					{#if event.trip_short_name}
 						<span class="ml-1">{event.trip_short_name}</span>
+					{/if}
+					{#if eventAlerts.length > 0}
+						<span class="inline-block align-middle ml-1">
+							<img src="/icons/service_alert.svg" alt="" class="w-3.5 h-3.5" />
+						</span>
 					{/if}
 				</div>
 			</div>

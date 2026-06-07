@@ -221,6 +221,7 @@
 		filtered_dates_to_events = {};
 		raw_grouped_events = {};
 		hide_past_events = true;
+		alerts_expanded = false;
 		if (clearMeta) {
 			data_meta = null;
 			fly_to_already = false;
@@ -247,6 +248,52 @@
 		const sched = ev.scheduled_departure ?? ev.scheduled_arrival ?? 0;
 		return `${ev.chateau}|${ev.trip_id}|${ev.stop_id}|${ev.service_date}|${sched}`;
 	}
+
+	function entityMatchesEvent(entity: any, event: any) {
+		if (entity.route_id && entity.route_id !== event.route_id) return false;
+		if (entity.trip?.trip_id && entity.trip.trip_id !== event.trip_id) return false;
+		if (entity.stop_id && entity.stop_id !== event.stop_id) return false;
+		return true;
+	}
+
+	function alertMatchesEvent(alert: any, event: any) {
+		return alert.informed_entity?.some((entity: any) => entityMatchesEvent(entity, event));
+	}
+
+	$: alertsByEventKey = (() => {
+		const result: Record<string, any[]> = {};
+
+		for (const event of mergedEvents) {
+			const key = composeEventKey(event);
+			const chateauAlerts = data_meta?.alerts?.[event.chateau] ?? {};
+			const matches = Object.values(chateauAlerts).filter((alert: any) =>
+				alertMatchesEvent(alert, event)
+			);
+
+			if (matches.length > 0) result[key] = matches;
+		}
+
+		return result;
+	})();
+
+	let alerts_expanded = false;
+
+	$: stationWideAlertCount = (() => {
+		if (!data_meta?.alerts) return 0;
+		let count = 0;
+		for (const chateau_alerts of Object.values(data_meta.alerts)) {
+			for (const alert of Object.values(chateau_alerts as any)) {
+				const isSpecific = alert.informed_entity?.some(
+					(entity: any) => entity.route_id || entity.trip?.trip_id
+				);
+				if (!isSpecific) {
+					count++;
+				}
+			}
+		}
+		return count;
+	})();
+
 
 	async function mergePageEvents(pageId: string, incoming: any[], refreshedAt: number) {
 		// Optimization: Chunk the indexing loop
@@ -725,225 +772,266 @@
 			</div>
 			<p class="text-sm ml-1 mb-0">{displayTimezone}</p>
 
-			{#if data_meta?.alerts}
-				{#each Object.entries(data_meta.alerts) as [chateau, chateau_alerts]}
-					<div class="ml-1 mr-2 mt-2 mb-2">
-						<ServiceAlerts alerts={chateau_alerts} default_tz={displayTimezone} {chateau} expanded={false} />
-					</div>
-				{/each}
-			{/if}
-
-			<div class="ml-1 mb-3">
-				<DatePicker
-					bind:unixTime={selected_unix_time}
-					bind:isNow={is_now}
-					timezone={displayTimezone}
-					on:change={() => {
-						resetState(false);
-						loadInitialPages();
-					}}
-				/>
-			</div>
-
-			{#if available_modes.length > 1}
-				<div
-					class="flex flex-row flex-wrap gap-2 ml-1 mb-2 items-center border-b border-gray-200 dark:border-gray-700 w-full"
+			{#if stationWideAlertCount > 0}
+				<button
+					class="mx-1 mt-2 mb-2 grid grid-cols-[24px_1fr_auto] gap-2 items-center border-l-2 border-amber-500 py-1 text-left text-sm cursor-pointer"
+					on:click={() => (alerts_expanded = true)}
 				>
-					{#each available_modes as mode}
-						{#if mode === 'rail'}
-							<button
-								class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'rail' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
-								on:click={() => (active_tab = 'rail')}
-							>
-								<span class="material-symbols-outlined text-lg">train</span>
-								{$_('headingIntercityRail')}
-							</button>
-						{:else if mode === 'metro'}
-							<button
-								class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'metro' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
-								on:click={() => (active_tab = 'metro')}
-							>
-								<span class="material-symbols-outlined text-lg">tram</span>
-								{$_('headingLocalRail')}
-							</button>
-						{:else if mode === 'bus'}
-							<button
-								class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'bus' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
-								on:click={() => (active_tab = 'bus')}
-							>
-								<span class="material-symbols-outlined text-lg">directions_bus</span>
-								{$_('headingBus')}
-							</button>
-						{:else if mode === 'other'}
-							<button
-								class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'other' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
-								on:click={() => (active_tab = 'other')}
-							>
-								<span class="material-symbols-outlined text-lg">more_horiz</span>
-								{$_('headingOther')}
-							</button>
-						{/if}
-					{/each}
-				</div>
+					<img src="/icons/service_alert.svg" alt="" class="w-4 h-4" />
+					<span>{stationWideAlertCount} station advisories</span>
+					<span class="text-xs opacity-70">Details</span>
+				</button>
 			{/if}
 		</div>
-	{:else}
-		<p class="ml-2">Loading …</p>
-	{/if}
 
-	<div
-		bind:this={scrollContainer}
-		class="catenary-scroll overflow-y-auto pb-64 pr-2 flex-1"
-		on:scroll={onScroll}
-	>
-		<div class="flex flex-col">
-			<div>
-				<button
-					class="mt-1 ml-1 mb-1 px-3 py-1.5 font-semibold border border-gray-400 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-[1px] inline-flex items-center w-auto"
-					on:click={loadEarlier}
-				>
-					<span class="inline-block align-bottom mr-1">
-						<span class="material-symbols-outlined"> keyboard_arrow_up </span>
-					</span>
-					<span>{$_('earlier')}</span>
-				</button>
-			</div>
-
-			{#if Object.keys(filtered_dates_to_events).length > 0}
-				{#each Object.keys(filtered_dates_to_events) as date_code}
-					<p class="text-md font-semibold mt-0 mb-1 mx-3">
-						{new Date(date_code).toLocaleDateString(
-							timezone_to_locale(locale_inside_component, displayTimezone),
-							{
-								year: 'numeric',
-								month: 'numeric',
-								day: 'numeric',
-								weekday: 'long',
-								timeZone: 'UTC'
-							}
-						)}
-					</p>
-
-					<!-- Correct Logic Implementation -->
-					{#if active_tab === 'rail'}
-						<table class="w-full border-collapse">
-							<tbody>
-								{#each filtered_dates_to_events[date_code] as event}
-									<StationScreenTrainRow
-										eurostyle={is_inside_eurostyle}
-										swiss_style={is_inside_switzerland}
-										{event}
-										data_from_server={data_meta}
-										{current_time}
-										{show_seconds}
-										use_symbol_sign={true}
-										timezone={displayTimezone}
-									/>
-								{/each}
-							</tbody>
-						</table>
-					{:else}
-						<!-- Non-Rail (Div) List -->
-						{#each filtered_dates_to_events[date_code] as event}
-							{@const shortName = data_meta.routes?.[event.chateau]?.[event.route_id]?.short_name}
-							{@const longName = data_meta.routes?.[event.chateau]?.[event.route_id]?.long_name}
-							{@const routeColor = data_meta.routes?.[event.chateau]?.[event.route_id]?.color}
-							{@const textColor = data_meta.routes?.[event.chateau]?.[event.route_id]?.text_color}
-							{@const isSubway =
-								event.chateau === MTA_CHATEAU_ID && isSubwayRouteId(event.route_id)}
-							{@const isRatp = event.chateau === IDFM_CHATEAU_ID && isRatpRoute(shortName)}
-							<div
-								class="mx-1 py-1 border-b-1 border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
-								on:click={() => {
-									data_stack_store.update((x) => {
-										x.push(
-											new StackInterface(
-												new SingleTrip(
-													event.chateau,
-													event.trip_id,
-													event.route_id,
-													null,
-													event.service_date.replace(/-/g, ''),
-													null,
-													null
-												)
-											)
-										);
-										return x;
-									});
-								}}
-							>
-								<div
-									class={`${(event.realtime_departure || event.scheduled_departure) < current_time / 1000 && event.scheduled_departure < current_time / 1000 ? 'opacity-80' : ''} ${event.trip_cancelled ? 'opacity-60' : ''}`}
-								>
-									<p>
-										{#if isSubway && shortName}
-											<MtaBullet route_short_name={shortName} matchTextHeight={true} />
-										{:else if isRatp && shortName}
-											<RatpBullet route_short_name={shortName} matchTextHeight={true} />
-										{:else if shortName}
-											<span
-												class="rounded-xs font-bold px-0.5 mx-1 py-0.5"
-												style={`background: ${routeColor}; color: ${textColor};`}
-											>
-												{shortName}
-											</span>
-										{:else if longName}
-											<span
-												class="rounded-xs font-semibold px-0.5 mx-1 py-0.5"
-												style={`background: ${routeColor}; color: ${textColor};`}
-											>
-												{longName}
-											</span>
-										{/if}
-										{#if event.trip_short_name}
-											<span class="font-bold">{event.trip_short_name}</span>
-										{/if}
-										{event.headsign}
-									</p>
-
-									{#if event.last_stop}
-										<p>
-											<span class="ml-1 text-xs font-bold align-middle"> {$_('last_stop')}</span>
-										</p>
-									{/if}
-								</div>
-
-								<StopScreenRow
-									{event}
-									timezone={displayTimezone}
-									{current_time}
-									{show_seconds}
-									use_symbol_sign={true}
-									show_arrivals={event.last_stop}
-								/>
-
-								{#if show_gtfs_ids}
-									<p>trip id: {event.trip_id}</p>
-								{/if}
-
-								{#if event.platform_string_realtime}
-									<p>{$_('platform')} {event.platform_string_realtime}</p>
-								{/if}
-								{#if event.vehicle_number}
-									<p class="text-sm opacity-80">{$_('vehicle')}: {event.vehicle_number}</p>
-								{/if}
+		{#if alerts_expanded}
+			<!-- Full alerts view taking over the entire content area -->
+			<div class="flex flex-col flex-1 overflow-hidden p-2">
+				<div class="flex flex-row items-center mb-3">
+					<button
+						class="flex items-center text-sm font-semibold text-seashore dark:text-seashoredark hover:underline cursor-pointer"
+						on:click={() => (alerts_expanded = false)}
+					>
+						<span class="material-symbols-outlined mr-1 align-middle">arrow_back</span>
+						<span>{$_('back_to_departures', { default: 'Back to departures' })}</span>
+					</button>
+				</div>
+				<div class="catenary-scroll overflow-y-auto flex-1 pb-64 pr-2">
+					{#if data_meta?.alerts}
+						{#each Object.entries(data_meta.alerts) as [chateau, chateau_alerts]}
+							<div class="mt-2 mb-4">
+								<h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1 ml-1 uppercase font-mono">
+									{chateau}
+								</h3>
+								<ServiceAlerts alerts={chateau_alerts} default_tz={displayTimezone} {chateau} expanded={true} />
 							</div>
 						{/each}
 					{/if}
-				{/each}
-
-				<!-- Loader / pager hint -->
-				<div class="w-full text-center py-4 text-sm opacity-80">
-					{#if pages.some((p) => p.loading)}
-						<span>{$_('loadingmoredepartures')}…</span>
-					{:else}{/if}
-
-					<button class="underline" on:click={loadNextPage}>{$_('loadmore')}</button>
 				</div>
-			{:else}
-				<p class="ml-2">Loading…</p>
-			{/if}
-		</div>
-	</div>
+			</div>
+		{:else}
+			<div class="flex flex-col border-b border-gray-200 dark:border-gray-700 pb-0 pr-2">
+				<div class="ml-1 mb-3">
+					<DatePicker
+						bind:unixTime={selected_unix_time}
+						bind:isNow={is_now}
+						timezone={displayTimezone}
+						on:change={() => {
+							resetState(false);
+							loadInitialPages();
+						}}
+					/>
+				</div>
+
+				{#if available_modes.length > 1}
+					<div
+						class="flex flex-row flex-wrap gap-2 ml-1 mb-2 items-center border-b border-gray-200 dark:border-gray-700 w-full"
+					>
+						{#each available_modes as mode}
+							{#if mode === 'rail'}
+								<button
+									class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'rail' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
+									on:click={() => (active_tab = 'rail')}
+								>
+									<span class="material-symbols-outlined text-lg">train</span>
+									{$_('headingIntercityRail')}
+								</button>
+							{:else if mode === 'metro'}
+								<button
+									class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'metro' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
+									on:click={() => (active_tab = 'metro')}
+								>
+									<span class="material-symbols-outlined text-lg">tram</span>
+									{$_('headingLocalRail')}
+								</button>
+							{:else if mode === 'bus'}
+								<button
+									class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'bus' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
+									on:click={() => (active_tab = 'bus')}
+								>
+									<span class="material-symbols-outlined text-lg">directions_bus</span>
+									{$_('headingBus')}
+								</button>
+							{:else if mode === 'other'}
+								<button
+									class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'other' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
+									on:click={() => (active_tab = 'other')}
+								>
+									<span class="material-symbols-outlined text-lg">more_horiz</span>
+									{$_('headingOther')}
+								</button>
+							{/if}
+						{/each}
+					</div>
+				{/if}
+			</div>
+
+			<div
+				bind:this={scrollContainer}
+				class="catenary-scroll overflow-y-auto pb-64 pr-2 flex-1"
+				on:scroll={onScroll}
+			>
+				<div class="flex flex-col">
+					<div>
+						<button
+							class="mt-1 ml-1 mb-1 px-3 py-1.5 font-semibold border border-gray-400 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-[1px] inline-flex items-center w-auto"
+							on:click={loadEarlier}
+						>
+							<span class="inline-block align-bottom mr-1">
+								<span class="material-symbols-outlined"> keyboard_arrow_up </span>
+							</span>
+							<span>{$_('earlier')}</span>
+						</button>
+					</div>
+
+					{#if Object.keys(filtered_dates_to_events).length > 0}
+						{#each Object.keys(filtered_dates_to_events) as date_code}
+							<p class="text-md font-semibold mt-0 mb-1 mx-3">
+								{new Date(date_code).toLocaleDateString(
+									timezone_to_locale(locale_inside_component, displayTimezone),
+									{
+										year: 'numeric',
+										month: 'numeric',
+										day: 'numeric',
+										weekday: 'long',
+										timeZone: 'UTC'
+									}
+								)}
+							</p>
+
+							<!-- Correct Logic Implementation -->
+							{#if active_tab === 'rail'}
+								<table class="w-full border-collapse">
+									<tbody>
+										{#each filtered_dates_to_events[date_code] as event}
+											{@const eventAlerts = alertsByEventKey[composeEventKey(event)] ?? []}
+											<StationScreenTrainRow
+												eurostyle={is_inside_eurostyle}
+												swiss_style={is_inside_switzerland}
+												{event}
+												data_from_server={data_meta}
+												{current_time}
+												{show_seconds}
+												use_symbol_sign={true}
+												timezone={displayTimezone}
+												{eventAlerts}
+											/>
+										{/each}
+									</tbody>
+								</table>
+							{:else}
+								<!-- Non-Rail (Div) List -->
+								{#each filtered_dates_to_events[date_code] as event}
+									{@const shortName = data_meta.routes?.[event.chateau]?.[event.route_id]?.short_name}
+									{@const longName = data_meta.routes?.[event.chateau]?.[event.route_id]?.long_name}
+									{@const routeColor = data_meta.routes?.[event.chateau]?.[event.route_id]?.color}
+									{@const textColor = data_meta.routes?.[event.chateau]?.[event.route_id]?.text_color}
+									{@const isSubway =
+										event.chateau === MTA_CHATEAU_ID && isSubwayRouteId(event.route_id)}
+									{@const isRatp = event.chateau === IDFM_CHATEAU_ID && isRatpRoute(shortName)}
+									{@const eventAlerts = alertsByEventKey[composeEventKey(event)] ?? []}
+									<div
+										class="mx-1 py-1 border-b-1 border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
+										on:click={() => {
+											data_stack_store.update((x) => {
+												x.push(
+													new StackInterface(
+														new SingleTrip(
+															event.chateau,
+															event.trip_id,
+															event.route_id,
+															null,
+															event.service_date.replace(/-/g, ''),
+															null,
+															null
+														)
+													)
+												);
+												return x;
+											});
+										}}
+									>
+										<div
+											class={`${(event.realtime_departure || event.scheduled_departure) < current_time / 1000 && event.scheduled_departure < current_time / 1000 ? 'opacity-80' : ''} ${event.trip_cancelled ? 'opacity-60' : ''}`}
+										>
+											<p>
+												{#if isSubway && shortName}
+													<MtaBullet route_short_name={shortName} matchTextHeight={true} />
+												{:else if isRatp && shortName}
+													<RatpBullet route_short_name={shortName} matchTextHeight={true} />
+												{:else if shortName}
+													<span
+														class="rounded-xs font-bold px-0.5 mx-1 py-0.5"
+														style={`background: ${routeColor}; color: ${textColor};`}
+													>
+														{shortName}
+													</span>
+												{:else if longName}
+													<span
+														class="rounded-xs font-semibold px-0.5 mx-1 py-0.5"
+														style={`background: ${routeColor}; color: ${textColor};`}
+													>
+														{longName}
+													</span>
+												{/if}
+												{#if event.trip_short_name}
+													<span class="font-bold">{event.trip_short_name}</span>
+												{/if}
+												{event.headsign}
+												{#if eventAlerts.length > 0}
+													<span class="inline-block align-middle ml-1">
+														<img src="/icons/service_alert.svg" alt="" class="w-3.5 h-3.5" />
+													</span>
+												{/if}
+											</p>
+
+											{#if event.last_stop}
+												<p>
+													<span class="ml-1 text-xs font-bold align-middle"> {$_('last_stop')}</span>
+												</p>
+											{/if}
+										</div>
+
+										<StopScreenRow
+											{event}
+											timezone={displayTimezone}
+											{current_time}
+											{show_seconds}
+											use_symbol_sign={true}
+											show_arrivals={event.last_stop}
+										/>
+
+										{#if show_gtfs_ids}
+											<p>trip id: {event.trip_id}</p>
+										{/if}
+
+										{#if event.platform_string_realtime}
+											<p>{$_('platform')} {event.platform_string_realtime}</p>
+										{/if}
+										{#if event.vehicle_number}
+											<p class="text-sm opacity-80">{$_('vehicle')}: {event.vehicle_number}</p>
+										{/if}
+									</div>
+								{/each}
+							{/if}
+						{/each}
+
+						<!-- Loader / pager hint -->
+						<div class="w-full text-center py-4 text-sm opacity-80">
+							{#if pages.some((p) => p.loading)}
+								<span>{$_('loadingmoredepartures')}…</span>
+							{:else}{/if}
+
+							<button class="underline" on:click={loadNextPage}>{$_('loadmore')}</button>
+						</div>
+					{:else}
+						<p class="ml-2">Loading…</p>
+					{/if}
+				</div>
+			</div>
+		{/if}
+	{:else}
+		<p class="ml-2">Loading …</p>
+	{/if}
 </div>
+
