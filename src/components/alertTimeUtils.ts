@@ -1,6 +1,6 @@
 export interface ActivePeriod {
-	start: number; // Unix timestamp in seconds
-	end: number;   // Unix timestamp in seconds
+	start: number | null | undefined; // Unix timestamp in seconds
+	end: number | null | undefined;   // Unix timestamp in seconds
 }
 
 export interface CondensedAlertSchedule {
@@ -16,8 +16,23 @@ export function condenseActivePeriods(
 	localeCode: string = 'en-CA',
 	defaultTz: string | null = null
 ): CondensedAlertSchedule {
-	if (!periods || periods.length <= 3) {
-		return { isCondensed: false, baseRule: "", weekdayRules: "", exceptions: "", fallbackPeriods: periods || [] };
+	if (!periods || periods.length === 0) {
+		return { isCondensed: false, baseRule: "", weekdayRules: "", exceptions: "", fallbackPeriods: [] };
+	}
+
+	const completePeriods = periods.filter(
+		(period): period is ActivePeriod & { start: number; end: number } =>
+			period?.start != null && period?.end != null
+	);
+
+	if (completePeriods.length !== periods.length || completePeriods.length <= 3) {
+		return {
+			isCondensed: false,
+			baseRule: "",
+			weekdayRules: "",
+			exceptions: "",
+			fallbackPeriods: periods
+		};
 	}
 
 	const timeZone = defaultTz || Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -55,7 +70,7 @@ export function condenseActivePeriods(
 		}
 	};
 
-	const nights = periods.map(p => {
+	const nights = completePeriods.map(p => {
 		const start = new Date(p.start * 1000);
 		const end = new Date(p.end * 1000);
 		
