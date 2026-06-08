@@ -276,12 +276,31 @@
 		return result;
 	})();
 
+	$: nonTripSpecificAlerts = (() => {
+		if (!data_meta?.alerts) return {};
+		const filtered: Record<string, Record<string, any>> = {};
+		for (const [chateau, chateau_alerts] of Object.entries(data_meta.alerts)) {
+			const activeMap: Record<string, any> = {};
+			for (const [alert_id, alert] of Object.entries(chateau_alerts as Record<string, any>)) {
+				const isTripSpecific = alert.informed_entity && alert.informed_entity.length > 0 &&
+					alert.informed_entity.every((entity: any) => entity.trip?.trip_id);
+				if (!isTripSpecific) {
+					activeMap[alert_id] = alert;
+				}
+			}
+			if (Object.keys(activeMap).length > 0) {
+				filtered[chateau] = activeMap;
+			}
+		}
+		return filtered;
+	})();
+
 	let alerts_expanded = false;
 
 	$: stationWideAlertCount = (() => {
-		if (!data_meta?.alerts) return 0;
+		if (!nonTripSpecificAlerts) return 0;
 		let count = 0;
-		for (const chateau_alerts of Object.values(data_meta.alerts)) {
+		for (const chateau_alerts of Object.values(nonTripSpecificAlerts)) {
 			for (const alert of Object.values(chateau_alerts as any)) {
 				const isSpecific = alert.informed_entity?.some(
 					(entity: any) => entity.route_id || entity.trip?.trip_id
@@ -797,8 +816,8 @@
 					</button>
 				</div>
 				<div class="catenary-scroll overflow-y-auto flex-1 pb-64 pr-2">
-					{#if data_meta?.alerts}
-						{#each Object.entries(data_meta.alerts) as [chateau, chateau_alerts]}
+					{#if nonTripSpecificAlerts}
+						{#each Object.entries(nonTripSpecificAlerts) as [chateau, chateau_alerts]}
 							<div class="mt-2 mb-4">
 								<h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1 ml-1 uppercase font-mono">
 									{chateau}
