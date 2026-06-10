@@ -360,9 +360,9 @@ export async function makeCircleLayers(map: Map, darkMode: boolean, layerspercat
 				]
 			},
 			'text-size': bus_label_text_size,
-			'text-ignore-placement': ['step', ['zoom'], false, 12.5, true]
+			'text-ignore-placement': ['step', ['zoom'], false, 13, true]
 		},
-		minzoom: 11.5,
+		minzoom: 12,
 		paint: {
 			'text-color': textColorOfMapLabels(darkMode),
 			//'text-color': ['get', 'color'],
