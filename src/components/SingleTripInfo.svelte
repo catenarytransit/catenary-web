@@ -1467,9 +1467,13 @@
 						<tr class={`min-h-[3rem] ${i <= last_inactive_stop_idx ? 'opacity-60' : ''}`}>
 							<!-- Time Column: Scheduled Arrival -->
 							{#if show_original_timetable}
-								<td class="align-top text-right border-r-0 whitespace-nowrap pl-2 pr-3">
+								<td
+									class="align-top text-right whitespace-nowrap pl-2 pr-3 {i <= last_inactive_stop_idx
+										? 'opacity-70'
+										: ''}"
+								>
 									{#if stoptime.scheduled_arrival_time_unix_seconds != null}
-										<div class="leading-none text-gray-400 dark:text-gray-500 text-sm mt-1">
+										<div class="leading-none text-gray-400 dark:text-gray-500 text-sm mt-0.5">
 											<Clock
 												timezone={stoptime.timezone || trip_data.tz}
 												time_seconds={stoptime.scheduled_arrival_time_unix_seconds}
@@ -1481,10 +1485,14 @@
 							{/if}
 
 							<!-- Time Column: Real-time Arrival -->
-							<td class="align-top text-right border-r-0 whitespace-nowrap">
-								<div class="flex flex-col items-end">
+							<td
+								class="align-top text-right whitespace-nowrap {i <= last_inactive_stop_idx
+									? 'opacity-70'
+									: ''}"
+							>
+								<div class="flex flex-col items-end mt-0.5">
 									<div class="flex flex-row gap-2 justify-end">
-										<div class="leading-none text-gray-500 dark:text-gray-400 text-sm">
+										<div class="font-bold leading-none text-sm">
 											<Clock
 												timezone={stoptime.timezone || trip_data.tz}
 												time_seconds={stoptime.rt_arrival_time ||
@@ -1511,8 +1519,12 @@
 
 							<!-- Arrival Countdown -->
 							{#if show_countdown_to_stop}
-								<td class="align-top text-right border-r-0 whitespace-nowrap">
-									<div class="leading-none text-xs italic opacity-80">
+								<td
+									class="align-top text-right whitespace-nowrap {i <= last_inactive_stop_idx
+										? 'opacity-70'
+										: ''}"
+								>
+									<div class="leading-none text-xs italic opacity-75 mt-0.5">
 										<TimeDiff
 											diff={(stoptime.rt_arrival_time ||
 												stoptime.scheduled_arrival_time_unix_seconds ||
@@ -1521,6 +1533,7 @@
 											{show_seconds}
 											show_brackets={false}
 											use_ticks={false}
+											textclass={'text-xs slashed-zero tabular-nums'}
 										/>
 									</div>
 								</td>
@@ -1606,7 +1619,7 @@
 									? 'opacity-70'
 									: ''}"
 							>
-								<div class="leading-none text-xs italic opacity-75">
+								<div class="leading-none text-xs italic opacity-75 mt-0.5">
 									<TimeDiff
 										diff={(stoptime.rt_departure_time ||
 											stoptime.scheduled_departure_time_unix_seconds ||
