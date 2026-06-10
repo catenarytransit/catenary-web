@@ -343,7 +343,7 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 			'text-halo-blur': 1
 			//'text-opacity': ['interpolate', ['linear'], ['zoom'], 3, 0, 3.5, 0.8, 4, 1]
 		},
-		minzoom: 6
+		minzoom: 5
 	});
 
 	//tram
@@ -446,7 +446,7 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 			'text-halo-blur': 1
 			//'text-opacity': ['interpolate', ['linear'], ['zoom'], 3, 0, 3.5, 0.8, 4, 1]
 		},
-		minzoom: 6
+		minzoom: 5
 	});
 
 	//INTERCITY RAIL
@@ -509,6 +509,6 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 			'text-halo-blur': 1
 			//'text-opacity': ['interpolate', ['linear'], ['zoom'], 3, 0, 3.5, 0.8, 4, 1]
 		},
-		minzoom: 5.5
+		minzoom: 3
 	});
 }

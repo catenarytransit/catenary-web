@@ -117,7 +117,7 @@
 	let previous_click_on_sidebar_dragger: number | null = null;
 	let previous_y_velocity_sidebar: number | null = null;
 	let layersettingsBox = false;
-	const layersettingsnamestorage = 'layersettingsv8';
+	const layersettingsnamestorage = 'layersettingsv9';
 	let LayerSettingsBox: any;
 	$: if (layersettingsBox) {
 		LayerSettingsBox = import('../components/LayerSettingsBox.svelte');
@@ -605,6 +605,9 @@
 							? 5
 							: 3);
 				mapglobal.setLayerZoomRange(categoryvalues.shapes, minZoom, 24);
+				if (categoryvalues.labelshapes && mapglobal.getLayer(categoryvalues.labelshapes)) {
+					mapglobal.setLayerZoomRange(categoryvalues.labelshapes, minZoom, 24);
+				}
 
 				if (category === 'other') {
 					if (this_layer_settings.shapes) {
