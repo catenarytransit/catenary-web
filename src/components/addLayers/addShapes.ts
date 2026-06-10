@@ -52,7 +52,7 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 			//'line-opacity': ['interpolate', ['linear'], ['zoom'], 6.5, 0.5, 7.2, 0.5, 10, 0.5, 10, 0.5],
 			// 'line-opacity': ['interpolate', ['linear'], ['zoom'], 7, 0.2, 10, 0.4]
 		},
-		minzoom: 10
+		minzoom: 11
 	});
 
 	map.addLayer({
@@ -99,13 +99,13 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 			//'text-field': ['coalesce', ['get', 'route_label']],
 			'text-field': urlParams.get('debug')
 				? [
-						'concat',
-						['get', 'onestop_feed_id'],
-						'|',
-						['get', 'shape_id'],
-						'|',
-						['coalesce', ['get', 'route_label']]
-					]
+					'concat',
+					['get', 'onestop_feed_id'],
+					'|',
+					['get', 'shape_id'],
+					'|',
+					['coalesce', ['get', 'route_label']]
+				]
 				: ['coalesce', ['get', 'route_label']],
 			//'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
 			'text-font': ['literal', ['Arimo-Regular']],

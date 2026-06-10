@@ -473,7 +473,7 @@
 			stoplabels: true,
 			showRoutesLabels: true,
 			showStopNames: true,
-			routesMinZoom: 10,
+			routesMinZoom: 11,
 			label: {
 				route: true,
 				trip: false,
@@ -600,7 +600,7 @@
 				const minZoom =
 					this_layer_settings.routesMinZoom ??
 					(category === 'bus'
-						? 10
+						? 12
 						: category === 'metro' || category === 'tram' || category === 'localrail'
 							? 5
 							: 3);
@@ -876,7 +876,7 @@
 							parsed[cat].showStopNames = true;
 						}
 						if (parsed[cat].routesMinZoom === undefined) {
-							parsed[cat].routesMinZoom = cat === 'bus' ? 10 : cat === 'localrail' ? 5 : 3;
+							parsed[cat].routesMinZoom = cat === 'bus' ? 12 : cat === 'localrail' ? 5 : 3;
 						} else if (cat === 'bus' && parsed[cat].routesMinZoom < 6) {
 							parsed[cat].routesMinZoom = 6;
 						}

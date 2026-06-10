@@ -93,12 +93,25 @@
 				class="mr-2 text-gray-500 hover:text-gray-850 dark:hover:text-gray-250 flex items-center justify-center p-0.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
 				aria-label="Back"
 			>
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					class="h-5 w-5"
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke="currentColor"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2.5"
+						d="M10 19l-7-7m0 0l7-7m-7 7h18"
+					/>
 				</svg>
 			</button>
 			<h2 class="font-bold text-gray-800 dark:text-gray-200">
-				{$_('edit_layer_settings', { default: showEditMenu === 'routes' ? 'Edit Route Settings' : 'Edit Stop Settings' })}
+				{$_('edit_layer_settings', {
+					default: showEditMenu === 'routes' ? 'Edit Route Settings' : 'Edit Stop Settings'
+				})}
 			</h2>
 		{:else}
 			<h2 class="font-bold text-gray-800 dark:text-gray-200">{$_('layers')}</h2>
@@ -137,14 +150,20 @@
 			<!-- Slider: Min Zoom for Route Shapes -->
 			<div class="flex flex-col gap-y-1.5 py-0.5">
 				<div class="flex justify-between items-center select-none">
-					<span class="text-sm font-medium text-gray-750 dark:text-gray-300">Route Shapes Min Zoom</span>
+					<span class="text-sm font-medium text-gray-750 dark:text-gray-300"
+						>Route Shapes Min Zoom</span
+					>
 					<div class="flex items-center gap-x-1.5">
-						<span class="text-xs font-semibold px-2 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-							{layersettings[selectedSettingsTab]?.routesMinZoom ?? (selectedSettingsTab === 'bus' ? 10 : (selectedSettingsTab === 'localrail' ? 5 : 3))}
+						<span
+							class="text-xs font-semibold px-2 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+						>
+							{layersettings[selectedSettingsTab]?.routesMinZoom ??
+								(selectedSettingsTab === 'bus' ? 12 : selectedSettingsTab === 'localrail' ? 5 : 3)}
 						</span>
 						<button
 							on:click={() => {
-								const defaultVal = selectedSettingsTab === 'bus' ? 10 : (selectedSettingsTab === 'localrail' ? 5 : 3);
+								const defaultVal =
+									selectedSettingsTab === 'bus' ? 11 : selectedSettingsTab === 'localrail' ? 5 : 3;
 								layersettings[selectedSettingsTab].routesMinZoom = defaultVal;
 								runSettingsAdapt();
 							}}
@@ -152,8 +171,19 @@
 							title="Reset to default"
 							aria-label="Reset to default"
 						>
-							<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								class="h-3.5 w-3.5"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2.5"
+									d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+								/>
 							</svg>
 						</button>
 					</div>
@@ -163,28 +193,50 @@
 						type="range"
 						min={selectedSettingsTab === 'bus' ? 6 : 3}
 						max="16"
-						step="1"
-						value={layersettings[selectedSettingsTab]?.routesMinZoom ?? (selectedSettingsTab === 'bus' ? 10 : (selectedSettingsTab === 'localrail' ? 5 : 3))}
+						step="0.5"
+						value={layersettings[selectedSettingsTab]?.routesMinZoom ??
+							(selectedSettingsTab === 'bus' ? 12 : selectedSettingsTab === 'localrail' ? 5 : 3)}
 						on:input={(e) => {
-							layersettings[selectedSettingsTab].routesMinZoom = parseInt(e.currentTarget.value);
+							layersettings[selectedSettingsTab].routesMinZoom = parseFloat(e.currentTarget.value);
 							runSettingsAdapt();
 						}}
 						class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600 relative z-10"
 					/>
 					<div
 						class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-0.5 h-3.5 bg-gray-400 dark:bg-gray-500 z-0 pointer-events-none rounded-full"
-						style="left: {(((selectedSettingsTab === 'bus' ? 10 : (selectedSettingsTab === 'localrail' ? 5 : 3)) - (selectedSettingsTab === 'bus' ? 6 : 3)) / (16 - (selectedSettingsTab === 'bus' ? 6 : 3))) * 100}%;"
-						title="Default: {selectedSettingsTab === 'bus' ? 10 : (selectedSettingsTab === 'localrail' ? 5 : 3)}"
+						style="left: {(((selectedSettingsTab === 'bus'
+							? 12
+							: selectedSettingsTab === 'localrail'
+								? 5
+								: 3) -
+							(selectedSettingsTab === 'bus' ? 6 : 3)) /
+							(16 - (selectedSettingsTab === 'bus' ? 6 : 3))) *
+							100}%;"
+						title="Default: {selectedSettingsTab === 'bus'
+							? 12
+							: selectedSettingsTab === 'localrail'
+								? 5
+								: 3}"
 					></div>
 				</div>
-				<div class="flex justify-between text-[10px] text-gray-400 dark:text-gray-500 px-0.5 select-none">
-					<span>Zoom {selectedSettingsTab === 'bus' ? 6 : 3} ({selectedSettingsTab === 'bus' ? 'Min' : 'Far'})</span>
+				<div
+					class="flex justify-between text-[10px] text-gray-400 dark:text-gray-500 px-0.5 select-none"
+				>
+					<span
+						>Zoom {selectedSettingsTab === 'bus' ? 6 : 3} ({selectedSettingsTab === 'bus'
+							? 'Min'
+							: 'Far'})</span
+					>
 					<span>Zoom 16 (Near)</span>
 				</div>
 			</div>
 			{#if currentZoom !== null}
-				<div class="text-[11px] text-gray-500 dark:text-gray-400 select-none pt-1.5 border-t border-gray-150 dark:border-gray-800 mt-0.5">
-					Current Map Zoom: <span class="font-semibold text-gray-700 dark:text-gray-300">{currentZoom}</span>
+				<div
+					class="text-[11px] text-gray-500 dark:text-gray-400 select-none pt-1.5 border-t border-gray-150 dark:border-gray-800 mt-0.5"
+				>
+					Current Map Zoom: <span class="font-semibold text-gray-700 dark:text-gray-300"
+						>{currentZoom}</span
+					>
 				</div>
 			{/if}
 		</div>{:else if showEditMenu === 'stops'}
@@ -207,8 +259,12 @@
 				/>
 			</label>
 			{#if currentZoom !== null}
-				<div class="text-[11px] text-gray-500 dark:text-gray-400 select-none pt-1.5 border-t border-gray-150 dark:border-gray-800 mt-0.5">
-					Current Map Zoom: <span class="font-semibold text-gray-700 dark:text-gray-300">{currentZoom}</span>
+				<div
+					class="text-[11px] text-gray-500 dark:text-gray-400 select-none pt-1.5 border-t border-gray-150 dark:border-gray-800 mt-0.5"
+				>
+					Current Map Zoom: <span class="font-semibold text-gray-700 dark:text-gray-300"
+						>{currentZoom}</span
+					>
 				</div>
 			{/if}
 		</div>
