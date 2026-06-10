@@ -283,7 +283,7 @@ export async function makeCircleLayers(map: Map, darkMode: boolean, layerspercat
 		paint: {
 			'circle-radius': ['interpolate', ['linear'], ['zoom'], 7, 1, 8, 1.2, 9, 1.5, 10, 2, 16, 6],
 			'circle-color': ['get', 'color'],
-			'circle-stroke-color': darkMode == true ? '#ffffff' : '#3a3a3a',
+			'circle-stroke-color': '#3a3a3a',
 			'circle-stroke-opacity': [
 				'interpolate',
 				['linear'],
@@ -362,7 +362,7 @@ export async function makeCircleLayers(map: Map, darkMode: boolean, layerspercat
 			'text-size': bus_label_text_size,
 			'text-ignore-placement': ['step', ['zoom'], false, 12.5, true]
 		},
-		minzoom: 11,
+		minzoom: 11.5,
 		paint: {
 			'text-color': textColorOfMapLabels(darkMode),
 			//'text-color': ['get', 'color'],
@@ -370,7 +370,7 @@ export async function makeCircleLayers(map: Map, darkMode: boolean, layerspercat
 			'text-halo-color': darkMode == true ? '#1d1d1d' : '#ededed',
 			'text-halo-width': darkMode == true ? 2.4 : 1,
 			'text-halo-blur': 1,
-			'text-opacity': ['interpolate', ['linear'], ['zoom'], 7.9, 0, 8, 0.9, 11, 0.95, 12, 1]
+			'text-opacity': ['interpolate', ['linear'], ['zoom'], 7.9, 0, 8, 0.8, 11, 0.9, 12, 1]
 		}
 	});
 

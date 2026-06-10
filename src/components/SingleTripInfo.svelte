@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { json, text } from '@sveltejs/kit';
 	import { BlockStack, SingleTrip, StackInterface, StopStack } from './stackenum';
-	import { onDestroy, onMount } from 'svelte';
+	import { onDestroy, onMount, tick } from 'svelte';
+	import { fade, fly } from 'svelte/transition';
 	import { locale, locales } from 'svelte-i18n';
 	import { isLoading } from 'svelte-i18n';
 	import { _ } from 'svelte-i18n';
@@ -52,8 +53,9 @@
 	let fetchtimeout: NodeJS.Timeout | null = null;
 	let bigfetchtimeout: NodeJS.Timeout | null = null;
 	let updatetimecounter: NodeJS.Timeout | null = null;
-	let show_previous_stops: boolean = false;
 	let bind_scrolling_div: null | HTMLElement = null;
+	let show_scroll_button = false;
+	let has_scrolled_to_current = false;
 	let stop_connections: Record<string, any[]> = {};
 
 	let coach_sequence_screen_shown: boolean = false;
@@ -427,6 +429,59 @@
 		} catch (e: any) {
 			console.error(e);
 		}
+	}
+
+	function getCurrentStopIndex(): number {
+		if (current_at_stop_idx_store !== -1) {
+			return current_at_stop_idx_store;
+		}
+		let next_idx = last_inactive_stop_idx + 1;
+		if (next_idx < stoptimes_cleaned_dataset.length) {
+			return next_idx;
+		}
+		return Math.max(0, stoptimes_cleaned_dataset.length - 1);
+	}
+
+	function scrollToCurrentStop(behavior: ScrollBehavior = 'smooth') {
+		if (!bind_scrolling_div) return;
+		const currentIdx = getCurrentStopIndex();
+		const stopRow = bind_scrolling_div.querySelector(`[data-stop-index="${currentIdx}"]`);
+		if (stopRow) {
+			stopRow.scrollIntoView({ behavior, block: 'center' });
+		}
+	}
+
+	async function autoScrollToCurrentStop() {
+		if (has_scrolled_to_current) return;
+		if (!bind_scrolling_div || stoptimes_cleaned_dataset.length === 0) return;
+		if (last_inactive_stop_idx === -1 && current_at_stop_idx_store === -1) {
+			return;
+		}
+
+		await tick();
+		setTimeout(() => {
+			if (bind_scrolling_div && !has_scrolled_to_current) {
+				scrollToCurrentStop('auto');
+				has_scrolled_to_current = true;
+				setTimeout(checkScrollPosition, 50);
+			}
+		}, 100);
+	}
+
+	function checkScrollPosition() {
+		if (!bind_scrolling_div) return;
+		const currentIdx = getCurrentStopIndex();
+		const stopRow = bind_scrolling_div.querySelector(`[data-stop-index="${currentIdx}"]`) as HTMLElement | null;
+		if (!stopRow) {
+			show_scroll_button = false;
+			return;
+		}
+
+		const containerRect = bind_scrolling_div.getBoundingClientRect();
+		const rowRect = stopRow.getBoundingClientRect();
+
+		// Current stop is below the current scroll window
+		show_scroll_button = rowRect.top >= containerRect.bottom;
 	}
 
 	onDestroy(() => {
@@ -939,12 +994,18 @@
 	$: if (trip_selected) {
 		is_loading_trip_data = true;
 		error = null;
+		has_scrolled_to_current = false;
+		show_scroll_button = false;
 
 		connectSpruceWebSocket(trip_selected.chateau_id, {
 			trip_id: trip_selected.trip_id,
 			start_date: trip_selected.start_date,
 			start_time: trip_selected.start_time
 		});
+	}
+
+	$: if (bind_scrolling_div && stoptimes_cleaned_dataset.length > 0 && (last_inactive_stop_idx !== -1 || current_at_stop_idx_store !== -1)) {
+		autoScrollToCurrentStop();
 	}
 
 	$: if ($spruce_trip_data) {
@@ -1048,6 +1109,7 @@
 					moving_dot_progress = Math.max(0, Math.min(1, elapsed / total));
 				}
 			}
+			checkScrollPosition();
 		}, 100);
 
 		return () => {
@@ -1284,11 +1346,13 @@
 		</div>
 	{/if}
 
-	<div
-		bind:this={bind_scrolling_div}
-		class="flex flex-col catenary-scroll overflow-y-scroll h-full px-3 pt-2"
-		style:border-top={`3px solid ${trip_data.color}`}
-	>
+	<div class="relative h-full overflow-hidden flex flex-col">
+		<div
+			bind:this={bind_scrolling_div}
+			on:scroll={checkScrollPosition}
+			class="flex flex-col catenary-scroll overflow-y-scroll h-full px-3 pt-2"
+			style:border-top={`3px solid ${trip_data.color}`}
+		>
 		{#if show_gtfs_ids}
 			<div class="font-mono px-3">
 				<div class="text-xs md:text-sm font-mono text-gray-500 dark:text-gray-400 leading-none">
@@ -1431,37 +1495,13 @@
 			expanded={false}
 		/>
 
-		{#key trip_data}
-			{#if show_previous_stops && last_inactive_stop_idx > -1}
-				<button
-					on:click={() => {
-						show_previous_stops = false;
-					}}
-					class="cursor-pointer text-md font-medium text-seashore dark:text-seashoredark mb-2"
-				>
-					&darr;
-					{$_('hidepreviousstops')}
-				</button>
-			{/if}
-			{#if !show_previous_stops && last_inactive_stop_idx > -1}
-				<button
-					on:click={() => {
-						show_previous_stops = true;
-					}}
-					class="cursor-pointer text-md font-medium text-seashore dark:text-seashoredark mb-2"
-				>
-					&uarr;
-					{$_('shownpreviousstops', { values: { n: last_inactive_stop_idx + 1 } })}
-				</button>
-			{/if}
-		{/key}
+
 
 		<table class="w-full border-collapse">
 			{#each stoptimes_cleaned_dataset as stoptime, i}
 				{@const connectionKey = stop_connections[stoptime.stop_id] ? stoptime.stop_id : null}
 				{@const isDoubleTime = shouldShowDoubleTime(stoptime)}
 
-				{#if show_previous_stops || i > last_inactive_stop_idx - 1}
 					{#if isDoubleTime}
 						<!-- Arrival Row -->
 						<tr class={`min-h-[3rem] ${i <= last_inactive_stop_idx ? 'opacity-60' : ''}`}>
@@ -1558,7 +1598,7 @@
 					{/if}
 
 					<!-- Main/Departure Row -->
-					<tr class={`min-h-[3rem]`}>
+					<tr data-stop-index={i} class={`min-h-[3rem]`}>
 						<!-- Time Column: Scheduled Departure (or single time) -->
 						{#if show_original_timetable}
 							<td
@@ -1640,7 +1680,7 @@
 								class="absolute top-0 bottom-0 left-1/2 -ml-px w-full h-full flex flex-col items-center"
 							>
 								<!-- Top Line -->
-								{#if i > 0 || isDoubleTime || show_previous_stops}
+								{#if i > 0 || isDoubleTime}
 									{#if i < stoptimes_cleaned_dataset.length - 1}
 										<div
 											class="bg-gray-800 dark:bg-gray-300 w-0.5 absolute top-0 bottom-1/2 bg-current"
@@ -1763,7 +1803,6 @@
 							</div>
 						</td>
 					</tr>
-				{/if}
 			{/each}
 		</table>
 
@@ -1771,11 +1810,20 @@
 		{
 			/if
 		}
-		<!--
-			<br/>
-
-			<NativeLands chateau={trip_selected.chateau_id} />
-
-			<br/>-->
+		</div>
+		{#if show_scroll_button}
+			<button
+				transition:fly={{ y: 20, duration: 250 }}
+				on:click={() => scrollToCurrentStop('smooth')}
+				class="absolute bottom-6 right-6 z-[99] p-3.5 rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all duration-300 border border-white/20 dark:border-black/20 flex items-center justify-center cursor-pointer group hover:brightness-110"
+				style={`background-color: ${trip_data.color}; color: ${trip_data.text_color || '#ffffff'};`}
+				title={$_('skip_to_current_trip', { default: 'Skip to current trip' })}
+			>
+				<!-- Bottom chevron down SVG icon -->
+				<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 transform group-hover:translate-y-0.5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M19 13l-7 7-7-7m14-6l-7 7-7-7" />
+				</svg>
+			</button>
+		{/if}
 	</div>
 {/if}
