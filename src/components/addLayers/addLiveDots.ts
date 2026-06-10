@@ -120,11 +120,11 @@ const metro_label_text_size = [
 	['linear'],
 	['zoom'],
 	6,
-	5,
+	4,
 	9,
-	7,
+	6,
 	10,
-	9,
+	8,
 	11,
 	11,
 	13,
@@ -322,7 +322,7 @@ export async function makeCircleLayers(map: Map, darkMode: boolean, layerspercat
 			'icon-offset': busbearingoffset,
 			'icon-size': busbearingsize
 		},
-		minzoom: 9.7
+		minzoom: 10.5
 	});
 
 	map.addLayer({
@@ -342,7 +342,7 @@ export async function makeCircleLayers(map: Map, darkMode: boolean, layerspercat
 			'icon-offset': busbearingoffset,
 			'icon-size': busbearingsize
 		},
-		minzoom: 9.7
+		minzoom: 10.5
 	});
 
 	map.addLayer({
@@ -577,7 +577,7 @@ export async function makeCircleLayers(map: Map, darkMode: boolean, layerspercat
 		id: layerspercategory.tram.labeldots,
 		type: 'symbol',
 		source: 'localrail',
-		minzoom: 6,
+		minzoom: 8,
 		filter: ['all', ['any', ['==', ['get', 'route_type'], 0], ['==', ['get', 'route_type'], 5]]],
 		layout: {
 			'text-field': ['get', 'maptag'],
@@ -616,7 +616,7 @@ export async function makeCircleLayers(map: Map, darkMode: boolean, layerspercat
 			'circle-radius': ['interpolate', ['linear'], ['zoom'], 6, 3, 8, 3, 10, 4, 11, 6, 16, 12],
 			'circle-color': ['get', 'color'],
 			'circle-stroke-color': darkMode == true ? '#ffffff' : '#3a3a3a',
-			'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 8, 0.8, 10, 1.2],
+			'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 9, 0.1, 10, 1.2],
 			//'circle-emissive-strength': 1,
 			'circle-opacity': ['interpolate', ['linear'], ['zoom'], 7, 0.5, 9, 0.7]
 		}
@@ -678,7 +678,7 @@ export async function makeCircleLayers(map: Map, darkMode: boolean, layerspercat
 		id: layerspercategory.metro.labeldots,
 		type: 'symbol',
 		source: 'localrail',
-		minzoom: 6,
+		minzoom: 8,
 		filter: ['all', ['==', ['get', 'route_type'], 1]],
 		layout: {
 			'text-field': ['get', 'maptag'],
