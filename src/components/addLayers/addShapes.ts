@@ -317,7 +317,12 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 		type: 'symbol',
 		source: 'localcityrailshapes',
 		'source-layer': 'data',
-		filter: ['all', ['any', ['==', 1, ['get', 'route_type']], ['==', 12, ['get', 'route_type']]]],
+		filter: ['all', ['any', ['==', 1, ['get', 'route_type']], ['==', 12, ['get', 'route_type']]],
+			[
+				'!',
+				['all', ['==', 'nyct', ['get', 'chateau']], ['==', true, ['get', 'stop_to_stop_generated']]]
+			]
+		],
 		layout: {
 			'symbol-placement': 'line',
 			'text-field': ['coalesce', ['get', 'route_label']],
