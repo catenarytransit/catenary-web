@@ -158,7 +158,7 @@
 							class="text-xs font-semibold px-2 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
 						>
 							{layersettings[selectedSettingsTab]?.routesMinZoom ??
-								(selectedSettingsTab === 'bus' ? 12 : selectedSettingsTab === 'localrail' ? 5 : 3)}
+								(selectedSettingsTab === 'bus' ? 11 : selectedSettingsTab === 'localrail' ? 5 : 3)}
 						</span>
 						<button
 							on:click={() => {
@@ -195,7 +195,7 @@
 						max="16"
 						step="0.5"
 						value={layersettings[selectedSettingsTab]?.routesMinZoom ??
-							(selectedSettingsTab === 'bus' ? 12 : selectedSettingsTab === 'localrail' ? 5 : 3)}
+							(selectedSettingsTab === 'bus' ? 11 : selectedSettingsTab === 'localrail' ? 5 : 3)}
 						on:input={(e) => {
 							layersettings[selectedSettingsTab].routesMinZoom = parseFloat(e.currentTarget.value);
 							runSettingsAdapt();
@@ -205,7 +205,7 @@
 					<div
 						class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-0.5 h-3.5 bg-gray-400 dark:bg-gray-500 z-0 pointer-events-none rounded-full"
 						style="left: {(((selectedSettingsTab === 'bus'
-							? 12
+							? 11
 							: selectedSettingsTab === 'localrail'
 								? 5
 								: 3) -
@@ -213,7 +213,7 @@
 							(16 - (selectedSettingsTab === 'bus' ? 6 : 3))) *
 							100}%;"
 						title="Default: {selectedSettingsTab === 'bus'
-							? 12
+							? 11
 							: selectedSettingsTab === 'localrail'
 								? 5
 								: 3}"
