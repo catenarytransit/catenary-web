@@ -32,7 +32,7 @@
 				class:border-blue-500={layersettings[selectedSettingsTab].label[change] == true}
 				class:dark:border-blue-50={layersettings[selectedSettingsTab].label[change] == true}
 				class:border-transparent={layersettings[selectedSettingsTab].label[change] == false}
-				class={`bg-gray-100 dark:bg-gray-800 rounded-xl border-2 w-12 h-12 md:w-13 md:h-13 flex items-center align-center`}
+				class={`select-none bg-gray-100 dark:bg-gray-800 rounded-xl border-2 w-11 h-11 flex items-center align-center`}
 			>
 				<div class="mx-auto">
 					<span class="material-symbols-outlined content-center text-xl md:text-2xl">

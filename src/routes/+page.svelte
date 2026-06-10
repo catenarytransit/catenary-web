@@ -117,7 +117,7 @@
 	let previous_click_on_sidebar_dragger: number | null = null;
 	let previous_y_velocity_sidebar: number | null = null;
 	let layersettingsBox = false;
-	const layersettingsnamestorage = 'layersettingsv7';
+	const layersettingsnamestorage = 'layersettingsv8';
 	let LayerSettingsBox: any;
 	$: if (layersettingsBox) {
 		LayerSettingsBox = import('../components/LayerSettingsBox.svelte');
@@ -471,6 +471,9 @@
 			stops: true,
 			shapes: true,
 			stoplabels: true,
+			showRoutesLabels: true,
+			showStopNames: true,
+			routesMinZoom: 10,
 			label: {
 				route: true,
 				trip: false,
@@ -488,6 +491,9 @@
 			labelshapes: true,
 			stoplabels: true,
 			shapes: true,
+			showRoutesLabels: true,
+			showStopNames: true,
+			routesMinZoom: 5,
 			label: {
 				route: true,
 				trip: false,
@@ -505,6 +511,9 @@
 			labelshapes: true,
 			stoplabels: true,
 			shapes: true,
+			showRoutesLabels: true,
+			showStopNames: true,
+			routesMinZoom: 3,
 			label: {
 				route: true,
 				trip: true,
@@ -522,6 +531,9 @@
 			labelshapes: true,
 			stoplabels: true,
 			shapes: true,
+			showRoutesLabels: true,
+			showStopNames: true,
+			routesMinZoom: 3,
 			label: {
 				route: true,
 				trip: false,
@@ -572,9 +584,6 @@
 	) {
 		if (mapglobal) {
 			let shape = mapglobal.getLayer(categoryvalues.shapes);
-
-			//console.log('processing settings',eachcategory, this_layer_settings)
-
 			if (shape) {
 				if (this_layer_settings.shapes) {
 					mapglobal.setLayoutProperty(categoryvalues.shapes, 'visibility', 'visible');
@@ -588,12 +597,22 @@
 					mapglobal.setLayoutProperty(categoryvalues.labelshapes, 'visibility', 'none');
 				}
 
+				const minZoom =
+					this_layer_settings.routesMinZoom ??
+					(category === 'bus'
+						? 10
+						: category === 'metro' || category === 'tram' || category === 'localrail'
+							? 5
+							: 3);
+				mapglobal.setLayerZoomRange(categoryvalues.shapes, minZoom, 24);
+
 				if (category === 'other') {
 					if (this_layer_settings.shapes) {
 						mapglobal.setLayoutProperty('ferryshapes', 'visibility', 'visible');
 					} else {
 						mapglobal.setLayoutProperty('ferryshapes', 'visibility', 'none');
 					}
+					mapglobal.setLayerZoomRange('ferryshapes', minZoom, 24);
 				}
 			} else {
 				console.error('could not fetch shapes layer', category);
@@ -713,8 +732,6 @@
 					'text-field',
 					interpretLabelsToCode(this_layer_settings.label, usunits)
 				);
-
-
 			}
 
 			if (category == 'tram') {
@@ -723,8 +740,6 @@
 					'text-field',
 					interpretLabelsToCode(this_layer_settings.label, usunits)
 				);
-
-				
 			}
 
 			if (category == 'metro') {
@@ -733,8 +748,6 @@
 					'text-field',
 					interpretLabelsToCode(this_layer_settings.label, usunits)
 				);
-
-				
 			}
 
 			if (category == 'train') {
@@ -743,10 +756,7 @@
 					'text-field',
 					interpretLabelsToCode(this_layer_settings.label, usunits)
 				);
-
-				
 			}
-
 
 			applyVehicleFilters(categoryvalues);
 		} else {
@@ -857,6 +867,21 @@
 			let parsed = JSON.parse(get_layers_from_local);
 
 			if (parsed) {
+				for (const cat of ['bus', 'localrail', 'intercityrail', 'other']) {
+					if (parsed[cat]) {
+						if (parsed[cat].showRoutesLabels === undefined) {
+							parsed[cat].showRoutesLabels = true;
+						}
+						if (parsed[cat].showStopNames === undefined) {
+							parsed[cat].showStopNames = true;
+						}
+						if (parsed[cat].routesMinZoom === undefined) {
+							parsed[cat].routesMinZoom = cat === 'bus' ? 10 : cat === 'localrail' ? 5 : 3;
+						} else if (cat === 'bus' && parsed[cat].routesMinZoom < 6) {
+							parsed[cat].routesMinZoom = 6;
+						}
+					}
+				}
 				layersettings = parsed;
 
 				runSettingsAdapt();
@@ -2033,15 +2058,24 @@
 
 				{#if clock_skew !== null && Math.abs(clock_skew) > 10000 && !clock_skew_ignored}
 					<div
-						class="md:hidden mx-3 mt-1 mb-2 px-3 py-2 border rounded text-sm flex justify-between items-center z-10 shrink-0 {Math.abs(clock_skew) > 15000 ? 'bg-red-100 dark:bg-red-900 border-red-400 dark:border-red-600 text-red-800 dark:text-red-200' : 'bg-yellow-100 dark:bg-yellow-900 border-yellow-400 dark:border-yellow-600 text-yellow-800 dark:text-yellow-200'}"
+						class="md:hidden mx-3 mt-1 mb-2 px-3 py-2 border rounded text-sm flex justify-between items-center z-10 shrink-0 {Math.abs(
+							clock_skew
+						) > 15000
+							? 'bg-red-100 dark:bg-red-900 border-red-400 dark:border-red-600 text-red-800 dark:text-red-200'
+							: 'bg-yellow-100 dark:bg-yellow-900 border-yellow-400 dark:border-yellow-600 text-yellow-800 dark:text-yellow-200'}"
 					>
 						<div>
-							<span class="font-bold">{$_('clock_skew_warning', { values: { skew: (Math.abs(clock_skew) / 1000).toFixed(2) } })}</span>
+							<span class="font-bold"
+								>{$_('clock_skew_warning', {
+									values: { skew: (Math.abs(clock_skew) / 1000).toFixed(2) }
+								})}</span
+							>
 						</div>
 						<button
 							on:click={() => (clock_skew_ignored = true)}
-							class="underline ml-2 whitespace-nowrap {Math.abs(clock_skew) > 15000 ? 'text-red-600 dark:text-red-300' : 'text-yellow-700 dark:text-yellow-300'}"
-							>{$_('clock_skew_ignore')}</button
+							class="underline ml-2 whitespace-nowrap {Math.abs(clock_skew) > 15000
+								? 'text-red-600 dark:text-red-300'
+								: 'text-yellow-700 dark:text-yellow-300'}">{$_('clock_skew_ignore')}</button
 						>
 					</div>
 				{/if}
@@ -2053,15 +2087,24 @@
 
 	{#if clock_skew !== null && Math.abs(clock_skew) > 10000 && !clock_skew_ignored}
 		<div
-			class="hidden md:flex fixed top-4 left-[396px] right-20 px-4 py-2 border rounded shadow-md text-sm justify-between items-center z-40 {Math.abs(clock_skew) > 15000 ? 'bg-red-100 dark:bg-red-900 border-red-400 dark:border-red-600 text-red-800 dark:text-red-200' : 'bg-yellow-100 dark:bg-yellow-900 border-yellow-400 dark:border-yellow-600 text-yellow-800 dark:text-yellow-200'}"
+			class="hidden md:flex fixed top-4 left-[396px] right-20 px-4 py-2 border rounded shadow-md text-sm justify-between items-center z-40 {Math.abs(
+				clock_skew
+			) > 15000
+				? 'bg-red-100 dark:bg-red-900 border-red-400 dark:border-red-600 text-red-800 dark:text-red-200'
+				: 'bg-yellow-100 dark:bg-yellow-900 border-yellow-400 dark:border-yellow-600 text-yellow-800 dark:text-yellow-200'}"
 		>
 			<div>
-				<span class="font-bold">{$_('clock_skew_warning', { values: { skew: (Math.abs(clock_skew) / 1000).toFixed(2) } })}</span>
+				<span class="font-bold"
+					>{$_('clock_skew_warning', {
+						values: { skew: (Math.abs(clock_skew) / 1000).toFixed(2) }
+					})}</span
+				>
 			</div>
 			<button
 				on:click={() => (clock_skew_ignored = true)}
-				class="underline ml-4 whitespace-nowrap {Math.abs(clock_skew) > 15000 ? 'text-red-600 dark:text-red-300' : 'text-yellow-700 dark:text-yellow-300'}"
-				>{$_('clock_skew_ignore')}</button
+				class="underline ml-4 whitespace-nowrap {Math.abs(clock_skew) > 15000
+					? 'text-red-600 dark:text-red-300'
+					: 'text-yellow-700 dark:text-yellow-300'}">{$_('clock_skew_ignore')}</button
 			>
 		</div>
 	{/if}
