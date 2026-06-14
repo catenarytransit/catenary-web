@@ -337,7 +337,7 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			['==', ['get', 'station_type'], 'station'],
 			['==', ['get', 'mode_type'], 'subway']
 		],
-		minzoom: 12
+		minzoom: 13
 	});
 
 	// TRAMS
