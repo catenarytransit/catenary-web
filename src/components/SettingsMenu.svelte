@@ -9,7 +9,8 @@
 		show_seconds_store,
 		show_stop_codes_store,
 		show_countdown_to_stop_store,
-		clock_skew_store
+		clock_skew_store,
+		show_osm_ids_store
 	} from '../globalstores';
 
 	import { livedotscaling_store } from '../fontscalingstores';
@@ -207,6 +208,25 @@
 			}}
 		/>
 		<p>{$_('show_stop_codes')}</p>
+	</div>
+
+	<div class="flex flex-row gap-x-2">
+		<input
+			type="checkbox"
+			checked={get(show_osm_ids_store)}
+			class="accent-seashore"
+			on:click={() => {
+				show_osm_ids_store.update((x) => !x);
+				window.localStorage.show_osm_ids = get(show_osm_ids_store);
+			}}
+			on:keydown={(e) => {
+				if (e.key === 'Enter') {
+					show_osm_ids_store.update((x) => !x);
+					window.localStorage.show_osm_ids = get(show_osm_ids_store);
+				}
+			}}
+		/>
+		<p>{$_('show_osm_ids')}</p>
 	</div>
 
 	<div class="flex flex-row gap-x-2">

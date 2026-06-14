@@ -19,7 +19,8 @@
 		map_pointer_store,
 		show_gtfs_ids_store,
 		ui_theme_store,
-		stops_to_hide_store
+		stops_to_hide_store,
+		show_osm_ids_store
 	} from '../globalstores';
 	import TimeDiff from './TimeDiff.svelte';
 	import DelayDiff from './DelayDiff.svelte';
@@ -44,6 +45,7 @@
 
 	export let initial_is_now: boolean = true;
 	export let initial_selected_unix_time: number = Date.now() / 1000;
+	export let osm_id: string | null = null;
 
 	let is_now = initial_is_now;
 	let selected_unix_time = initial_selected_unix_time;
@@ -120,6 +122,9 @@
 	let show_seconds = get(show_seconds_store);
 	let locale_inside_component = get(locale);
 	show_seconds_store.subscribe((value) => (show_seconds = value));
+
+	let show_osm_ids = get(show_osm_ids_store);
+	show_osm_ids_store.subscribe((value) => (show_osm_ids = value));
 
 	// UI state
 	let filtered_dates_to_events: Record<string, any[]> = {};
@@ -789,7 +794,12 @@
 					/>
 				</p>
 			</div>
-			<p class="text-sm ml-1 mb-0">{displayTimezone}</p>
+			<p class="text-sm ml-1 mb-0">
+				{displayTimezone}
+				{#if osm_id && show_osm_ids}
+					<span class="font-mono text-xs dark:text-gray-400 text-gray-500 ml-2">osm id: {osm_id}</span>
+				{/if}
+			</p>
 
 			{#if stationWideAlertCount > 0}
 				<button

@@ -22,6 +22,7 @@
 <GenericStopScreen
 	{buildUrl}
 	key={osm_id}
+	{osm_id}
 	{stationName}
 	{stationLat}
 	{stationLon}

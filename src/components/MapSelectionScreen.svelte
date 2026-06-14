@@ -16,7 +16,7 @@
 	} from '../components/stackenum';
 	import HomeButton from './SidebarParts/home_button.svelte';
 	import { get } from 'svelte/store';
-	import { data_stack_store, show_gtfs_ids_store } from '../globalstores';
+	import { data_stack_store, show_gtfs_ids_store, show_osm_ids_store } from '../globalstores';
 	import { _ } from 'svelte-i18n';
 	import {
 		fixHeadsignIcon,
@@ -42,6 +42,12 @@
 
 	show_gtfs_ids_store.subscribe((value) => {
 		show_gtfs_ids = value;
+	});
+
+	let show_osm_ids = get(show_osm_ids_store);
+
+	show_osm_ids_store.subscribe((value) => {
+		show_osm_ids = value;
 	});
 
 	$: if (map_selection_screen) {
@@ -294,6 +300,9 @@
 									? 'Tram'
 									: option.data.mode_type}
 					</p>
+					{#if show_osm_ids}
+						<p class="font-mono text-xs dark:text-gray-400 text-gray-500">osm id: {option.data.osm_id}</p>
+					{/if}
 
 					{#if osm_stations_preview_data[option.data.osm_id] && osm_stations_preview_data[option.data.osm_id].stops}
 						{@const allRouteIds = [
