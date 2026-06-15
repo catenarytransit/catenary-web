@@ -665,6 +665,27 @@
 				}
 			}
 
+			if (category === 'intercityrail') {
+				for (let i = 1; i <= 6; i++) {
+					const circleLayerId = `intercityrail-ranked-${i}`;
+					const labelLayerId = `intercityrail-ranked-label-${i}`;
+					if (mapglobal.getLayer(circleLayerId)) {
+						mapglobal.setLayoutProperty(
+							circleLayerId,
+							'visibility',
+							this_layer_settings.stops ? 'visible' : 'none'
+						);
+					}
+					if (mapglobal.getLayer(labelLayerId)) {
+						mapglobal.setLayoutProperty(
+							labelLayerId,
+							'visibility',
+							this_layer_settings.stoplabels ? 'visible' : 'none'
+						);
+					}
+				}
+			}
+
 			let dotcirclelayer = mapglobal.getLayer(categoryvalues.livedots);
 			let dotlabel = mapglobal.getLayer(categoryvalues.labeldots);
 

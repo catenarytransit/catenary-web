@@ -232,18 +232,18 @@ export function setup_click_handler(
 			// OSM Stations (excluding platforms - only station_type === 'station')
 			const selected_osm_stations_raw = selectedFeatures.filter(
 				(x: any) =>
-					x.source === 'osmstations' &&
+					(x.source === 'osmstations' || x.source === 'osmstationsranked') &&
 					(
 						(x.properties.station_type === 'station' ||
-						x.properties.station_type === 'tram_stop' ||
-						x.properties.station_type === 'halt') ||
+							x.properties.station_type === 'tram_stop' ||
+							x.properties.station_type === 'halt') ||
 						((x.properties.parent_osm_id === null || x.properties.parent_osm_id === undefined) && !(
 							(typeof x.properties.ref == "string") || (typeof x.properties.local_ref == "string")
 						))
 					)
 			);
 
-			console.log('osmstations', selectedFeatures.filter((x: any) => x.source === 'osmstations'));
+			console.log('osmstations', selectedFeatures.filter((x: any) => x.source === 'osmstations' || x.source === 'osmstationsranked'));
 			console.log("selected osm stations raw", selected_osm_stations_raw);
 
 			const selected_osm_stations_key_unique = new Set();

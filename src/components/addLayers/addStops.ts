@@ -25,12 +25,68 @@ const internationalIntercityCircleSize = [
 	8
 ];
 
+const osmTramSubwayCircleSize = [
+	'interpolate',
+	['linear'],
+	['zoom'],
+	5,
+	0.8,
+	8,
+	1.4,
+	12,
+	2.8,
+	15,
+	4.8
+];
+
 function getCircleInside(darkMode: boolean) {
 	return darkMode ? '#1c2636' : '#ffffff';
 }
 
 function getCircleOutside(darkMode: boolean) {
 	return darkMode ? '#ffffff' : '#1c2636';
+}
+
+function getRanked12Inside(darkMode: boolean) {
+	return darkMode ? '#1c2636' : '#ffffff';
+}
+
+function getRanked12Outside(darkMode: boolean) {
+	return darkMode ? '#dddddd' : '#888888';
+}
+
+function getRanked3456Inside(darkMode: boolean) {
+	return darkMode ? '#dddddd' : '#888888';
+}
+
+function getRanked3456Outside(darkMode: boolean) {
+	return darkMode ? '#1c2636' : '#ffffff';
+}
+
+function getOsmLabelTextColor(darkMode: boolean, minZoom: number) {
+	const startZoom = minZoom;
+	const endZoom = minZoom + 2;
+	if (darkMode) {
+		return [
+			'interpolate',
+			['linear'],
+			['zoom'],
+			startZoom,
+			'#aaaaaa',
+			endZoom,
+			'#ffffff'
+		];
+	} else {
+		return [
+			'interpolate',
+			['linear'],
+			['zoom'],
+			startZoom,
+			'#555555',
+			endZoom,
+			'#000000'
+		];
+	}
 }
 
 export function changeStopsTheme(map: Map, darkMode: boolean) {
@@ -70,16 +126,16 @@ export function changeStopsTheme(map: Map, darkMode: boolean) {
 	);
 
 	// Metro osm stops
-	map.setPaintProperty(layerspercategory.metro.osmstops, 'circle-color', getCircleInside(darkMode));
+	map.setPaintProperty(layerspercategory.metro.osmstops, 'circle-color', getRanked3456Inside(darkMode));
 	map.setPaintProperty(
 		layerspercategory.metro.osmstops,
 		'circle-stroke-color',
-		getCircleOutside(darkMode)
+		getRanked3456Outside(darkMode)
 	);
 	map.setPaintProperty(
 		layerspercategory.metro.osmlabelstops,
 		'text-color',
-		darkMode ? '#ffffff' : '#2a2a2a'
+		getOsmLabelTextColor(darkMode, 13)
 	);
 	map.setPaintProperty(
 		layerspercategory.metro.osmlabelstops,
@@ -106,16 +162,16 @@ export function changeStopsTheme(map: Map, darkMode: boolean) {
 	);
 
 	// Tram osm stops
-	map.setPaintProperty(layerspercategory.tram.osmstops, 'circle-color', getCircleInside(darkMode));
+	map.setPaintProperty(layerspercategory.tram.osmstops, 'circle-color', getRanked3456Inside(darkMode));
 	map.setPaintProperty(
 		layerspercategory.tram.osmstops,
 		'circle-stroke-color',
-		getCircleOutside(darkMode)
+		getRanked3456Outside(darkMode)
 	);
 	map.setPaintProperty(
 		layerspercategory.tram.osmlabelstops,
 		'text-color',
-		darkMode ? '#ffffff' : '#2a2a2a'
+		getOsmLabelTextColor(darkMode, 14)
 	);
 	map.setPaintProperty(
 		layerspercategory.tram.osmlabelstops,
@@ -162,6 +218,37 @@ export function changeStopsTheme(map: Map, darkMode: boolean) {
 		'text-halo-color',
 		darkMode ? '#0f172a' : '#ffffff'
 	);
+
+	// Ranked stations and labels
+	for (let i = 1; i <= 6; i++) {
+		const circleLayerId = `intercityrail-ranked-${i}`;
+		const labelLayerId = `intercityrail-ranked-label-${i}`;
+		const isLevel12 = i <= 2;
+		if (map.getLayer(circleLayerId)) {
+			map.setPaintProperty(
+				circleLayerId,
+				'circle-color',
+				isLevel12 ? getRanked12Inside(darkMode) : getRanked3456Inside(darkMode)
+			);
+			map.setPaintProperty(
+				circleLayerId,
+				'circle-stroke-color',
+				isLevel12 ? getRanked12Outside(darkMode) : getRanked3456Outside(darkMode)
+			);
+		}
+		if (map.getLayer(labelLayerId)) {
+			map.setPaintProperty(
+				labelLayerId,
+				'text-color',
+				darkMode ? '#ffffff' : '#2a2a2a'
+			);
+			map.setPaintProperty(
+				labelLayerId,
+				'text-halo-color',
+				darkMode ? '#0f172a' : '#ffffff'
+			);
+		}
+	}
 }
 
 export function bus_stop_stop_color(darkMode: boolean) {
@@ -186,7 +273,7 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			'circle-opacity': 0.1
 			//'circle-emissive-strength': 1
 		},
-		minzoom: window?.innerWidth >= 768 ? 13 : 11.5,
+		minzoom: window?.innerWidth >= 768 ? 14 : 12,
 		filter: default_bus_filter
 	});
 
@@ -280,31 +367,31 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 	map.addLayer({
 		id: layerspercategory.metro.osmstops,
 		type: 'circle',
-		source: 'osmstations',
+		source: 'osmstationsranked',
 		'source-layer': 'data',
 		layout: {},
 		paint: {
-			'circle-color': getCircleInside(darkMode),
-			'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 0.8, 12, 3.5, 15, 5, 16, 6],
-			'circle-stroke-color': getCircleOutside(darkMode),
-			'circle-stroke-width': ['step', ['zoom'], 0.4, 10.5, 0.8, 11, 1.2, 13.2, 1.5],
-			'circle-stroke-opacity': ['step', ['zoom'], 0.5, 15, 0.6],
-			'circle-opacity': ['interpolate', ['linear'], ['zoom'], 10, 0.7, 16, 0.8]
-			//'circle-emissive-strength': 1
+			'circle-color': getRanked3456Inside(darkMode),
+			'circle-radius': osmTramSubwayCircleSize,
+			'circle-stroke-color': getRanked3456Outside(darkMode),
+			'circle-stroke-width': ['step', ['zoom'], 1.8, 12, 3.0],
+			'circle-stroke-opacity': 1.0,
+			'circle-opacity': 1.0
 		},
 		minzoom: 9,
 		filter: [
 			'all',
 			['==', ['get', 'local_ref'], null],
 			['==', ['get', 'station_type'], 'station'],
-			['==', ['get', 'mode_type'], 'subway']
+			['==', ['get', 'mode_type'], 'subway'],
+			['!=', ['get', 'number_of_associated_stops'], 0]
 		]
 	});
 
 	map.addLayer({
 		id: layerspercategory.metro.osmlabelstops,
 		type: 'symbol',
-		source: 'osmstations',
+		source: 'osmstationsranked',
 		'source-layer': 'data',
 		layout: {
 			'text-field': ['get', 'name'],
@@ -326,16 +413,16 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			]
 		},
 		paint: {
-			'text-color': darkMode ? '#ffffff' : '#2a2a2a',
+			'text-color': getOsmLabelTextColor(darkMode, 13),
 			'text-halo-color': darkMode ? '#0f172a' : '#ffffff',
 			'text-halo-width': 1
 			//'text-emissive-strength': 1
 		},
 		filter: [
 			'all',
-			['==', ['get', 'local_ref'], null],
 			['==', ['get', 'station_type'], 'station'],
-			['==', ['get', 'mode_type'], 'subway']
+			['==', ['get', 'mode_type'], 'subway'],
+			['!=', ['get', 'number_of_associated_stops'], 0]
 		],
 		minzoom: 13
 	});
@@ -403,16 +490,16 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 	map.addLayer({
 		id: layerspercategory.tram.osmstops,
 		type: 'circle',
-		source: 'osmstations',
+		source: 'osmstationsranked',
 		'source-layer': 'data',
 		layout: {},
 		paint: {
-			'circle-color': getCircleInside(darkMode),
-			'circle-radius': ['interpolate', ['linear'], ['zoom'], 9, 0.9, 10, 1, 12, 3, 15, 4, 16, 5],
-			'circle-stroke-color': getCircleOutside(darkMode),
-			'circle-stroke-width': ['step', ['zoom'], 0.8, 12, 1.2, 13.2, 1.5],
-			'circle-stroke-opacity': ['step', ['zoom'], 0.4, 11, 0.5, 15, 0.6],
-			'circle-opacity': ['step', ['zoom'], 0.4, 11, 0.5, 15, 0.8],
+			'circle-color': getRanked3456Inside(darkMode),
+			'circle-radius': osmTramSubwayCircleSize,
+			'circle-stroke-color': getRanked3456Outside(darkMode),
+			'circle-stroke-width': ['step', ['zoom'], 1.8, 12, 3.0],
+			'circle-stroke-opacity': 1.0,
+			'circle-opacity': 1.0
 		},
 		minzoom: 12,
 		filter: [
@@ -425,6 +512,7 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 				['==', ['get', 'station_type'], 'tram_stop'],
 				['==', ['get', 'station_type'], 'halt']
 			],
+			['!=', ['get', 'number_of_associated_stops'], 0],
 			['any', ['==', ['get', 'mode_type'], 'tram'], ['==', ['get', 'mode_type'], 'light_rail']]
 		]
 	});
@@ -466,7 +554,7 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			]
 		},
 		paint: {
-			'text-color': darkMode ? '#ffffff' : '#2a2a2a',
+			'text-color': getOsmLabelTextColor(darkMode, 14),
 			'text-halo-color': darkMode ? '#0f172a' : '#ffffff',
 			'text-halo-width': 1
 		},
@@ -480,6 +568,7 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 				['==', ['get', 'station_type'], 'tram_stop'],
 				['==', ['get', 'station_type'], 'halt']
 			],
+			['!=', ['get', 'number_of_associated_stops'], 0],
 			['any', ['==', ['get', 'mode_type'], 'tram'], ['==', ['get', 'mode_type'], 'light_rail']]
 		],
 		minzoom: 14
@@ -545,88 +634,114 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 		minzoom: 8
 	});
 
-	//INTERCITY RAIL OSM
+	// INTERCITY RAIL RANKED OSM STATIONS
+	const ranked12CircleSize = [
+		'interpolate',
+		['linear'],
+		['zoom'],
+		3,
+		1.5,
+		6,
+		2,
+		8,
+		3,
+		12,
+		5.5,
+		15,
+		8
+	];
 
-	map.addLayer({
-		id: layerspercategory.intercityrail.osmstops,
-		type: 'circle',
-		source: 'osmstations',
-		'source-layer': 'data',
-		layout: {},
-		paint: {
-			'circle-color': getCircleInside(darkMode),
-			'circle-radius': internationalIntercityCircleSize,
-			'circle-stroke-color': getCircleOutside(darkMode),
-			'circle-stroke-width': ['step', ['zoom'], 1.2, 13.2, 1.5],
-			'circle-stroke-opacity': ['step', ['zoom'], 0.5, 15, 0.6],
-			'circle-opacity': ['step', ['zoom'], 0.6, 13, 0.8]
-			//'circle-emissive-strength': 1
-		},
-		filter: [
-			'all',
-			['==', ['get', 'local_ref'], null],
-			['any',
-				['==', ['get', 'station_type'], 'station'], ['==', ['get', 'station_type'], 'halt'],
-				[
-					'all',
-					['==', ['get', 'mode_type'], 'rail'],
-					['==', ['get', 'parent_osm_id'], null],
-					['==', ['get', 'ref'], null],
-					['==', ['get', 'local_ref'], null]
-				]
-			],
-			['==', ['get', 'mode_type'], 'rail']
-		],
-		minzoom: 7.5
-	});
+	const ranked3456CircleSize = [
+		'interpolate',
+		['linear'],
+		['zoom'],
+		5,
+		1,
+		8,
+		1.8,
+		12,
+		3.5,
+		15,
+		6
+	];
 
-	map.addLayer({
-		id: layerspercategory.intercityrail.osmlabelstops,
-		type: 'symbol',
-		source: 'osmstations',
-		'source-layer': 'data',
-		layout: {
-			'text-field': ['get', 'name'],
-			'text-variable-anchor': ['left', 'right', 'top', 'bottom'],
-			'text-size': internationalIntercityLabelSize,
-			'text-radial-offset': 0.2,
-			//'text-ignore-placement': true,
-			//'icon-ignore-placement': false,
-			//'text-allow-overlap': true,
-			//'symbol-avoid-edges': false,
-			'text-font': [
-				'step',
-				['zoom'],
-				['literal', ['Arimo-Regular']],
-				12.5,
-				['literal', ['Arimo-Medium']],
-				13.5,
-				['literal', ['Arimo-Bold']]
-			]
-		},
-		paint: {
-			'text-color': darkMode ? '#ffffff' : '#2a2a2a',
-			'text-halo-color': darkMode ? '#0f172a' : '#ffffff',
-			'text-halo-width': 1
-			//'text-emissive-strength': 1
-		},
-		filter: [
-			'all',
-			['==', ['get', 'local_ref'], null],
-			['any',
-				['==', ['get', 'station_type'], 'station'], ['==', ['get', 'station_type'], 'halt'],
-				[
-					'all',
-					['==', ['get', 'mode_type'], 'rail'],
-					['==', ['get', 'parent_osm_id'], null],
-					['==', ['get', 'ref'], null],
-					['==', ['get', 'local_ref'], null]
-				]
+	const ranked12LabelSize = [
+		'interpolate',
+		['linear'],
+		['zoom'],
+		6,
+		8,
+		13,
+		13
+	];
+
+	const ranked3456LabelSize = [
+		'interpolate',
+		['linear'],
+		['zoom'],
+		8,
+		7,
+		13,
+		11
+	];
+
+	for (let i = 6; i >= 1; i--) {
+		const isLevel12 = i <= 2;
+		const minZoomCircle = i === 1 ? 4 : i === 2 ? 5 : i === 3 ? 6 : i === 4 ? 7 : i === 5 ? 8 : 9;
+		const minZoomLabel = i === 1 ? 6 : i === 2 ? 7 : i === 3 ? 8 : i === 4 ? 9 : i === 5 ? 10 : 11;
+
+		map.addLayer({
+			id: `intercityrail-ranked-${i}`,
+			type: 'circle',
+			source: 'osmstationsranked',
+			'source-layer': 'data',
+			layout: {
+				visibility: 'none'
+			},
+			paint: {
+				'circle-color': isLevel12 ? getRanked12Inside(darkMode) : getRanked3456Inside(darkMode),
+				'circle-radius': isLevel12 ? ranked12CircleSize : ranked3456CircleSize,
+				'circle-stroke-color': isLevel12 ? getRanked12Outside(darkMode) : getRanked3456Outside(darkMode),
+				'circle-stroke-width': ['step', ['zoom'], 1.8, 12, 3.0],
+				'circle-stroke-opacity': 1.0,
+				'circle-opacity': 1.0
+			},
+			filter: [
+				'all',
+				['==', ['get', 'importance_level_station'], i],
+				['==', ['get', 'rail'], true],
+				['!=', ['get', 'mode_type'], 'light_rail'],
+			['!=', ['get', 'number_of_associated_stops'], 0]
 			],
-			['==', ['get', 'mode_type'], 'rail']
-		],
-		minzoom: 8
-	});
+			minzoom: minZoomCircle
+		});
+
+		map.addLayer({
+			id: `intercityrail-ranked-label-${i}`,
+			type: 'symbol',
+			source: 'osmstationsranked',
+			'source-layer': 'data',
+			layout: {
+				'text-field': ['get', 'name'],
+				'text-variable-anchor': ['left', 'right', 'top', 'bottom'],
+				'text-size': isLevel12 ? ranked12LabelSize : ranked3456LabelSize,
+				'text-radial-offset': 0.5,
+				'text-font': ['Arimo-Bold'],
+				visibility: 'none'
+			},
+			paint: {
+				'text-color': darkMode ? '#ffffff' : '#2a2a2a',
+				'text-halo-color': darkMode ? '#0f172a' : '#ffffff',
+				'text-halo-width': 1
+			},
+			filter: [
+				'all',
+				['==', ['get', 'importance_level_station'], i],
+				['==', ['get', 'rail'], true]
+			],
+			minzoom: minZoomLabel
+		});
+	}
 
 	let urlParams = new URLSearchParams(window.location.search);
 	let debugmode = !!urlParams.get('debug');
@@ -804,6 +919,6 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			//'text-emissive-strength': 1
 		},
 		filter: ['all', ['any', ['>', ['zoom'], 16], ['==', null, ['get', 'parent_station']]]],
-		minzoom: 9
+		minzoom: 12
 	});
 }

@@ -149,7 +149,7 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 		],
 		paint: {
 			'line-color': ['concat', '#', ['get', 'color']],
-			'line-width': ['interpolate', ['linear'], ['zoom'], 7, 2, 9, 3],
+			'line-width': ['interpolate', ['linear'], ['zoom'], 7, 0.5, 9, 1],
 			'line-opacity': 1
 			//'line-emissive-strength': 1
 		},
@@ -255,9 +255,9 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 				3,
 				0.4,
 				5,
-				0.7,
+				0.6,
 				7,
-				1,
+				0.8,
 				9,
 				2,
 				11,
@@ -514,6 +514,6 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 			'text-halo-blur': 1
 			//'text-opacity': ['interpolate', ['linear'], ['zoom'], 3, 0, 3.5, 0.8, 4, 1]
 		},
-		minzoom: 3
+		minzoom: 6
 	});
 }

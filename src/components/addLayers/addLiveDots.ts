@@ -678,7 +678,7 @@ export async function makeCircleLayers(map: Map, darkMode: boolean, layerspercat
 		id: layerspercategory.metro.labeldots,
 		type: 'symbol',
 		source: 'localrail',
-		minzoom: 8,
+		minzoom: 9,
 		filter: ['all', ['==', ['get', 'route_type'], 1]],
 		layout: {
 			'text-field': ['get', 'maptag'],

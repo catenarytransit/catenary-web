@@ -18,8 +18,18 @@ export const layerspercategory = {
 		labelstops: 'intercityrailstopslabel',
 		shapes: 'intercityrailshapes',
 		labelshapes: 'intercityraillabelshapes',
-		osmstops: 'intercityrailosmstopscircle',
-		osmlabelstops: 'intercityrailosmstopslabel'
+		ranked_1: 'intercityrail-ranked-1',
+		ranked_2: 'intercityrail-ranked-2',
+		ranked_3: 'intercityrail-ranked-3',
+		ranked_4: 'intercityrail-ranked-4',
+		ranked_5: 'intercityrail-ranked-5',
+		ranked_6: 'intercityrail-ranked-6',
+		ranked_label_1: 'intercityrail-ranked-label-1',
+		ranked_label_2: 'intercityrail-ranked-label-2',
+		ranked_label_3: 'intercityrail-ranked-label-3',
+		ranked_label_4: 'intercityrail-ranked-label-4',
+		ranked_label_5: 'intercityrail-ranked-label-5',
+		ranked_label_6: 'intercityrail-ranked-label-6'
 	},
 	metro: {
 		livedots: 'metro',
