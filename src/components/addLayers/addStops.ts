@@ -25,7 +25,7 @@ const internationalIntercityCircleSize = [
 	8
 ];
 
-const osmTramSubwayCircleSize = [
+const osmSubwayCircleSize = [
 	'interpolate',
 	['linear'],
 	['zoom'],
@@ -37,6 +37,20 @@ const osmTramSubwayCircleSize = [
 	2.8,
 	15,
 	4.8
+];
+
+const osmTramCircleSize = [
+	'interpolate',
+	['linear'],
+	['zoom'],
+	5,
+	0.6,
+	8,
+	1,
+	12,
+	2,
+	15,
+	4
 ];
 
 function getCircleInside(darkMode: boolean) {
@@ -372,7 +386,7 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 		layout: {},
 		paint: {
 			'circle-color': getRanked3456Inside(darkMode),
-			'circle-radius': osmTramSubwayCircleSize,
+			'circle-radius': osmSubwayCircleSize,
 			'circle-stroke-color': getRanked3456Outside(darkMode),
 			'circle-stroke-width': ['step', ['zoom'], 1.8, 12, 3.0],
 			'circle-stroke-opacity': 1.0,
@@ -495,7 +509,7 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 		layout: {},
 		paint: {
 			'circle-color': getRanked3456Inside(darkMode),
-			'circle-radius': osmTramSubwayCircleSize,
+			'circle-radius': osmTramCircleSize,
 			'circle-stroke-color': getRanked3456Outside(darkMode),
 			'circle-stroke-width': ['step', ['zoom'], 1.8, 12, 3.0],
 			'circle-stroke-opacity': 1.0,
