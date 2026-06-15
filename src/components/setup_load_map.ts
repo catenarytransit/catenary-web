@@ -53,7 +53,7 @@ const STOP_SOURCES = [
 	},
 	{
 		id: 'osmstationsranked',
-		url: 'http://birch.catenarymaps.org/osm_stations_ranked'
+		url: 'https://birch.catenarymaps.org/osm_stations_ranked'
 	}
 ];
 
