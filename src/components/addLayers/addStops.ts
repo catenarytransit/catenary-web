@@ -388,7 +388,7 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			'circle-color': getRanked3456Inside(darkMode),
 			'circle-radius': osmSubwayCircleSize,
 			'circle-stroke-color': getRanked3456Outside(darkMode),
-			'circle-stroke-width': ['step', ['zoom'], 1.8, 12, 3.0],
+			'circle-stroke-width': ['step', ['zoom'], 1, 11, 1.8, 12, 3.0],
 			'circle-stroke-opacity': 1.0,
 			'circle-opacity': 1.0
 		},
@@ -508,7 +508,8 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 		'source-layer': 'data',
 		layout: {},
 		paint: {
-			'circle-color': getRanked3456Inside(darkMode),
+			'circle-color': ge
+			tRanked3456Inside(darkMode),
 			'circle-radius': osmTramCircleSize,
 			'circle-stroke-color': getRanked3456Outside(darkMode),
 			'circle-stroke-width': ['step', ['zoom'], 1.8, 12, 3.0],
