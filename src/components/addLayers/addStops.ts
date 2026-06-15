@@ -565,12 +565,14 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 		filter: [
 			'all',
 			['==', ['get', 'local_ref'], null],
-			['any', 
+			['any',
 				['==', ['get', 'station_type'], 'station'], ['==', ['get', 'station_type'], 'halt'],
 				[
 					'all',
 					['==', ['get', 'mode_type'], 'rail'],
-					['==', ['get', 'parent_osm_id'], null]
+					['==', ['get', 'parent_osm_id'], null],
+					['==', ['get', 'ref'], null],
+					['==', ['get', 'local_ref'], null]
 				]
 			],
 			['==', ['get', 'mode_type'], 'rail']
@@ -611,12 +613,14 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 		filter: [
 			'all',
 			['==', ['get', 'local_ref'], null],
-			['any', 
+			['any',
 				['==', ['get', 'station_type'], 'station'], ['==', ['get', 'station_type'], 'halt'],
 				[
 					'all',
 					['==', ['get', 'mode_type'], 'rail'],
-					['==', ['get', 'parent_osm_id'], null]
+					['==', ['get', 'parent_osm_id'], null],
+					['==', ['get', 'ref'], null],
+					['==', ['get', 'local_ref'], null]
 				]
 			],
 			['==', ['get', 'mode_type'], 'rail']

@@ -50,6 +50,10 @@ const STOP_SOURCES = [
 	{
 		id: 'osmstations',
 		url: 'https://birch.catenarymaps.org/osm_stations'
+	},
+	{
+		id: 'osmstationsranked',
+		url: 'http://birch.catenarymaps.org/osm_stations_ranked'
 	}
 ];
 
