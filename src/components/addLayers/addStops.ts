@@ -665,7 +665,21 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 		8
 	];
 
-	const ranked3456CircleSize = [
+	const ranked3CircleSize = [
+		'interpolate',
+		['linear'],
+		['zoom'],
+		5,
+		1.2,
+		8,
+		2.2,
+		12,
+		4.2,
+		15,
+		7
+	];
+
+	const ranked456CircleSize = [
 		'interpolate',
 		['linear'],
 		['zoom'],
@@ -714,7 +728,11 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			},
 			paint: {
 				'circle-color': isLevel12 ? getRanked12Inside(darkMode) : getRanked3456Inside(darkMode),
-				'circle-radius': isLevel12 ? ranked12CircleSize : ranked3456CircleSize,
+				'circle-radius': isLevel12
+					? ranked12CircleSize
+					: i === 3
+						? ranked3CircleSize
+						: ranked456CircleSize,
 				'circle-stroke-color': isLevel12 ? getRanked12Outside(darkMode) : getRanked3456Outside(darkMode),
 				'circle-stroke-width': ['step', ['zoom'], 1.8, 12, 2.0],
 				'circle-stroke-opacity': 1.0,
