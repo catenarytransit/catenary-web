@@ -66,11 +66,11 @@ function getRanked12Inside(darkMode: boolean) {
 }
 
 function getRanked12Outside(darkMode: boolean) {
-	return darkMode ? '#dddddd' : '#888888';
+	return darkMode ? '#dddddd' : '#666767';
 }
 
 function getRanked3456Inside(darkMode: boolean) {
-	return darkMode ? '#dddddd' : '#888888';
+	return darkMode ? '#dddddd' : '#666767';
 }
 
 function getRanked3456Outside(darkMode: boolean) {
@@ -716,7 +716,7 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 				'circle-color': isLevel12 ? getRanked12Inside(darkMode) : getRanked3456Inside(darkMode),
 				'circle-radius': isLevel12 ? ranked12CircleSize : ranked3456CircleSize,
 				'circle-stroke-color': isLevel12 ? getRanked12Outside(darkMode) : getRanked3456Outside(darkMode),
-				'circle-stroke-width': ['step', ['zoom'], 1.8, 12, 3.0],
+				'circle-stroke-width': ['step', ['zoom'], 1.8, 12, 2.0],
 				'circle-stroke-opacity': 1.0,
 				'circle-opacity': 1.0
 			},
@@ -725,7 +725,7 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 				['==', ['get', 'importance_level_station'], i],
 				['==', ['get', 'rail'], true],
 				['!=', ['get', 'mode_type'], 'light_rail'],
-			['!=', ['get', 'number_of_associated_stops'], 0]
+				['!=', ['get', 'number_of_associated_stops'], 0]
 			],
 			minzoom: minZoomCircle
 		});
