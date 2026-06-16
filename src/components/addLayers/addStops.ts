@@ -508,8 +508,7 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 		'source-layer': 'data',
 		layout: {},
 		paint: {
-			'circle-color': ge
-			tRanked3456Inside(darkMode),
+			'circle-color': getRanked3456Inside(darkMode),
 			'circle-radius': osmTramCircleSize,
 			'circle-stroke-color': getRanked3456Outside(darkMode),
 			'circle-stroke-width': ['step', ['zoom'], 1.8, 12, 3.0],
