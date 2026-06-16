@@ -717,7 +717,7 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 	for (let i = 6; i >= 1; i--) {
 		const isLevel12 = i <= 2;
 		const minZoomCircle = i === 1 ? 4 : i === 2 ? 5 : i === 3 ? 6 : i === 4 ? 7 : i === 5 ? 8 : 9;
-		const minZoomLabel = i === 1 ? 6 : i === 2 ? 7 : i === 3 ? 8 : i === 4 ? 9 : i === 5 ? 10 : 11;
+		const minZoomLabel = i === 1 ? 4 : i === 2 ? 6.5 : i === 3 ? 8 : i === 4 ? 9 : i === 5 ? 10 : 11;
 
 		map.addLayer({
 			id: `intercityrail-ranked-${i}`,
