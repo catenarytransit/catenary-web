@@ -392,7 +392,7 @@ export function addStopsLayers(map: Map, darkMode: boolean) {
 			'circle-stroke-opacity': 1.0,
 			'circle-opacity': 1.0
 		},
-		minzoom: 9.5,
+		minzoom: 10.2,
 		filter: [
 			'all',
 			['==', ['get', 'local_ref'], null],
