@@ -135,6 +135,9 @@
 
 	$: isSubway = isSubwayRouteId(route_id) && chateau_id == MTA_CHATEAU_ID;
 	$: isRatp = chateau_id === IDFM_CHATEAU_ID && isRatpRoute(short_name);
+	$: is_sbahn =
+		['dbregioag', 'deutschland'].includes(chateau_id) &&
+		(short_name || '').match(/^S\d+/) !== null;
 	$: showLongName = !!(
 		long_name &&
 		(!short_name ||
@@ -146,7 +149,7 @@
 {#if !compact}
 	<div class="flex items-start justify-between gap-2">
 		<h2
-			class={`${window_height_known < 600 ? 'text-base' : 'text-lg md:text-xl md:mt-2'} ${
+			class={`${window_height_known < 600 ? 'text-sm' : 'text-base md:text-lg md:mt-1'} ${
 				isSubway ? '' : 'leading-tight'
 			}`}
 			style={`
@@ -181,7 +184,12 @@
 							<SbbLogo text={short_name} chateau={chateau_id} />
 						</span>
 					{:else if (chateau_id !== 'nationalrailuk' || short_name.startsWith('LO-') || short_name === 'XR-ELIZABETH') && chateau_id !== 'metrolinktrains'}
-						<span class="font-bold">{fixRouteName(chateau_id, short_name, route_id)}</span>
+						<span
+							class="font-bold px-1.5 py-0.5 text-xs inline-block align-middle mr-1 {is_sbahn ? 'rounded-full' : 'rounded-sm'}"
+							style={`background: ${color}; color: ${text_color};`}
+						>
+							{fixRouteName(chateau_id, short_name, route_id)}
+						</span>
 					{/if}
 				{/if}
 
@@ -224,7 +232,7 @@
 	{/if}
 
 	<h2
-		class={`${window_height_known < 600 ? 'text-base' : 'text-base md:text-lg my-0.5'}  font-medium ${arrow ? '-translate-x-1.5' : ''} leading-tight`}
+		class={`${window_height_known < 600 ? 'text-xs' : 'text-sm md:text-base my-0.5'}  font-medium ${arrow ? '-translate-x-1.5' : ''} leading-tight`}
 	>
 		{#if arrow}
 			<span class="material-symbols-outlined text-2xl align-middle">chevron_right</span>
