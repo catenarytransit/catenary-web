@@ -188,7 +188,7 @@
 							class="h-4 inline-block"
 						/>
 					{:else}
-						<span class="text-xs">{agencyName}</span>
+						<span class="text-[10px] leading-none">{agencyName}</span>
 					{/if}
 				{/if}
 			</div>
