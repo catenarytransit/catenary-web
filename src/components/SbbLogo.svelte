@@ -2,7 +2,10 @@
 	export let text: string;
 	export let chateau: string;
 
-	$: isSbbIcOrIr = chateau === 'schweiz' && (text.startsWith('IR') || text.startsWith('IC'));
+	$: isSbbIcOrIr =
+		chateau === 'schweiz' &&
+		(text.startsWith('IR') || text.startsWith('IC')) &&
+		!text.startsWith('ICE');
 	$: sbbLogoSrc = isSbbIcOrIr
 		? text.startsWith('IR')
 			? '/icons/sbb/SBB_IR_Logo.svg'
