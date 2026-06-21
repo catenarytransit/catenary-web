@@ -3142,10 +3142,10 @@
           ["coalesce", ["get", "name"], ["get", "name_en"]]
         ],
         "text-font": ["Arimo-Italic"],
-        "text-letter-spacing": 0.1,
+        "text-letter-spacing": 0.12,
         "text-max-width": 9,
         "text-size": ["interpolate", ["linear"], ["zoom"], 8, 9, 12, 10],
-        "text-transform": "uppercase"
+        "text-transform": "none"
       },
       "paint": {
         "text-color": "#ddd",
