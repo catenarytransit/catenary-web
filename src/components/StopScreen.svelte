@@ -54,4 +54,4 @@
 	}
 </script>
 
-<GenericStopScreen {buildUrl} key={stop_id} {initial_is_now} {initial_selected_unix_time} />
+<GenericStopScreen {buildUrl} key={stop_id} {chateau} {initial_is_now} {initial_selected_unix_time} />

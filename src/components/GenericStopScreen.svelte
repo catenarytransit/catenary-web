@@ -46,6 +46,7 @@
 	export let initial_is_now: boolean = true;
 	export let initial_selected_unix_time: number = Date.now() / 1000;
 	export let osm_id: string | null = null;
+	export let chateau: string | null = null;
 
 	let is_now = initial_is_now;
 	let selected_unix_time = initial_selected_unix_time;
@@ -143,15 +144,103 @@
 	let hide_past_events = true;
 
 	// Filters
-	type Mode = 'rail' | 'metro' | 'bus' | 'other';
+	type Mode = 'rail' | 'rer' | 'transilien' | 'metro' | 'bus' | 'other';
 	let active_tab: Mode = 'bus'; // default, will auto-correct
 	let available_modes: Mode[] = [];
 
-	function get_mode_for_route_type(route_type: number): Mode {
+	function get_mode(chateau: string, route_type: number, shortName: string | null | undefined): Mode {
 		if ([3, 11, 700].includes(route_type)) return 'bus';
 		if ([0, 1, 5, 7, 12, 900].includes(route_type)) return 'metro';
 		if ([2, 106, 107, 101, 100, 102, 103].includes(route_type)) return 'rail';
 		return 'other';
+	}
+
+	$: primaryChateauId = (() => {
+		if (chateau) return chateau;
+		if (data_meta?.primary?.chateau_id) return data_meta.primary.chateau_id;
+		if (data_meta?.primary?.chateau) return data_meta.primary.chateau;
+		const chateaus = Object.keys(data_meta?.routes || {});
+		if (chateaus.includes('deutschland')) return 'deutschland';
+		if (chateaus.includes('schweiz')) return 'schweiz';
+		if (chateaus.includes('île~de~france~mobilités')) return 'île~de~france~mobilités';
+		return chateaus[0] || null;
+	})();
+
+	const train_categories: Record<string, string[]> = {
+		'île~de~france~mobilités': ['Grandes lignes', 'RER', 'Transilien'],
+		'deutschland': ['S-Bahn', 'ICE/TGV/RJX', 'IC/EC', 'IR', 'RE/RB', 'Other'],
+		'schweiz': ['ICE/TGV/RJX', 'EC/IC', 'IR/PE', 'RE', 'S/SN/R', 'ARZ/EXT']
+	};
+
+	let enabled_categories = new Set<string>();
+	$: {
+		if (primaryChateauId && train_categories[primaryChateauId]) {
+			enabled_categories = new Set(train_categories[primaryChateauId]);
+		} else {
+			enabled_categories = new Set();
+		}
+	}
+
+	function toggle_category(cat: string) {
+		if (enabled_categories.has(cat)) {
+			enabled_categories.delete(cat);
+		} else {
+			enabled_categories.add(cat);
+		}
+		enabled_categories = enabled_categories; // trigger reactivity
+	}
+
+	function get_train_category(primaryChateau: string, shortName: string | null | undefined, routeType: number): string {
+		const sn = (shortName || '').toUpperCase().trim();
+		if (primaryChateau === 'île~de~france~mobilités') {
+			if (['A', 'B', 'C', 'D', 'E'].includes(sn)) {
+				return 'RER';
+			}
+			if (['H', 'J', 'K', 'L', 'N', 'P', 'R', 'U', 'V'].includes(sn)) {
+				return 'Transilien';
+			}
+			return 'Grandes lignes';
+		}
+		if (primaryChateau === 'deutschland') {
+			if (sn.match(/^S\d+/)) {
+				return 'S-Bahn';
+			}
+			if (sn.startsWith('ICE') || sn.startsWith('TGV') || sn.startsWith('RJX')) {
+				return 'ICE/TGV/RJX';
+			}
+			if (sn.startsWith('IC') || sn.startsWith('EC')) {
+				return 'IC/EC';
+			}
+			if (sn.startsWith('IR')) {
+				return 'IR';
+			}
+			if (sn.startsWith('RE') || sn.startsWith('RB')) {
+				return 'RE/RB';
+			}
+			return 'Other';
+		}
+		if (primaryChateau === 'schweiz') {
+			if (sn.startsWith('ICE') || sn.startsWith('TGV') || sn.startsWith('RJX')) {
+				return 'ICE/TGV/RJX';
+			}
+			if (sn.startsWith('EC') || sn.startsWith('IC')) {
+				return 'EC/IC';
+			}
+			if (sn.startsWith('IR') || sn.startsWith('PE')) {
+				return 'IR/PE';
+			}
+			if (sn.startsWith('RE')) {
+				return 'RE';
+			}
+			if (sn.startsWith('S') || sn.startsWith('SN') || sn.startsWith('R')) {
+				return 'S/SN/R';
+			}
+			if (sn.startsWith('ARZ') || sn.startsWith('EXT')) {
+				return 'ARZ/EXT';
+			}
+			return 'S/SN/R'; // Fallback
+		}
+		return 'Other';
 	}
 
 	$: {
@@ -162,11 +251,12 @@
 		for (const ev of mergedEvents) {
 			const routeDef = data_meta?.routes?.[ev.chateau]?.[ev.route_id];
 			const rType = routeDef?.route_type ?? ev.route_type ?? 3;
-			modes.add(get_mode_for_route_type(rType));
+			const shortName = routeDef?.short_name;
+			modes.add(get_mode(ev.chateau, rType, shortName));
 		}
 
 		// Stable order
-		const order: Mode[] = ['rail', 'metro', 'bus', 'other'];
+		const order: Mode[] = ['rail', 'rer', 'transilien', 'metro', 'bus', 'other'];
 		available_modes = order.filter((m) => modes.has(m));
 
 		// Auto-select tab logic
@@ -195,7 +285,17 @@
 				if (available_modes.length > 1) {
 					const routeDef = data_meta?.routes?.[event.chateau]?.[event.route_id];
 					const rType = routeDef?.route_type ?? event.route_type ?? 3;
-					if (get_mode_for_route_type(rType) !== active_tab) return false;
+					const shortName = routeDef?.short_name;
+					if (get_mode(event.chateau, rType, shortName) !== active_tab) return false;
+				}
+
+				// Train Category filter
+				if (active_tab === 'rail' && primaryChateauId && train_categories[primaryChateauId]) {
+					const routeDef = data_meta?.routes?.[event.chateau]?.[event.route_id];
+					const rType = routeDef?.route_type ?? event.route_type ?? 3;
+					const shortName = routeDef?.short_name;
+					const cat = get_train_category(primaryChateauId, shortName, rType);
+					if (!enabled_categories.has(cat)) return false;
 				}
 
 				if (hide_past_events) {
@@ -865,6 +965,22 @@
 									<span class="material-symbols-outlined text-lg">train</span>
 									{$_('headingIntercityRail')}
 								</button>
+							{:else if mode === 'rer'}
+								<button
+									class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'rer' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
+									on:click={() => (active_tab = 'rer')}
+								>
+									<span class="material-symbols-outlined text-lg">subway</span>
+									RER
+								</button>
+							{:else if mode === 'transilien'}
+								<button
+									class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'transilien' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
+									on:click={() => (active_tab = 'transilien')}
+								>
+									<span class="material-symbols-outlined text-lg">train</span>
+									Transilien
+								</button>
 							{:else if mode === 'metro'}
 								<button
 									class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'metro' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
@@ -890,6 +1006,24 @@
 									{$_('headingOther')}
 								</button>
 							{/if}
+						{/each}
+					</div>
+				{/if}
+
+				{#if active_tab === 'rail' && primaryChateauId && train_categories[primaryChateauId]}
+					<div class="flex flex-row flex-wrap gap-2 ml-1 mb-3 mt-2 items-center">
+						{#each train_categories[primaryChateauId] as cat}
+							{@const active = enabled_categories.has(cat)}
+							<button
+								class={`px-3 py-1 text-xs font-semibold rounded-full border transition-all cursor-pointer ${
+									active
+										? 'bg-blue-500 border-blue-500 text-white hover:bg-blue-600'
+										: 'bg-transparent border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400 dark:border-gray-600 dark:text-gray-400 dark:hover:text-gray-300'
+								}`}
+								on:click={() => toggle_category(cat)}
+							>
+								{cat}
+							</button>
 						{/each}
 					</div>
 				{/if}
@@ -929,7 +1063,7 @@
 							</p>
 
 							<!-- Correct Logic Implementation -->
-							{#if active_tab === 'rail'}
+							{#if active_tab === 'rail' || active_tab === 'rer' || active_tab === 'transilien'}
 								<table class="w-full border-collapse">
 									<tbody>
 										{#each filtered_dates_to_events[date_code] as event}
