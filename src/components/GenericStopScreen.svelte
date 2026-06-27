@@ -130,7 +130,7 @@
 	// UI state
 	let filtered_dates_to_events: Record<string, any[]> = {};
 	let raw_grouped_events: Record<string, any[]> = {};
-	let current_time = 0;
+	let current_time = Date.now();
 	let fly_to_already = false;
 	let data_meta: any = null; // primary/routes/shapes merged from any page
 
@@ -148,7 +148,11 @@
 	let active_tab: Mode = 'bus'; // default, will auto-correct
 	let available_modes: Mode[] = [];
 
-	function get_mode(chateau: string, route_type: number, shortName: string | null | undefined): Mode {
+	function get_mode(
+		chateau: string,
+		route_type: number,
+		shortName: string | null | undefined
+	): Mode {
 		if ([3, 11, 700].includes(route_type)) return 'bus';
 		if ([0, 1, 5, 7, 12, 900].includes(route_type)) return 'metro';
 		if ([2, 106, 107, 101, 100, 102, 103].includes(route_type)) return 'rail';
@@ -168,8 +172,8 @@
 
 	const train_categories: Record<string, string[]> = {
 		'île~de~france~mobilités': ['Grandes lignes', 'RER', 'Transilien'],
-		'deutschland': ['S-Bahn', 'ICE/TGV/RJX', 'IC/EC', 'IR', 'RE/RB', 'Other'],
-		'schweiz': ['ICE/TGV/RJX', 'EC/IC', 'IR/PE', 'RE', 'S/SN/R', 'ARZ/EXT']
+		deutschland: ['S-Bahn', 'ICE/TGV/RJX', 'IC/EC', 'IR', 'RE/RB', 'Other'],
+		schweiz: ['ICE/TGV/RJX', 'EC/IC', 'IR/PE', 'RE', 'S/SN/R', 'ARZ/EXT']
 	};
 
 	let enabled_categories = new Set<string>();
@@ -190,7 +194,11 @@
 		enabled_categories = enabled_categories; // trigger reactivity
 	}
 
-	function get_train_category(primaryChateau: string, shortName: string | null | undefined, routeType: number): string {
+	function get_train_category(
+		primaryChateau: string,
+		shortName: string | null | undefined,
+		routeType: number
+	): string {
 		const sn = (shortName || '').toUpperCase().trim();
 		if (primaryChateau === 'île~de~france~mobilités') {
 			if (['A', 'B', 'C', 'D', 'E'].includes(sn)) {
@@ -272,8 +280,9 @@
 	$: filtered_dates_to_events = (() => {
 		const result: Record<string, any[]> = {};
 
+		// hide anything behind 1 min
 		let cutoff_time = hide_past_events
-			? (is_now ? Date.now() / 1000 : selected_unix_time) - 5 * 60
+			? (is_now ? Date.now() / 1000 : selected_unix_time) - 1 * 60
 			: 0;
 
 		for (const [date_code, events] of Object.entries(raw_grouped_events)) {
@@ -387,7 +396,9 @@
 		for (const [chateau, chateau_alerts] of Object.entries(data_meta.alerts)) {
 			const activeMap: Record<string, any> = {};
 			for (const [alert_id, alert] of Object.entries(chateau_alerts as Record<string, any>)) {
-				const isTripSpecific = alert.informed_entity && alert.informed_entity.length > 0 &&
+				const isTripSpecific =
+					alert.informed_entity &&
+					alert.informed_entity.length > 0 &&
 					alert.informed_entity.every((entity: any) => entity.trip?.trip_id);
 				if (!isTripSpecific) {
 					activeMap[alert_id] = alert;
@@ -417,7 +428,6 @@
 		}
 		return count;
 	})();
-
 
 	async function mergePageEvents(pageId: string, incoming: any[], refreshedAt: number) {
 		// Optimization: Chunk the indexing loop
@@ -897,7 +907,9 @@
 			<p class="text-sm ml-1 mb-0">
 				{displayTimezone}
 				{#if osm_id && show_osm_ids}
-					<span class="font-mono text-xs dark:text-gray-400 text-gray-500 ml-2">osm id: {osm_id}</span>
+					<span class="font-mono text-xs dark:text-gray-400 text-gray-500 ml-2"
+						>osm id: {osm_id}</span
+					>
 				{/if}
 			</p>
 
@@ -929,10 +941,17 @@
 					{#if nonTripSpecificAlerts}
 						{#each Object.entries(nonTripSpecificAlerts) as [chateau, chateau_alerts]}
 							<div class="mt-2 mb-4">
-								<h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1 ml-1 uppercase font-mono">
+								<h3
+									class="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1 ml-1 uppercase font-mono"
+								>
 									{chateau}
 								</h3>
-								<ServiceAlerts alerts={chateau_alerts} default_tz={displayTimezone} {chateau} expanded={true} />
+								<ServiceAlerts
+									alerts={chateau_alerts}
+									default_tz={displayTimezone}
+									{chateau}
+									expanded={true}
+								/>
 							</div>
 						{/each}
 					{/if}
@@ -1085,10 +1104,12 @@
 							{:else}
 								<!-- Non-Rail (Div) List -->
 								{#each filtered_dates_to_events[date_code] as event}
-									{@const shortName = data_meta.routes?.[event.chateau]?.[event.route_id]?.short_name}
+									{@const shortName =
+										data_meta.routes?.[event.chateau]?.[event.route_id]?.short_name}
 									{@const longName = data_meta.routes?.[event.chateau]?.[event.route_id]?.long_name}
 									{@const routeColor = data_meta.routes?.[event.chateau]?.[event.route_id]?.color}
-									{@const textColor = data_meta.routes?.[event.chateau]?.[event.route_id]?.text_color}
+									{@const textColor =
+										data_meta.routes?.[event.chateau]?.[event.route_id]?.text_color}
 									{@const isSubway =
 										event.chateau === MTA_CHATEAU_ID && isSubwayRouteId(event.route_id)}
 									{@const isRatp = event.chateau === IDFM_CHATEAU_ID && isRatpRoute(shortName)}
@@ -1150,7 +1171,9 @@
 
 											{#if event.last_stop}
 												<p>
-													<span class="ml-1 text-xs font-bold align-middle"> {$_('last_stop')}</span>
+													<span class="ml-1 text-xs font-bold align-middle">
+														{$_('last_stop')}</span
+													>
 												</p>
 											{/if}
 										</div>
@@ -1197,4 +1220,3 @@
 		<p class="ml-2">Loading …</p>
 	{/if}
 </div>
-
