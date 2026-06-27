@@ -531,7 +531,11 @@
       "type": "fill",
       "source": "openmaptiles",
       "source-layer": "water",
-      "filter": ["!=", ["get", "brunnel"], "tunnel"],
+      "filter": [
+        "all",
+        ["!=", ["get", "brunnel"], "tunnel"],
+        ["!=", ["get", "class"], "swimming_pool"]
+      ],
       "layout": {"visibility": "visible"},
       "paint": {
         "fill-color": [
@@ -2645,10 +2649,10 @@
       ],
       "layout": {
         "text-field": ["get", "name"],
-        "text-font": ["Arimo-Italic"],
+        "text-font": ["Arimo-Regulr"],
         "text-letter-spacing": 0.2,
         "text-max-width": 5,
-        "text-size": ["interpolate", ["linear"], ["zoom"], 0, 10, 8, 14]
+        "text-size": ["interpolate", ["linear"], ["zoom"], 0, 8, 8, 12]
       },
       "paint": {
         "text-color": "#495e91",
@@ -2800,7 +2804,7 @@
         ],
         "text-anchor": "top",
         "text-field": ["coalesce", ["get", "name"], ["get", "name_en"]],
-        "text-font": ["Arimo-Italic"],
+        "text-font": ["Arimo-Regular"],
         "text-max-width": 9,
         "text-offset": [0, 0.6],
         "text-size": 12

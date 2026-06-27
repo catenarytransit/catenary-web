@@ -253,6 +253,7 @@
       "source": "terrainpolygons",
       "source-layer": "hillshade",
       "maxzoom": 16,
+      "layout": {"visibility": "visible"},
       "paint": {
         "fill-color": [
           "match",
@@ -1101,7 +1102,7 @@
         ["match", ["get", "subclass"], ["cycleway"], true, false],
         ["match", ["get", "surface"], ["unpaved"], false, true]
       ],
-      "layout": {"line-join": "bevel"},
+      "layout": {"line-join": "bevel", "visibility": "visible"},
       "paint": {
         "line-width": [
           "interpolate",
@@ -1463,7 +1464,7 @@
       "layout": {"line-cap": "round", "line-join": "round"},
       "paint": {
         "line-color": {
-          "stops": [[6, "rgba(68, 68, 68, 1)"], [10, "rgba(97, 104, 127, 1)"]]
+          "stops": [[6, "rgba(68, 68, 68, 1)"], [10, "rgba(58, 59, 59, 1)"]]
         },
         "line-width": [
           "interpolate",
@@ -2564,13 +2565,7 @@
       "type": "symbol",
       "source": "openmaptiles",
       "source-layer": "water_name",
-      "filter": [
-        "match",
-        ["geometry-type"],
-        ["Point", "MultiPoint"],
-        true,
-        false
-      ],
+      "filter": ["all"],
       "layout": {
         "text-field": [
           "case",
@@ -2599,7 +2594,6 @@
         "all",
         ["match", ["geometry-type"], ["Point", "MultiPoint"], true, false],
         [">=", ["get", "rank"], 20],
-        ["!=", ["get", "class"], "railway"],
         ["!=", ["get", "class"], "bus"],
         ["!=", ["get", "class"], "parking"],
         ["!=", ["get", "class"], "information"]
@@ -2607,12 +2601,18 @@
       "layout": {
         "text-anchor": "top",
         "text-field": [
-          "case",
-          ["has", "name:nonlatin"],
-          ["get", "name"],
-          ["coalesce", ["get", "name"], ["get", "name_en"]]
+          "step",
+          ["zoom"],
+          "",
+          17,
+          [
+            "case",
+            ["has", "name:nonlatin"],
+            ["get", "name"],
+            ["coalesce", ["get", "name"], ["get", "name_en"]]
+          ]
         ],
-        "text-font": ["Arimo"],
+        "text-font": ["Arimo-Regular"],
         "text-max-width": 9,
         "text-offset": [0, 0.6],
         "text-size": 12,
@@ -2661,7 +2661,8 @@
             ]
           ],
           ["image", "mbicons:marker-dark"]
-        ]
+        ],
+        "text-letter-spacing": 0.02
       },
       "paint": {
         "text-color": [
@@ -2702,10 +2703,16 @@
       "layout": {
         "text-anchor": "top",
         "text-field": [
-          "case",
-          ["has", "name:nonlatin"],
-          ["get", "name"],
-          ["coalesce", ["get", "name"], ["get", "name_en"]]
+          "step",
+          ["zoom"],
+          "",
+          18,
+          [
+            "case",
+            ["has", "name:nonlatin"],
+            ["get", "name"],
+            ["coalesce", ["get", "name"], ["get", "name_en"]]
+          ]
         ],
         "text-font": ["Arimo"],
         "text-max-width": 9,
@@ -2756,7 +2763,8 @@
             ]
           ],
           ["image", "mbicons:marker-dark"]
-        ]
+        ],
+        "text-letter-spacing": 0.01
       },
       "paint": {
         "text-color": [
@@ -2819,12 +2827,24 @@
           ["image", "marker-dark"]
         ],
         "text-anchor": "top",
-        "text-field": ["get", "name"],
-        "text-font": ["Arimo-Italic"],
+        "text-field": [
+          "step",
+          ["zoom"],
+          "",
+          1,
+          [
+            "case",
+            ["has", "name:nonlatin"],
+            ["get", "name"],
+            ["coalesce", ["get", "name"], ["get", "name_en"]]
+          ]
+        ],
+        "text-font": ["Arimo-Regular"],
         "text-max-width": 9,
         "text-offset": [0, 0.6],
         "text-size": 12,
-        "symbol-placement": "point"
+        "symbol-placement": "point",
+        "text-letter-spacing": 0.01
       },
       "paint": {
         "text-color": [
@@ -2907,12 +2927,13 @@
         "text-font": ["Arimo-Regular"],
         "text-rotation-alignment": "map",
         "text-size": ["interpolate", ["linear"], ["zoom"], 13, 12, 14, 13],
-        "text-pitch-alignment": "viewport"
+        "text-pitch-alignment": "viewport",
+        "text-letter-spacing": 0.05
       },
       "paint": {
-        "text-color": "rgba(252, 249, 244, 1)",
-        "text-halo-color": "rgba(17, 17, 17, 1)",
-        "text-halo-width": 0.5
+        "text-color": "rgba(193, 193, 193, 1)",
+        "text-halo-color": "rgba(34, 34, 34, 1)",
+        "text-halo-width": 2
       }
     },
     {
@@ -2938,12 +2959,14 @@
         "text-font": ["Arimo-Regular"],
         "text-rotation-alignment": "map",
         "text-size": ["interpolate", ["linear"], ["zoom"], 13, 12, 14, 13],
-        "text-pitch-alignment": "viewport"
+        "text-pitch-alignment": "viewport",
+        "icon-text-fit": "none",
+        "text-letter-spacing": 0.01
       },
       "paint": {
-        "text-color": "rgba(255, 255, 255, 1)",
+        "text-color": "rgba(195, 195, 195, 1)",
         "text-halo-width": 2,
-        "text-halo-color": "rgba(63, 63, 63, 1)",
+        "text-halo-color": "rgba(49, 49, 49, 1)",
         "text-halo-blur": 3
       }
     },
@@ -2971,10 +2994,12 @@
         "text-font": ["Arimo-Medium"],
         "text-rotation-alignment": "map",
         "text-size": ["interpolate", ["linear"], ["zoom"], 13, 12, 14, 13],
-        "text-pitch-alignment": "viewport"
+        "text-pitch-alignment": "viewport",
+        "text-letter-spacing": 0.05,
+        "symbol-avoid-edges": true
       },
       "paint": {
-        "text-color": "rgba(245, 245, 245, 1)",
+        "text-color": "rgba(201, 201, 201, 1)",
         "text-halo-blur": 0.5,
         "text-halo-width": 2,
         "text-halo-color": "rgba(28, 28, 28, 1)"
@@ -3127,6 +3152,7 @@
       "source": "openmaptiles",
       "source-layer": "place",
       "minzoom": 8,
+      "maxzoom": 16,
       "filter": [
         "match",
         ["get", "class"],
@@ -3141,11 +3167,11 @@
           ["concat", ["get", "name:nonlatin"]],
           ["coalesce", ["get", "name"], ["get", "name_en"]]
         ],
-        "text-font": ["Arimo-Italic"],
-        "text-letter-spacing": 0.1,
+        "text-font": ["Arimo-Regular"],
+        "text-letter-spacing": 0.12,
         "text-max-width": 9,
         "text-size": ["interpolate", ["linear"], ["zoom"], 8, 9, 12, 10],
-        "text-transform": "uppercase"
+        "text-transform": "none"
       },
       "paint": {
         "text-color": "#ddd",
@@ -3265,6 +3291,7 @@
       "source": "openmaptiles",
       "source-layer": "place",
       "minzoom": 3,
+      "maxzoom": 14,
       "filter": [
         "all",
         ["==", ["get", "class"], "city"],
@@ -3291,11 +3318,14 @@
           ["zoom"],
           4,
           11,
-          7,
+          6,
+          10,
+          8,
           13,
           11,
           18
-        ]
+        ],
+        "text-letter-spacing": 0.012
       },
       "paint": {
         "text-color": "rgba(255, 255, 255, 1)",
