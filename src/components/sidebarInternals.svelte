@@ -14,7 +14,8 @@
 		VehicleSelectedStack,
 		StopMapSelector,
 		OsmItemStack,
-		OsmStationStack
+		OsmStationStack,
+		BlockStack
 	} from '../components/stackenum';
 	import HomeButton from './SidebarParts/home_button.svelte';
 	import BackButton from './SidebarParts/back_button.svelte';
