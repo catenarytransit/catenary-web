@@ -81,7 +81,7 @@
 	import { determineDarkModeToBool } from '../components/determineDarkModeToBool';
 	import { checkClockSkew } from '../components/timesync';
 	import SearchAutocompleteList from '../components/search/SearchAutocompleteList.svelte';
-
+	import { getOptimalPixelRatio } from '../components/maplibre_starter';
 	import ConsentBanner from '../components/ConsentBanner.svelte';
 	import AndroidDownloadPopup from '../components/AndroidDownloadPopup.svelte';
 	import { startSantaTracking } from '../components/santa_tracker';

@@ -21,6 +21,7 @@
 
 	let this_locale: string | undefined | null;
 	import { getLocaleStorageOrNav } from '../i18n';
+	import { getOptimalPixelRatio } from './maplibre_starter';
 	import { init_stores } from './init_stores';
 	init_stores();
 
