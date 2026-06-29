@@ -1464,9 +1464,11 @@
 			desync = false;
 		}
 
+		const isLowSpec = getOptimalPixelRatio() === 1;
+
 		const map = new maplibregl.Map({
 			canvasContextAttributes: {
-				antialias: true,
+				antialias: !isLowSpec,
 				powerPreference: 'high-performance',
 				desynchronized: desync
 			},
@@ -1474,7 +1476,7 @@
 			localIdeographFontFamily: false,
 			light: { anchor: 'viewport', color: 'white', intensity: 0.4 },
 			hash: 'map',
-			pixelRatio: window.devicePixelRatio * 3,
+			pixelRatio: getOptimalPixelRatio(),
 			maxPitch: window.innerHeight / window.innerWidth > 1.5 ? 60 : 85,
 			validateStyle: true,
 			fadeDuration: 100,
