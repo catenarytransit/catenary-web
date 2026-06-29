@@ -2080,7 +2080,7 @@
 					<div class="mx-auto rounded-lg px-8 py-1 bg-sky-500 dark:bg-sky-400"></div>
 				</div>
 
-				{#if clock_skew !== null && Math.abs(clock_skew) > 10000 && !clock_skew_ignored}
+				{#if clock_skew !== null && Math.abs(clock_skew) > 2000 && !clock_skew_ignored}
 					<div
 						class="md:hidden mx-3 mt-1 mb-2 px-3 py-2 border rounded text-sm flex justify-between items-center z-10 shrink-0 {Math.abs(
 							clock_skew
