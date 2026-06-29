@@ -13,7 +13,6 @@
 		RouteMapSelector,
 		VehicleSelectedStack,
 		StopMapSelector,
-		BlockStack,
 		OsmItemStack,
 		OsmStationStack
 	} from '../components/stackenum';
