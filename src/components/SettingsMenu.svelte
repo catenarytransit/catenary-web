@@ -35,9 +35,10 @@
 		localStorage.setItem('cookie_consent', String(value));
 	});
 
-	const pixelRatioChosen = getOptimalPixelRatio();
+	let pixelRatioChosen = 1;
 
 	onMount(() => {
+		pixelRatioChosen = getOptimalPixelRatio();
 		const consent = localStorage.getItem('cookie_consent');
 		if (consent === 'true') {
 			consentGiven.set(true);
