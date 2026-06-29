@@ -79,7 +79,7 @@
 	import CloseButton from '../components/CloseButton.svelte';
 	import Layerselectionbox from '../components/layerselectionbox.svelte';
 	import { determineDarkModeToBool } from '../components/determineDarkModeToBool';
-	import { checkClockSkew } from '../components/timesync';
+	import { checkClockSync } from '../components/checkClockSync';
 	import SearchAutocompleteList from '../components/search/SearchAutocompleteList.svelte';
 	import { getOptimalPixelRatio } from '../components/maplibre_starter';
 	import ConsentBanner from '../components/ConsentBanner.svelte';
@@ -1526,7 +1526,7 @@
 		});
 
 		map.on('load', () => {
-			checkClockSkew();
+			checkClockSync();
 
 			deep_link_url_reader();
 
