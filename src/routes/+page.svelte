@@ -1492,7 +1492,7 @@
 		}
 
 		const updatePixelRatio = () => {
-			map.setPixelRatio(window.devicePixelRatio * 1.4);
+			map.setPixelRatio(getOptimalPixelRatio());
 		};
 		const mqString = `(resolution: ${window.devicePixelRatio}dppx)`;
 		const media = matchMedia(mqString);
