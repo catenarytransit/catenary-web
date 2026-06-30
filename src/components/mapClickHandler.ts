@@ -31,7 +31,14 @@ export function setup_click_handler(
 
 		console.log('interactiveLayers', interactiveLayers);
 
-		interactiveLayers.push('ferryshapes');
+		interactiveLayers.push(
+			'ferryshapes',
+			'trajectory_bus',
+			'trajectory_intercityrail',
+			'trajectory_metro',
+			'trajectory_tram',
+			'trajectory_other'
+		);
 
 		let current_layers = map.getStyle().layers;
 
@@ -59,7 +66,11 @@ export function setup_click_handler(
 					x.source === 'localrail' ||
 					x.source === 'intercityrail' ||
 					x.source === 'other' ||
-					x.source === 'livedots_context'
+					x.source === 'livedots_context' ||
+					x.source === 'trajectory_buses' ||
+					x.source === 'trajectory_localrail' ||
+					x.source === 'trajectory_intercityrail' ||
+					x.source === 'trajectory_other'
 			);
 
 			const selected_vehicles_key_unique = new Set();
@@ -84,7 +95,7 @@ export function setup_click_handler(
 							x.properties.color,
 							x.properties.route_short_name,
 							x.properties.route_long_name,
-							x.properties.routeType,
+							x.properties.routeType ?? x.properties.route_type,
 							x.properties.trip_short_name,
 							x.properties.text_color,
 							x.properties.rt_id,
