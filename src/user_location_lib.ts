@@ -1,5 +1,5 @@
 import { addGeoRadius, setUserCircles } from './components/userradius';
-import { show_my_location_store, geolocation_store, map_pointer_store } from './globalstores';
+import { show_my_location_store, geolocation_store, map_pointer_store, usunits_store } from './globalstores';
 export const permission_to_geolocate = 'permission_to_geolocate';
 import { get } from 'svelte/store';
 import { createGeoJSONCircle, componentToHex } from './geoMathsAssist';
@@ -9,6 +9,8 @@ import { saveLocationToLocalStorage } from './components/previously_known_locati
 import { browser } from '$app/environment';
 
 let geolocation: GeolocationPosition | null;
+let last_processed_state: string = '';
+
 
 if (browser) {
 	geolocation_store.subscribe((g) => {
@@ -72,12 +74,24 @@ export function update_geolocation_source() {
 		}
 
 		const show_my_location = get(show_my_location_store);
+		const usunits = get(usunits_store) || false;
 
-		const geolocation_mapsource = map.getSource('user_geolocation');
+		const geolocation_mapsource = map.getSource('user_geolocation') as maplibregl.GeoJSONSource;
 
 		if (geolocation_mapsource) {
-			if (geolocation) {
-				if (geolocation.coords) {
+			if (geolocation && geolocation.coords) {
+				const currentState = JSON.stringify({
+					lng: geolocation.coords.longitude,
+					lat: geolocation.coords.latitude,
+					acc: geolocation.coords.accuracy,
+					heading: geolocation.coords.heading,
+					show: show_my_location,
+					units: usunits
+				});
+
+				if (currentState !== last_processed_state) {
+					last_processed_state = currentState;
+
 					geolocation_mapsource.setData({
 						type: 'FeatureCollection',
 						features: [
@@ -98,7 +112,7 @@ export function update_geolocation_source() {
 					setUserCircles(map, geolocation.coords.longitude, geolocation.coords.latitude);
 
 					if (geolocation.coords.accuracy) {
-						let accuracyLayer = map.getSource('userpositionacc');
+						let accuracyLayer = map.getSource('userpositionacc') as maplibregl.GeoJSONSource;
 
 						if (accuracyLayer) {
 							let numberofpoints: number = 128;
@@ -134,29 +148,29 @@ export function update_geolocation_source() {
 					let nobearingposlayer = map.getLayer('nobearing_position');
 					let bearingposlayer = map.getLayer('bearing_position');
 
+					const setVisSafe = (layerId: string, vis: 'visible' | 'none') => {
+						if (map.getLayer(layerId) && map.getLayoutProperty(layerId, 'visibility') !== vis) {
+							map.setLayoutProperty(layerId, 'visibility', vis);
+						}
+					};
+
 					if (geolocation.coords.heading) {
-						console.log('bearing is', geolocation.coords.heading);
+						// console.log('bearing is', geolocation.coords.heading);
 
 						if (show_my_location) {
-							map.setLayoutProperty('nobearing_position', 'visibility', 'none');
-
-							map.setLayoutProperty('bearing_position', 'visibility', 'visible');
+							setVisSafe('nobearing_position', 'none');
+							setVisSafe('bearing_position', 'visible');
 						} else {
-							map.setLayoutProperty('bearing_position', 'visibility', 'none');
-							map.setLayoutProperty('nobearing_position', 'visibility', 'none');
+							setVisSafe('bearing_position', 'none');
+							setVisSafe('nobearing_position', 'none');
 						}
 					} else {
-						if (nobearingposlayer) {
-							if (show_my_location) {
-								map.setLayoutProperty('nobearing_position', 'visibility', 'visible');
-							} else {
-								map.setLayoutProperty('nobearing_position', 'visibility', 'none');
-							}
+						if (show_my_location) {
+							setVisSafe('nobearing_position', 'visible');
+						} else {
+							setVisSafe('nobearing_position', 'none');
 						}
-
-						if (bearingposlayer) {
-							map.setLayoutProperty('bearing_position', 'visibility', 'none');
-						}
+						setVisSafe('bearing_position', 'none');
 					}
 				}
 			}
