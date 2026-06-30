@@ -19,7 +19,8 @@ export default defineConfig({
 			// This ensures the new service worker activates immediately.
 			workbox: {
 				skipWaiting: true,
-				clientsClaim: true
+				clientsClaim: true,
+				navigateFallback: null
 			}
 		})
 	],

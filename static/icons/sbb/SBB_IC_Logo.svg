@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="29" height="12" viewBox="0 0 7.6729167 3.1750001" version="1.1" id="svg19376" inkscape:version="0.92.1 r15371" sodipodi:docname="SBB_IC_Logo.svg">
+  <defs id="defs19370"/>
+  <sodipodi:namedview id="base" pagecolor="#ffffff" bordercolor="#666666" borderopacity="1.0" inkscape:pageopacity="0.0" inkscape:pageshadow="2" inkscape:zoom="11.2" inkscape:cx="21.407549" inkscape:cy="7.1072959" inkscape:document-units="mm" inkscape:current-layer="use9328" showgrid="false" inkscape:window-width="780" inkscape:window-height="405" inkscape:window-x="1050" inkscape:window-y="292" inkscape:window-maximized="0" units="px"/>
+  <metadata id="metadata19373">
+    <rdf:RDF>
+      <cc:Work rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+        <dc:title/>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g inkscape:label="Ebene 1" inkscape:groupmode="layer" id="layer1" transform="translate(0,-293.82498)">
+    <g style="fill:currentColor" transform="matrix(0.4023756,0,0,0.4023756,7.4311096,296.42087)" id="use9328">
+      <g transform="matrix(2.6640251,0,0,2.6640251,-293.8294,-181.32045)" id="g20206" style="fill:#211e1e;fill-opacity:1">
+        <g id="use20204" transform="matrix(0.65755313,0,0,0.65755313,103.0846,68.513388)">
+          <path inkscape:connector-curvature="0" id="path32096" d="M 3.859375,-4.25 2.015625,0 h -1.5 l 1.84375,-4.25 z m 7.296875,0 -0.546875,1.265625 h -4.75 l -0.75,1.71875 h 4.75 L 9.3125,0 H 3.015625 l 1.84375,-4.25 z m 0,0" style="stroke:none"/>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

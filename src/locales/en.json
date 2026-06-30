@@ -28,6 +28,7 @@
   "stops": "Stops",
   "stopnames": "Names",
   "vehicles": "Vehicles",
+  "vehiclelabels": "Vehicle Labels",
   "showroute": "Route",
   "showtrip": "Trip",
   "showvehicle": "Vehicle",
@@ -77,6 +78,7 @@
   "Platform": "Platform",
   "show_gtfs_ids": "Show GTFS IDs",
   "show_stop_codes": "Show stop codes",
+  "show_osm_ids": "Show OSM ids",
   "alert_cause_unknown_cause": "Unknown cause",
   "alert_cause_other_cause": "Other cause",
   "alert_cause_technical_problem": "Technical problem",
@@ -182,5 +184,6 @@
   "cs_legend": "Legend",
   "cs_no_data": "No train formation data available.",
   "cs_disclaimer": "All information without guarantee.",
-  "cs_nf": "LF"
+  "cs_nf": "LF",
+  "skip_to_current_trip": "Skip to current trip"
 }

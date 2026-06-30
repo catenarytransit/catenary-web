@@ -16,7 +16,7 @@
 	} from '../components/stackenum';
 	import HomeButton from './SidebarParts/home_button.svelte';
 	import { get } from 'svelte/store';
-	import { data_stack_store, show_gtfs_ids_store } from '../globalstores';
+	import { data_stack_store, show_gtfs_ids_store, show_osm_ids_store } from '../globalstores';
 	import { _ } from 'svelte-i18n';
 	import {
 		fixHeadsignIcon,
@@ -31,6 +31,7 @@
 	import MtaBullet from './mtabullet.svelte';
 	import RatpBullet from './ratpbullet.svelte';
 	import RouteSymbols from './RouteSymbols.svelte';
+	import StationScreenRouteBadge from './StationScreenRouteBadge.svelte';
 
 	export let map_selection_screen: MapSelectionScreen;
 	export let darkMode: boolean;
@@ -42,6 +43,12 @@
 
 	show_gtfs_ids_store.subscribe((value) => {
 		show_gtfs_ids = value;
+	});
+
+	let show_osm_ids = get(show_osm_ids_store);
+
+	show_osm_ids_store.subscribe((value) => {
+		show_osm_ids = value;
 	});
 
 	$: if (map_selection_screen) {
@@ -176,39 +183,33 @@
 					{/if}
 					{#if option.data.trip_id}
 						{#if option.data.route_long_name || option.data.route_short_name}
-							<span
-								class="text-md"
-								style={`color: ${darkMode ? lightenColour(option.data.colour) : option.data.colour}`}
-							>
-								{#if option.data.route_long_name && option.data.route_short_name && !option.data.route_long_name.includes(option.data.route_short_name)}
-									<span class="font-bold"
-										>{fixRouteName(
-											option.data.chateau_id,
-											option.data.route_short_name,
-											option.data.route_id
-										)}</span
+							<span class="text-md align-middle">
+								{#if isSubwayRouteId(option.data.route_id) && option.data.chateau_id === MTA_CHATEAU_ID && option.data.route_short_name}
+									<MtaBullet route_short_name={option.data.route_short_name} matchTextHeight={true} />
+								{:else if option.data.chateau_id === IDFM_CHATEAU_ID && isRatpRoute(option.data.route_short_name) && option.data.route_short_name}
+									<RatpBullet route_short_name={option.data.route_short_name} matchTextHeight={true} />
+								{:else if option.data.route_short_name}
+									<StationScreenRouteBadge
+										routeDef={{
+											short_name: option.data.route_short_name,
+											color: option.data.colour,
+											text_color: option.data.text_colour
+										}}
+										chateau={option.data.chateau_id}
+									/>
+								{/if}
+
+								{#if option.data.route_long_name && (!option.data.route_short_name || (option.data.route_long_name.trim().toLowerCase() !== option.data.route_short_name.trim().toLowerCase() && option.data.route_long_name.trim().toLowerCase() !== `${option.data.route_short_name.trim().toLowerCase()} line`))}
+									<span
+										class="font-normal ml-1 align-middle"
+										style={`color: ${darkMode ? lightenColour(option.data.colour) : option.data.colour}`}
 									>
-									<span class="font-normal ml-1"
-										>{fixRouteNameLong(
+										{fixRouteNameLong(
 											option.data.chateau_id,
 											option.data.route_long_name,
 											option.data.route_id
-										)}</span
-									>
-								{:else}
-									<span class="font-semibold"
-										>{option.data.route_long_name
-											? fixRouteNameLong(
-													option.data.chateau_id,
-													option.data.route_long_name,
-													option.data.route_id
-												)
-											: fixRouteName(
-													option.data.chateau_id,
-													option.data.route_short_name,
-													option.data.route_id
-												)}</span
-									>
+										)}
+									</span>
 								{/if}
 							</span>
 						{/if}
@@ -294,6 +295,9 @@
 									? 'Tram'
 									: option.data.mode_type}
 					</p>
+					{#if show_osm_ids}
+						<p class="font-mono text-xs dark:text-gray-400 text-gray-500">osm id: {option.data.osm_id}</p>
+					{/if}
 
 					{#if osm_stations_preview_data[option.data.osm_id] && osm_stations_preview_data[option.data.osm_id].stops}
 						{@const allRouteIds = [
@@ -419,11 +423,14 @@
 					{:else if option.data.chateau_id === IDFM_CHATEAU_ID && isRatpRoute(option.data.name)}
 						<RatpBullet route_short_name={option.data.name} matchTextHeight={false} />
 					{:else if option.data.name}
-						<span
-							style={`color: ${darkMode ? lightenColour(option.data.colour) : option.data.colour}`}
-						>
-							{option.data.name}
-						</span>
+						<StationScreenRouteBadge
+							routeDef={{
+								short_name: option.data.name,
+								color: option.data.colour,
+								text_color: option.data.text_colour
+							}}
+							chateau={option.data.chateau_id}
+						/>
 					{/if}
 				</div>
 			{/each}

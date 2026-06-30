@@ -6,6 +6,31 @@
 	export let urlicon: string;
 	export let change: string;
 	export let nestedchange: string = '';
+
+	function toggle() {
+		if (nestedchange != '') {
+			Object.keys(layersettings[selectedSettingsTab][change]).forEach((element) => {
+				layersettings[selectedSettingsTab][change][element] = false;
+			});
+			layersettings[selectedSettingsTab][change][nestedchange] = true;
+		} else {
+			const newValue = !layersettings[selectedSettingsTab][change];
+			layersettings[selectedSettingsTab][change] = newValue;
+
+			if (change === 'shapes') {
+				if (layersettings[selectedSettingsTab].showRoutesLabels === undefined) {
+					layersettings[selectedSettingsTab].showRoutesLabels = true;
+				}
+				layersettings[selectedSettingsTab].labelshapes = newValue ? layersettings[selectedSettingsTab].showRoutesLabels : false;
+			} else if (change === 'stops') {
+				if (layersettings[selectedSettingsTab].showStopNames === undefined) {
+					layersettings[selectedSettingsTab].showStopNames = true;
+				}
+				layersettings[selectedSettingsTab].stoplabels = newValue ? layersettings[selectedSettingsTab].showStopNames : false;
+			}
+		}
+		runSettingsAdapt();
+	}
 </script>
 
 <!-- {#if layersettings} -->
@@ -13,29 +38,8 @@
 <div
 	role="button"
 	tabindex="0"
-	on:click={() => {
-		if (nestedchange != '') {
-			Object.keys(layersettings[selectedSettingsTab][change]).forEach((element) => {
-				console.log(element);
-				layersettings[selectedSettingsTab][change][element] = false;
-			});
-			layersettings[selectedSettingsTab][change][nestedchange] = true;
-		} else {
-			layersettings[selectedSettingsTab][change] = !layersettings[selectedSettingsTab][change];
-		}
-		runSettingsAdapt();
-	}}
-	on:keydown={() => {
-		if (nestedchange != '') {
-			Object.keys(layersettings[selectedSettingsTab][change]).forEach((element) => {
-				layersettings[selectedSettingsTab][change][element] = false;
-			});
-			layersettings[selectedSettingsTab][change][nestedchange] = true;
-		} else {
-			layersettings[selectedSettingsTab][change] = !layersettings[selectedSettingsTab][change];
-		}
-		runSettingsAdapt();
-	}}
+	on:click={toggle}
+	on:keydown={toggle}
 >
 	{#if nestedchange}
 		<!--Toggle Routes-->
@@ -46,7 +50,7 @@
 			class:border-transparent={layersettings[selectedSettingsTab][change][nestedchange] == false}
 			class={`bg-gray-100 dark:bg-gray-800 rounded-xl border-2`}
 		>
-			<img src={urlicon} class="w-14 h-14" alt="" />
+			<img src={urlicon} class="w-12 h-12" alt="" />
 		</div>
 		<p class="text-xs text-center">{name}</p>
 	{:else}
@@ -57,7 +61,7 @@
 			class:border-transparent={layersettings[selectedSettingsTab][change] == false}
 			class={`bg-gray-100 dark:bg-gray-800 rounded-xl border-2`}
 		>
-			<img src={urlicon} class="w-14 h-14" alt="" />
+			<img src={urlicon} class="w-12 h-12" alt="" />
 		</div>
 		<p class="text-xs text-center">{name}</p>
 	{/if}

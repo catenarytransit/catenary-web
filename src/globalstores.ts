@@ -128,3 +128,5 @@ export const show_topo_global_store = writable(false);
 export const stops_to_hide_store: Writable<Record<string, string[]>> = writable({});
 
 export const show_countdown_to_stop_store = writable(true);
+export const show_osm_ids_store = writable(false);
+

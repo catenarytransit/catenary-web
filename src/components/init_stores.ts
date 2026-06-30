@@ -18,7 +18,8 @@ import {
 	show_seconds_store,
 	show_topo_global_store,
 	show_stop_codes_store,
-	show_countdown_to_stop_store
+	show_countdown_to_stop_store,
+	show_osm_ids_store
 } from '../globalstores';
 
 export function init_stores() {
@@ -61,6 +62,12 @@ export function init_stores() {
 			show_countdown_to_stop_store.set(false);
 		} else if (window.localStorage.getItem('show_countdown_to_stop') == 'true') {
 			show_countdown_to_stop_store.set(true);
+		}
+
+		if (window.localStorage.getItem('show_osm_ids') == 'true') {
+			show_osm_ids_store.set(true);
+		} else {
+			show_osm_ids_store.set(false);
 		}
 
 		let ui_theme_grab = window.localStorage.getItem('ui_theme_store');

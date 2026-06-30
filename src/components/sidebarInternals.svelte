@@ -13,9 +13,9 @@
 		RouteMapSelector,
 		VehicleSelectedStack,
 		StopMapSelector,
-		BlockStack,
 		OsmItemStack,
-		OsmStationStack
+		OsmStationStack,
+		BlockStack
 	} from '../components/stackenum';
 	import HomeButton from './SidebarParts/home_button.svelte';
 	import BackButton from './SidebarParts/back_button.svelte';
@@ -44,7 +44,6 @@
 	import { locales_options, locales_options_lookup } from '../i18n';
 	import { MTA_CHATEAU_ID, isSubwayRouteId } from '../utils/mta_subway_utils';
 	import MtaBullet from './mtabullet.svelte';
-	import IosDonationPopup from './IosDonationPopup.svelte';
 
 	import VehicleInfo from './vehicle_info.svelte';
 	export let latest_item_on_stack: StackInterface | null;
@@ -189,7 +188,6 @@
 	</div>-->
 	<div class="py-1 flex flex-col h-full">
 		<div class="flex flex-col h-full select-text">
-			<IosDonationPopup />
 			<NearbyDepartures
 				{usunits}
 				{darkMode}

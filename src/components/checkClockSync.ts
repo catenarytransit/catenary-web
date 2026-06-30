@@ -1,45 +1,52 @@
-export async function checkClockSync() {
-	const serverTimeEndpoint = 'https://birch.catenarymaps.org/microtime'; // Replace with your actual endpoint
+import { clock_skew_store } from '../globalstores';
 
-	try {
-		const clientStart = Date.now(); // Get client time before request
-
-		const response = await fetch(serverTimeEndpoint);
-		if (!response.ok) {
-			throw new Error(`HTTP error! status: ${response.status}`);
-		}
-		const data = await response.text(); // returns microseconds in string format
-
-		const clientEnd = Date.now(); // Get client time after response
-
-		const serverTimeUs = parseInt(data, 10); // Convert string to integer
-		if (isNaN(serverTimeUs)) {
-			throw new Error('Invalid server time format');
-		}
-		// Convert server time from microseconds to milliseconds
-		const serverTime = serverTimeUs / 1000; // Convert microseconds to milliseconds
-
-		const roundTripTime = clientEnd - clientStart;
-		const offset = (clientEnd + clientStart) / 2 - serverTime;
-
-		console.log(`Client Start Time: ${clientStart} ms`);
-		console.log(`Client End Time: ${clientEnd} ms`);
-		console.log(`Server Time Received: ${serverTime} ms`);
-		console.log(`Round Trip Time: ${roundTripTime} ms`);
-		console.log(`Estimated Offset: ${offset} ms`);
-
-		// You can define a threshold for what you consider "synchronized"
-		const syncThresholdMs = 1000; // Example: 1 second threshold
-
-		if (Math.abs(offset) <= syncThresholdMs) {
-			console.log('Client clock appears to be reasonably synchronized with the server.');
-			return { offset: offset, isSynchronized: true };
-		} else {
-			console.log('Client clock appears to be significantly out of sync with the server.');
-			return { offset: offset, isSynchronized: false };
-		}
-	} catch (error) {
-		console.error('Error checking clock synchronization:', error);
-		return { offset: null, isSynchronized: false, error: error.message };
+export async function checkClockSync(): Promise<{ offset: number | null; isSynchronized: boolean; error?: string }> {
+	if (typeof window === 'undefined' || typeof Worker === 'undefined') {
+		return { offset: null, isSynchronized: false, error: 'Web Workers are not supported in this environment' };
 	}
+
+	return new Promise((resolve) => {
+		try {
+			const worker = new Worker(
+				new URL('./checkClockSync.worker.ts', import.meta.url),
+				{ type: 'module' }
+			);
+
+			worker.onmessage = (event) => {
+				const { success, result, error } = event.data;
+				worker.terminate();
+
+				if (success) {
+					const { offset, isSynchronized, clientStart, clientEnd, serverTime, roundTripTime } = result;
+
+					console.log(`Client Start Time: ${clientStart} ms`);
+					console.log(`Client End Time: ${clientEnd} ms`);
+					console.log(`Server Time Received: ${serverTime} ms`);
+					console.log(`Round Trip Time: ${roundTripTime} ms`);
+					console.log(`Estimated Offset: ${offset} ms`);
+
+					if (isSynchronized) {
+						console.log('Client clock appears to be reasonably synchronized with the server.');
+					} else {
+						console.log('Client clock appears to be significantly out of sync with the server.');
+					}
+
+					clock_skew_store.set(offset);
+					resolve({ offset, isSynchronized });
+				} else {
+					console.error('Error checking clock synchronization in worker:', error);
+					resolve({ offset: null, isSynchronized: false, error });
+				}
+			};
+
+			worker.onerror = (err) => {
+				console.error('Worker error in clock sync:', err);
+				worker.terminate();
+				resolve({ offset: null, isSynchronized: false, error: err.message });
+			};
+		} catch (err: any) {
+			console.error('Failed to create worker for clock sync:', err);
+			resolve({ offset: null, isSynchronized: false, error: err.message });
+		}
+	});
 }

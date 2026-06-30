@@ -502,6 +502,9 @@
       "source": "terrainpolygons",
       "source-layer": "hillshade",
       "maxzoom": 16,
+      "layout": {
+        "visibility": "visible"
+      },
       "paint": {
         "fill-color": [
           "match",
@@ -2117,7 +2120,8 @@
         ]
       ],
       "layout": {
-        "line-join": "bevel"
+        "line-join": "bevel",
+        "visibility": "visible"
       },
       "paint": {
         "line-width": [
@@ -2932,7 +2936,7 @@
             ],
             [
               10,
-              "rgba(97, 104, 127, 1)"
+              "rgba(58, 59, 59, 1)"
             ]
           ]
         },
@@ -5258,16 +5262,7 @@
       "source": "openmaptiles",
       "source-layer": "water_name",
       "filter": [
-        "match",
-        [
-          "geometry-type"
-        ],
-        [
-          "Point",
-          "MultiPoint"
-        ],
-        true,
-        false
+        "all"
       ],
       "layout": {
         "text-field": [
@@ -5359,14 +5354,6 @@
             "get",
             "class"
           ],
-          "railway"
-        ],
-        [
-          "!=",
-          [
-            "get",
-            "class"
-          ],
           "bus"
         ],
         [
@@ -5389,29 +5376,37 @@
       "layout": {
         "text-anchor": "top",
         "text-field": [
-          "case",
+          "step",
           [
-            "has",
-            "name:nonlatin"
+            "zoom"
           ],
+          "",
+          17,
           [
-            "get",
-            "name"
-          ],
-          [
-            "coalesce",
+            "case",
+            [
+              "has",
+              "name:nonlatin"
+            ],
             [
               "get",
               "name"
             ],
             [
-              "get",
-              "name_en"
+              "coalesce",
+              [
+                "get",
+                "name"
+              ],
+              [
+                "get",
+                "name_en"
+              ]
             ]
           ]
         ],
         "text-font": [
-          "Arimo"
+          "Arimo-Regular"
         ],
         "text-max-width": 9,
         "text-offset": [
@@ -5507,7 +5502,8 @@
             "image",
             "mbicons:marker-dark"
           ]
-        ]
+        ],
+        "text-letter-spacing": 0.02
       },
       "paint": {
         "text-color": [
@@ -5522,7 +5518,8 @@
           "#97c2f8",
           [
             "restaurant",
-            "bar", "cafe"
+            "bar",
+            "cafe"
           ],
           "#fcca60",
           [
@@ -5531,7 +5528,8 @@
           "#a17bed",
           [
             "art_gallery",
-            "theatre", "attraction"
+            "theatre",
+            "attraction"
           ],
           "#f191cb",
           [
@@ -5609,24 +5607,32 @@
       "layout": {
         "text-anchor": "top",
         "text-field": [
-          "case",
+          "step",
           [
-            "has",
-            "name:nonlatin"
+            "zoom"
           ],
+          "",
+          18,
           [
-            "get",
-            "name"
-          ],
-          [
-            "coalesce",
+            "case",
+            [
+              "has",
+              "name:nonlatin"
+            ],
             [
               "get",
               "name"
             ],
             [
-              "get",
-              "name_en"
+              "coalesce",
+              [
+                "get",
+                "name"
+              ],
+              [
+                "get",
+                "name_en"
+              ]
             ]
           ]
         ],
@@ -5727,7 +5733,8 @@
             "image",
             "mbicons:marker-dark"
           ]
-        ]
+        ],
+        "text-letter-spacing": 0.01
       },
       "paint": {
         "text-color": [
@@ -5742,7 +5749,8 @@
           "#97c2f8",
           [
             "restaurant",
-            "bar", "cafe"
+            "bar",
+            "cafe"
           ],
           "#fcca60",
           [
@@ -5751,7 +5759,8 @@
           "#a17bed",
           [
             "art_gallery",
-            "theatre", "attraction"
+            "theatre",
+            "attraction"
           ],
           "#f191cb",
           [
@@ -5882,11 +5891,37 @@
         ],
         "text-anchor": "top",
         "text-field": [
-          "get",
-          "name"
+          "step",
+          [
+            "zoom"
+          ],
+          "",
+          1,
+          [
+            "case",
+            [
+              "has",
+              "name:nonlatin"
+            ],
+            [
+              "get",
+              "name"
+            ],
+            [
+              "coalesce",
+              [
+                "get",
+                "name"
+              ],
+              [
+                "get",
+                "name_en"
+              ]
+            ]
+          ]
         ],
         "text-font": [
-          "Arimo-Italic"
+          "Arimo-Regular"
         ],
         "text-max-width": 9,
         "text-offset": [
@@ -5894,7 +5929,8 @@
           0.6
         ],
         "text-size": 12,
-        "symbol-placement": "point"
+        "symbol-placement": "point",
+        "text-letter-spacing": 0.01
       },
       "paint": {
         "text-color": [
@@ -5909,7 +5945,8 @@
           "#97c2f8",
           [
             "restaurant",
-            "bar", "cafe"
+            "bar",
+            "cafe"
           ],
           "#fcca60",
           [
@@ -5918,7 +5955,8 @@
           "#a17bed",
           [
             "art_gallery",
-            "theatre", "attraction"
+            "theatre",
+            "attraction"
           ],
           "#f191cb",
           [
@@ -6012,7 +6050,8 @@
           "#97c2f8",
           [
             "restaurant",
-            "bar", "cafe"
+            "bar",
+            "cafe"
           ],
           "#fcca60",
           [
@@ -6021,7 +6060,8 @@
           "#a17bed",
           [
             "art_gallery",
-            "theatre", "attraction"
+            "theatre",
+            "attraction"
           ],
           "#f191cb",
           [
@@ -6098,12 +6138,13 @@
           14,
           13
         ],
-        "text-pitch-alignment": "viewport"
+        "text-pitch-alignment": "viewport",
+        "text-letter-spacing": 0.05
       },
       "paint": {
-        "text-color": "rgba(252, 249, 244, 1)",
-        "text-halo-color": "rgba(17, 17, 17, 1)",
-        "text-halo-width": 0.5
+        "text-color": "rgba(193, 193, 193, 1)",
+        "text-halo-color": "rgba(34, 34, 34, 1)",
+        "text-halo-width": 2
       }
     },
     {
@@ -6164,12 +6205,14 @@
           14,
           13
         ],
-        "text-pitch-alignment": "viewport"
+        "text-pitch-alignment": "viewport",
+        "icon-text-fit": "none",
+        "text-letter-spacing": 0.01
       },
       "paint": {
-        "text-color": "rgba(255, 255, 255, 1)",
+        "text-color": "rgba(195, 195, 195, 1)",
         "text-halo-width": 2,
-        "text-halo-color": "rgba(63, 63, 63, 1)",
+        "text-halo-color": "rgba(49, 49, 49, 1)",
         "text-halo-blur": 3
       }
     },
@@ -6238,10 +6281,12 @@
           14,
           13
         ],
-        "text-pitch-alignment": "viewport"
+        "text-pitch-alignment": "viewport",
+        "text-letter-spacing": 0.05,
+        "symbol-avoid-edges": true
       },
       "paint": {
-        "text-color": "rgba(245, 245, 245, 1)",
+        "text-color": "rgba(201, 201, 201, 1)",
         "text-halo-blur": 0.5,
         "text-halo-width": 2,
         "text-halo-color": "rgba(28, 28, 28, 1)"
@@ -6564,6 +6609,7 @@
       "source": "openmaptiles",
       "source-layer": "place",
       "minzoom": 8,
+      "maxzoom": 16,
       "filter": [
         "match",
         [
@@ -6608,9 +6654,9 @@
           ]
         ],
         "text-font": [
-          "Arimo-Italic"
+          "Arimo-Regular"
         ],
-        "text-letter-spacing": 0.1,
+        "text-letter-spacing": 0.12,
         "text-max-width": 9,
         "text-size": [
           "interpolate",
@@ -6625,7 +6671,7 @@
           12,
           10
         ],
-        "text-transform": "uppercase"
+        "text-transform": "none"
       },
       "paint": {
         "text-color": "#ddd",
@@ -6660,7 +6706,7 @@
           ""
         ],
         "icon-optional": false,
-        "icon-size": 0.2,
+        "icon-size": 0.15,
         "text-anchor": "bottom",
         "text-field": [
           "case",
@@ -6712,7 +6758,7 @@
         ]
       },
       "paint": {
-        "text-color": "#fff",
+        "text-color": "rgba(168, 168, 168, 1)",
         "text-halo-blur": 1,
         "text-halo-color": "rgba(3, 6, 19, 1)",
         "text-halo-width": 1
@@ -6785,13 +6831,14 @@
             "zoom"
           ],
           7,
-          12,
           11,
-          14
-        ]
+          11,
+          13
+        ],
+        "text-line-height": 1
       },
       "paint": {
-        "text-color": "#fff",
+        "text-color": "rgba(156, 155, 155, 1)",
         "text-halo-blur": 1,
         "text-halo-color": "#000",
         "text-halo-width": 1
@@ -6876,6 +6923,7 @@
       "source": "openmaptiles",
       "source-layer": "place",
       "minzoom": 3,
+      "maxzoom": 14,
       "filter": [
         "all",
         [
@@ -6953,11 +7001,14 @@
           ],
           4,
           11,
-          7,
+          6,
+          10,
+          8,
           13,
           11,
           18
-        ]
+        ],
+        "text-letter-spacing": 0.012
       },
       "paint": {
         "text-color": "rgba(255, 255, 255, 1)",

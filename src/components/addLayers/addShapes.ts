@@ -52,7 +52,7 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 			//'line-opacity': ['interpolate', ['linear'], ['zoom'], 6.5, 0.5, 7.2, 0.5, 10, 0.5, 10, 0.5],
 			// 'line-opacity': ['interpolate', ['linear'], ['zoom'], 7, 0.2, 10, 0.4]
 		},
-		minzoom: 8
+		minzoom: 11
 	});
 
 	map.addLayer({
@@ -99,13 +99,13 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 			//'text-field': ['coalesce', ['get', 'route_label']],
 			'text-field': urlParams.get('debug')
 				? [
-						'concat',
-						['get', 'onestop_feed_id'],
-						'|',
-						['get', 'shape_id'],
-						'|',
-						['coalesce', ['get', 'route_label']]
-					]
+					'concat',
+					['get', 'onestop_feed_id'],
+					'|',
+					['get', 'shape_id'],
+					'|',
+					['coalesce', ['get', 'route_label']]
+				]
 				: ['coalesce', ['get', 'route_label']],
 			//'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
 			'text-font': ['literal', ['Arimo-Regular']],
@@ -149,7 +149,7 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 		],
 		paint: {
 			'line-color': ['concat', '#', ['get', 'color']],
-			'line-width': ['interpolate', ['linear'], ['zoom'], 7, 2, 9, 3],
+			'line-width': ['interpolate', ['linear'], ['zoom'], 7, 0.5, 9, 1],
 			'line-opacity': 1
 			//'line-emissive-strength': 1
 		},
@@ -253,13 +253,13 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 				['linear'],
 				['zoom'],
 				3,
-				0.4,
+				0.3,
 				5,
-				0.7,
+				0.5,
 				7,
-				1,
+				0.6,
 				9,
-				2,
+				1.6,
 				11,
 				2.5,
 				15,
@@ -317,7 +317,12 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 		type: 'symbol',
 		source: 'localcityrailshapes',
 		'source-layer': 'data',
-		filter: ['all', ['any', ['==', 1, ['get', 'route_type']], ['==', 12, ['get', 'route_type']]]],
+		filter: ['all', ['any', ['==', 1, ['get', 'route_type']], ['==', 12, ['get', 'route_type']]],
+			[
+				'!',
+				['all', ['==', 'nyct', ['get', 'chateau']], ['==', true, ['get', 'stop_to_stop_generated']]]
+			]
+		],
 		layout: {
 			'symbol-placement': 'line',
 			'text-field': ['coalesce', ['get', 'route_label']],
@@ -343,7 +348,7 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 			'text-halo-blur': 1
 			//'text-opacity': ['interpolate', ['linear'], ['zoom'], 3, 0, 3.5, 0.8, 4, 1]
 		},
-		minzoom: 6
+		minzoom: 5
 	});
 
 	//tram
@@ -446,7 +451,7 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 			'text-halo-blur': 1
 			//'text-opacity': ['interpolate', ['linear'], ['zoom'], 3, 0, 3.5, 0.8, 4, 1]
 		},
-		minzoom: 6
+		minzoom: 5
 	});
 
 	//INTERCITY RAIL
@@ -509,6 +514,6 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 			'text-halo-blur': 1
 			//'text-opacity': ['interpolate', ['linear'], ['zoom'], 3, 0, 3.5, 0.8, 4, 1]
 		},
-		minzoom: 5.5
+		minzoom: 6
 	});
 }

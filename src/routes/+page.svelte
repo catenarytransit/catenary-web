@@ -75,13 +75,13 @@
 	import { setup_load_map } from '../components/setup_load_map';
 	import { interpretLabelsToCode } from '../components/rtLabelsToMapboxStyle';
 	import { locale, locales } from 'svelte-i18n';
-	import { determineFeedsUsingChateaus } from '../maploaddata';
+	//import { determineFeedsUsingChateaus } from '../maploaddata';
 	import CloseButton from '../components/CloseButton.svelte';
 	import Layerselectionbox from '../components/layerselectionbox.svelte';
 	import { determineDarkModeToBool } from '../components/determineDarkModeToBool';
-	import { checkClockSkew } from '../components/timesync';
+	import { checkClockSync } from '../components/checkClockSync';
 	import SearchAutocompleteList from '../components/search/SearchAutocompleteList.svelte';
-
+	import { getOptimalPixelRatio } from '../components/maplibre_starter';
 	import ConsentBanner from '../components/ConsentBanner.svelte';
 	import AndroidDownloadPopup from '../components/AndroidDownloadPopup.svelte';
 	import { startSantaTracking } from '../components/santa_tracker';
@@ -117,7 +117,7 @@
 	let previous_click_on_sidebar_dragger: number | null = null;
 	let previous_y_velocity_sidebar: number | null = null;
 	let layersettingsBox = false;
-	const layersettingsnamestorage = 'layersettingsv7';
+	const layersettingsnamestorage = 'layersettingsv9';
 	let LayerSettingsBox: any;
 	$: if (layersettingsBox) {
 		LayerSettingsBox = import('../components/LayerSettingsBox.svelte');
@@ -471,6 +471,9 @@
 			stops: true,
 			shapes: true,
 			stoplabels: true,
+			showRoutesLabels: true,
+			showStopNames: true,
+			routesMinZoom: 11,
 			label: {
 				route: true,
 				trip: false,
@@ -488,6 +491,9 @@
 			labelshapes: true,
 			stoplabels: true,
 			shapes: true,
+			showRoutesLabels: true,
+			showStopNames: true,
+			routesMinZoom: 5,
 			label: {
 				route: true,
 				trip: false,
@@ -505,6 +511,9 @@
 			labelshapes: true,
 			stoplabels: true,
 			shapes: true,
+			showRoutesLabels: true,
+			showStopNames: true,
+			routesMinZoom: 3,
 			label: {
 				route: true,
 				trip: true,
@@ -522,6 +531,9 @@
 			labelshapes: true,
 			stoplabels: true,
 			shapes: true,
+			showRoutesLabels: true,
+			showStopNames: true,
+			routesMinZoom: 3,
 			label: {
 				route: true,
 				trip: false,
@@ -572,9 +584,6 @@
 	) {
 		if (mapglobal) {
 			let shape = mapglobal.getLayer(categoryvalues.shapes);
-
-			//console.log('processing settings',eachcategory, this_layer_settings)
-
 			if (shape) {
 				if (this_layer_settings.shapes) {
 					mapglobal.setLayoutProperty(categoryvalues.shapes, 'visibility', 'visible');
@@ -588,12 +597,25 @@
 					mapglobal.setLayoutProperty(categoryvalues.labelshapes, 'visibility', 'none');
 				}
 
+				const minZoom =
+					this_layer_settings.routesMinZoom ??
+					(category === 'bus'
+						? 12
+						: category === 'metro' || category === 'tram' || category === 'localrail'
+							? 5
+							: 3);
+				mapglobal.setLayerZoomRange(categoryvalues.shapes, minZoom, 24);
+				if (categoryvalues.labelshapes && mapglobal.getLayer(categoryvalues.labelshapes)) {
+					mapglobal.setLayerZoomRange(categoryvalues.labelshapes, minZoom, 24);
+				}
+
 				if (category === 'other') {
 					if (this_layer_settings.shapes) {
 						mapglobal.setLayoutProperty('ferryshapes', 'visibility', 'visible');
 					} else {
 						mapglobal.setLayoutProperty('ferryshapes', 'visibility', 'none');
 					}
+					mapglobal.setLayerZoomRange('ferryshapes', minZoom, 24);
 				}
 			} else {
 				console.error('could not fetch shapes layer', category);
@@ -639,6 +661,27 @@
 						mapglobal.setLayoutProperty(categoryvalues.osmlabelstops, 'visibility', 'visible');
 					} else {
 						mapglobal.setLayoutProperty(categoryvalues.osmlabelstops, 'visibility', 'none');
+					}
+				}
+			}
+
+			if (category === 'intercityrail') {
+				for (let i = 1; i <= 6; i++) {
+					const circleLayerId = `intercityrail-ranked-${i}`;
+					const labelLayerId = `intercityrail-ranked-label-${i}`;
+					if (mapglobal.getLayer(circleLayerId)) {
+						mapglobal.setLayoutProperty(
+							circleLayerId,
+							'visibility',
+							this_layer_settings.stops ? 'visible' : 'none'
+						);
+					}
+					if (mapglobal.getLayer(labelLayerId)) {
+						mapglobal.setLayoutProperty(
+							labelLayerId,
+							'visibility',
+							this_layer_settings.stoplabels ? 'visible' : 'none'
+						);
 					}
 				}
 			}
@@ -713,8 +756,6 @@
 					'text-field',
 					interpretLabelsToCode(this_layer_settings.label, usunits)
 				);
-
-
 			}
 
 			if (category == 'tram') {
@@ -723,8 +764,6 @@
 					'text-field',
 					interpretLabelsToCode(this_layer_settings.label, usunits)
 				);
-
-				
 			}
 
 			if (category == 'metro') {
@@ -733,8 +772,6 @@
 					'text-field',
 					interpretLabelsToCode(this_layer_settings.label, usunits)
 				);
-
-				
 			}
 
 			if (category == 'train') {
@@ -743,10 +780,7 @@
 					'text-field',
 					interpretLabelsToCode(this_layer_settings.label, usunits)
 				);
-
-				
 			}
-
 
 			applyVehicleFilters(categoryvalues);
 		} else {
@@ -857,6 +891,21 @@
 			let parsed = JSON.parse(get_layers_from_local);
 
 			if (parsed) {
+				for (const cat of ['bus', 'localrail', 'intercityrail', 'other']) {
+					if (parsed[cat]) {
+						if (parsed[cat].showRoutesLabels === undefined) {
+							parsed[cat].showRoutesLabels = true;
+						}
+						if (parsed[cat].showStopNames === undefined) {
+							parsed[cat].showStopNames = true;
+						}
+						if (parsed[cat].routesMinZoom === undefined) {
+							parsed[cat].routesMinZoom = cat === 'bus' ? 12 : cat === 'localrail' ? 5 : 3;
+						} else if (cat === 'bus' && parsed[cat].routesMinZoom < 6) {
+							parsed[cat].routesMinZoom = 6;
+						}
+					}
+				}
 				layersettings = parsed;
 
 				runSettingsAdapt();
@@ -1366,7 +1415,7 @@
 
 		// https://raw.githubusercontent.com/catenarytransit/betula-celtiberica-cdn/refs/heads/main/data/chateaus.json
 		// https://birch.catenarymaps.org/getchateaus
-		fetch('https://birch.catenarymaps.org/getchateaus')
+		fetch('https://betula-celtiberica.catenarymaps.org/data/chateaus_simp.json')
 			.then(function (response) {
 				return response.json();
 			})
@@ -1415,9 +1464,11 @@
 			desync = false;
 		}
 
+		const isLowSpec = getOptimalPixelRatio() === 1;
+
 		const map = new maplibregl.Map({
 			canvasContextAttributes: {
-				antialias: false,
+				antialias: !isLowSpec,
 				powerPreference: 'high-performance',
 				desynchronized: desync
 			},
@@ -1425,7 +1476,7 @@
 			localIdeographFontFamily: false,
 			light: { anchor: 'viewport', color: 'white', intensity: 0.4 },
 			hash: 'map',
-			pixelRatio: window.devicePixelRatio * 3,
+			pixelRatio: getOptimalPixelRatio(),
 			maxPitch: window.innerHeight / window.innerWidth > 1.5 ? 60 : 85,
 			validateStyle: true,
 			fadeDuration: 100,
@@ -1441,7 +1492,7 @@
 		}
 
 		const updatePixelRatio = () => {
-			map.setPixelRatio(window.devicePixelRatio * 1.4);
+			map.setPixelRatio(getOptimalPixelRatio());
 		};
 		const mqString = `(resolution: ${window.devicePixelRatio}dppx)`;
 		const media = matchMedia(mqString);
@@ -1475,7 +1526,7 @@
 		});
 
 		map.on('load', () => {
-			checkClockSkew();
+			checkClockSync();
 
 			deep_link_url_reader();
 
@@ -1799,8 +1850,8 @@
 			});
 
 			setTimeout(() => {
-				let chateau_feed_results = determineFeedsUsingChateaus(map);
-				chateaus_in_frame.set(Array.from(chateau_feed_results.chateaus));
+				//	let chateau_feed_results = determineFeedsUsingChateaus(map);
+				//	chateaus_in_frame.set(Array.from(chateau_feed_results.chateaus));
 
 				runSettingsAdapt();
 			}, 0);
@@ -1810,13 +1861,13 @@
 			}, 1000);
 
 			setTimeout(() => {
-				let chateau_feed_results = determineFeedsUsingChateaus(map);
-				chateaus_in_frame.set(Array.from(chateau_feed_results.chateaus));
+				//	let chateau_feed_results = determineFeedsUsingChateaus(map);
+				//	chateaus_in_frame.set(Array.from(chateau_feed_results.chateaus));
 			}, 4000);
 
 			setTimeout(() => {
-				let chateau_feed_results = determineFeedsUsingChateaus(map);
-				chateaus_in_frame.set(Array.from(chateau_feed_results.chateaus));
+				//	let chateau_feed_results = determineFeedsUsingChateaus(map);
+				//	chateaus_in_frame.set(Array.from(chateau_feed_results.chateaus));
 			}, 5000);
 
 			// Start Santa tracking during Christmas window
@@ -1845,8 +1896,8 @@
 		});
 
 		map.on('moveend', (events) => {
-			let chateau_feed_results = determineFeedsUsingChateaus(map);
-			chateaus_in_frame.set(Array.from(chateau_feed_results.chateaus));
+			//let chateau_feed_results = determineFeedsUsingChateaus(map);
+			//chateaus_in_frame.set(Array.from(chateau_feed_results.chateaus));
 		});
 
 		map.on('touchmove', (events) => {
@@ -1858,8 +1909,8 @@
 		});
 
 		map.on('zoomend', (events) => {
-			let chateau_feed_results = determineFeedsUsingChateaus(map);
-			chateaus_in_frame.set(Array.from(chateau_feed_results.chateaus));
+			//let chateau_feed_results = determineFeedsUsingChateaus(map);
+			//chateaus_in_frame.set(Array.from(chateau_feed_results.chateaus));
 		});
 
 		console.log('setting up load map');
@@ -2031,17 +2082,26 @@
 					<div class="mx-auto rounded-lg px-8 py-1 bg-sky-500 dark:bg-sky-400"></div>
 				</div>
 
-				{#if clock_skew !== null && Math.abs(clock_skew) > 10000 && !clock_skew_ignored}
+				{#if clock_skew !== null && Math.abs(clock_skew) > 2000 && !clock_skew_ignored}
 					<div
-						class="md:hidden mx-3 mt-1 mb-2 px-3 py-2 border rounded text-sm flex justify-between items-center z-10 shrink-0 {Math.abs(clock_skew) > 15000 ? 'bg-red-100 dark:bg-red-900 border-red-400 dark:border-red-600 text-red-800 dark:text-red-200' : 'bg-yellow-100 dark:bg-yellow-900 border-yellow-400 dark:border-yellow-600 text-yellow-800 dark:text-yellow-200'}"
+						class="md:hidden mx-3 mt-1 mb-2 px-3 py-2 border rounded text-sm flex justify-between items-center z-10 shrink-0 {Math.abs(
+							clock_skew
+						) > 15000
+							? 'bg-red-100 dark:bg-red-900 border-red-400 dark:border-red-600 text-red-800 dark:text-red-200'
+							: 'bg-yellow-100 dark:bg-yellow-900 border-yellow-400 dark:border-yellow-600 text-yellow-800 dark:text-yellow-200'}"
 					>
 						<div>
-							<span class="font-bold">{$_('clock_skew_warning', { values: { skew: (Math.abs(clock_skew) / 1000).toFixed(2) } })}</span>
+							<span class="font-bold"
+								>{$_('clock_skew_warning', {
+									values: { skew: (Math.abs(clock_skew) / 1000).toFixed(2) }
+								})}</span
+							>
 						</div>
 						<button
 							on:click={() => (clock_skew_ignored = true)}
-							class="underline ml-2 whitespace-nowrap {Math.abs(clock_skew) > 15000 ? 'text-red-600 dark:text-red-300' : 'text-yellow-700 dark:text-yellow-300'}"
-							>{$_('clock_skew_ignore')}</button
+							class="underline ml-2 whitespace-nowrap {Math.abs(clock_skew) > 15000
+								? 'text-red-600 dark:text-red-300'
+								: 'text-yellow-700 dark:text-yellow-300'}">{$_('clock_skew_ignore')}</button
 						>
 					</div>
 				{/if}
@@ -2051,17 +2111,26 @@
 		{/if}
 	</div>
 
-	{#if clock_skew !== null && Math.abs(clock_skew) > 10000 && !clock_skew_ignored}
+	{#if clock_skew !== null && Math.abs(clock_skew) > 5000 && !clock_skew_ignored}
 		<div
-			class="hidden md:flex fixed top-4 left-[396px] right-20 px-4 py-2 border rounded shadow-md text-sm justify-between items-center z-40 {Math.abs(clock_skew) > 15000 ? 'bg-red-100 dark:bg-red-900 border-red-400 dark:border-red-600 text-red-800 dark:text-red-200' : 'bg-yellow-100 dark:bg-yellow-900 border-yellow-400 dark:border-yellow-600 text-yellow-800 dark:text-yellow-200'}"
+			class="hidden md:flex fixed top-4 left-[396px] right-20 px-4 py-2 border rounded shadow-md text-sm justify-between items-center z-40 {Math.abs(
+				clock_skew
+			) > 15000
+				? 'bg-red-100 dark:bg-red-900 border-red-400 dark:border-red-600 text-red-800 dark:text-red-200'
+				: 'bg-yellow-100 dark:bg-yellow-900 border-yellow-400 dark:border-yellow-600 text-yellow-800 dark:text-yellow-200'}"
 		>
 			<div>
-				<span class="font-bold">{$_('clock_skew_warning', { values: { skew: (Math.abs(clock_skew) / 1000).toFixed(2) } })}</span>
+				<span class="font-bold"
+					>{$_('clock_skew_warning', {
+						values: { skew: (Math.abs(clock_skew) / 1000).toFixed(2) }
+					})}</span
+				>
 			</div>
 			<button
 				on:click={() => (clock_skew_ignored = true)}
-				class="underline ml-4 whitespace-nowrap {Math.abs(clock_skew) > 15000 ? 'text-red-600 dark:text-red-300' : 'text-yellow-700 dark:text-yellow-300'}"
-				>{$_('clock_skew_ignore')}</button
+				class="underline ml-4 whitespace-nowrap {Math.abs(clock_skew) > 15000
+					? 'text-red-600 dark:text-red-300'
+					: 'text-yellow-700 dark:text-yellow-300'}">{$_('clock_skew_ignore')}</button
 			>
 		</div>
 	{/if}

@@ -97,6 +97,18 @@
 		fading = false;
 	}
 
+	function formatActivePeriodTime(value: number | null | undefined, locale: string, timeZone: string) {
+		if (value == null) return '';
+		return new Date(value * 1000)
+			.toLocaleString(locale, {
+				timeZone,
+				dateStyle: 'short',
+				timeStyle: 'short',
+				hour12: false
+			})
+			.replace(/,/, '');
+	}
+
 	$: if (!expanded) {
 		startCycling();
 	} else {
@@ -302,19 +314,9 @@
 								{@const fallbackLocale = isNA ? 'en-CA' : 'en-GB'}
 								{#each schedule.fallbackPeriods as active_period}
 									<p class="leading-relaxed">
-										{new Date(active_period.start * 1000).toLocaleString(fallbackLocale, {
-											timeZone: tz,
-											dateStyle: 'short',
-											timeStyle: 'short',
-											hour12: false
-										}).replace(/,/, '')}
+										{formatActivePeriodTime(active_period.start, fallbackLocale, tz)}
 										–
-										{new Date(active_period.end * 1000).toLocaleString(fallbackLocale, {
-											timeZone: tz,
-											dateStyle: 'short',
-											timeStyle: 'short',
-											hour12: false
-										}).replace(/,/, '')}
+										{formatActivePeriodTime(active_period.end, fallbackLocale, tz)}
 									</p>
 								{/each}
 							{/if}

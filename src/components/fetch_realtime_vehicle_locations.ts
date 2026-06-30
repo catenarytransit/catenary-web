@@ -1,11 +1,8 @@
 import type { Writable } from 'svelte/store';
-import { get } from 'svelte/store';
 import { updateMap } from '../spruce_websocket';
 
 export function fetch_realtime_vehicle_locations(
 	layersettings: Record<string, any>,
-	chateaus_in_frame: Writable<string[]>,
-	chateau_to_realtime_feed_lookup: Record<string, any>,
 	map: maplibregl.Map
 ) {
 	const categories_to_request: string[] = [];
@@ -40,24 +37,15 @@ export function fetch_realtime_vehicle_locations(
 		}
 	}
 
-	// Filter chateaus based on whether they have a realtime feed
-	const realtime_chateaus_in_frame = get(chateaus_in_frame).filter((chateau_id: string) => {
-		return (
-			chateau_to_realtime_feed_lookup[chateau_id] &&
-			chateau_to_realtime_feed_lookup[chateau_id].length > 0
-		);
-	});
-
 	const bounds = bounds_input_calculate(map);
 
-	if (categories_to_request.length > 0) {
-		// Send simplified MapViewportUpdate
-		updateMap({
-			categories: categories_to_request,
-			chateaus: realtime_chateaus_in_frame, // Just the list of IDs
-			bounds_input: bounds
-		});
-	}
+	let params = {
+		categories: categories_to_request,
+		bounds_input: bounds
+	};
+
+	// Send simplified MapViewportUpdate
+	updateMap(params);
 
 	return bounds;
 }

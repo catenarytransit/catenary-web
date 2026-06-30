@@ -12,7 +12,9 @@ import {
 	StopStack,
 	RouteMapSelector,
 	StopMapSelector,
-	OsmStationMapSelector
+	OsmStationMapSelector,
+	VehicleSelectedStack,
+	OsmStationStack
 } from './stackenum';
 
 export function setup_click_handler(
@@ -232,11 +234,19 @@ export function setup_click_handler(
 			// OSM Stations (excluding platforms - only station_type === 'station')
 			const selected_osm_stations_raw = selectedFeatures.filter(
 				(x: any) =>
-					x.source === 'osmstations' &&
-					(x.properties.station_type === 'station' ||
-						x.properties.station_type === 'tram_stop' ||
-						x.properties.station_type === 'halt')
+					(x.source === 'osmstations' || x.source === 'osmstationsranked') &&
+					(
+						(x.properties.station_type === 'station' ||
+							x.properties.station_type === 'tram_stop' ||
+							x.properties.station_type === 'halt') ||
+						((x.properties.parent_osm_id === null || x.properties.parent_osm_id === undefined) && !(
+							(typeof x.properties.ref == "string") || (typeof x.properties.local_ref == "string")
+						))
+					)
 			);
+
+			console.log('osmstations', selectedFeatures.filter((x: any) => x.source === 'osmstations' || x.source === 'osmstationsranked'));
+			console.log("selected osm stations raw", selected_osm_stations_raw);
 
 			const selected_osm_stations_key_unique = new Set();
 
@@ -276,7 +286,64 @@ export function setup_click_handler(
 			if (MapSelectionOptions.length > 0) {
 				const data_stack = get(data_stack_store);
 
-				data_stack.push(new StackInterface(new MapSelectionScreen(MapSelectionOptions)));
+				if (MapSelectionOptions.length === 1) {
+					const option = MapSelectionOptions[0];
+					if (option.data instanceof VehicleMapSelector) {
+						if (option.data.trip_id) {
+							data_stack.push(
+								new StackInterface(
+									new SingleTrip(
+										option.data.chateau_id,
+										option.data.trip_id,
+										option.data.route_id,
+										option.data.start_time,
+										option.data.start_date,
+										option.data.vehicle_id,
+										option.data.route_type
+									)
+								)
+							);
+						} else {
+							data_stack.push(
+								new StackInterface(
+									new VehicleSelectedStack(
+										option.data.chateau_id,
+										option.data.vehicle_id,
+										option.data.gtfs_id
+									)
+								)
+							);
+						}
+					} else if (option.data instanceof OsmStationMapSelector) {
+						data_stack.push(
+							new StackInterface(
+								new OsmStationStack(
+									option.data.osm_id,
+									option.data.name,
+									option.data.mode_type,
+									option.data.lat,
+									option.data.lon
+								)
+							)
+						);
+					} else if (option.data instanceof StopMapSelector) {
+						data_stack.push(
+							new StackInterface(
+								new StopStack(option.data.chateau_id, option.data.stop_id)
+							)
+						);
+					} else if (option.data instanceof RouteMapSelector) {
+						data_stack.push(
+							new StackInterface(
+								new RouteStack(option.data.chateau_id, option.data.route_id)
+							)
+						);
+					} else {
+						data_stack.push(new StackInterface(new MapSelectionScreen(MapSelectionOptions)));
+					}
+				} else {
+					data_stack.push(new StackInterface(new MapSelectionScreen(MapSelectionOptions)));
+				}
 
 				data_stack_store.update((data_stack_pointer) => data_stack);
 

@@ -76,7 +76,7 @@ function ensureConnection() {
 				} else {
 					trajectory_accumulator.push(...msg.content);
 				}
-				
+
 				if (msg.total_chunks === 0 || msg.chunk_index === msg.total_chunks - 1) {
 					spruce_trajectory_data.set(trajectory_accumulator);
 				}
@@ -132,10 +132,37 @@ export function connectSpruceWebSocket(chateau: string, params: any) {
 
 export function updateMap(params: any) {
 	ensureConnection();
-	// params should correspond to BulkFetchParamsV3 structure
+
+	// Defensively unwrap if passed as { params } instead of raw params
+	if (params && params.params) {
+		params = params.params;
+	}
+
+	// params should correspond to CategoryAskParamsV2 structure
 	const msg = {
-		type: 'update_map',
+		type: 'subscribe_map_v2',
 		...params
+	};
+	if (socket && socket.readyState === WebSocket.OPEN) {
+		socket.send(JSON.stringify(msg));
+	}
+}
+
+export function subscribeTrajectories(params: any) {
+	ensureConnection();
+	const msg = {
+		type: 'subscribe_trajectories',
+		...params
+	};
+	if (socket && socket.readyState === WebSocket.OPEN) {
+		socket.send(JSON.stringify(msg));
+	}
+}
+
+export function unsubscribeTrajectories() {
+	ensureConnection();
+	const msg = {
+		type: 'unsubscribe_trajectories'
 	};
 	if (socket && socket.readyState === WebSocket.OPEN) {
 		socket.send(JSON.stringify(msg));

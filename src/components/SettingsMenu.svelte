@@ -9,7 +9,8 @@
 		show_seconds_store,
 		show_stop_codes_store,
 		show_countdown_to_stop_store,
-		clock_skew_store
+		clock_skew_store,
+		show_osm_ids_store
 	} from '../globalstores';
 
 	import { livedotscaling_store } from '../fontscalingstores';
@@ -20,6 +21,7 @@
 
 	let this_locale: string | undefined | null;
 	import { getLocaleStorageOrNav } from '../i18n';
+	import { getOptimalPixelRatio } from './maplibre_starter';
 	import { init_stores } from './init_stores';
 	init_stores();
 
@@ -33,12 +35,53 @@
 		localStorage.setItem('cookie_consent', String(value));
 	});
 
+	let pixelRatioChosen = 1;
+
 	onMount(() => {
+		pixelRatioChosen = getOptimalPixelRatio();
 		const consent = localStorage.getItem('cookie_consent');
 		if (consent === 'true') {
 			consentGiven.set(true);
 		} else if (consent === 'false') {
 			consentGiven.set(false);
+		}
+
+		try {
+			const canvas = document.createElement('canvas');
+			let gl: any = canvas.getContext('webgl2');
+			let versionText = 'WebGL 2';
+			if (!gl) {
+				gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+				versionText = 'WebGL 1';
+			}
+			if (gl) {
+				const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+				const maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+				const maxViewportDimsArray = gl.getParameter(gl.MAX_VIEWPORT_DIMS);
+				const maxViewportDims = maxViewportDimsArray
+					? `${maxViewportDimsArray[0]}x${maxViewportDimsArray[1]}`
+					: 'Unknown';
+				const attribs = gl.getContextAttributes();
+				const antialias = attribs ? attribs.antialias : false;
+
+				webglInfo = {
+					supported: true,
+					versionText,
+					version: gl.getParameter(gl.VERSION) || '',
+					vendor: gl.getParameter(gl.VENDOR) || '',
+					renderer: gl.getParameter(gl.RENDERER) || '',
+					shadingLanguageVersion: gl.getParameter(gl.SHADING_LANGUAGE_VERSION) || '',
+					unmaskedRenderer: debugInfo
+						? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || ''
+						: '',
+					unmaskedVendor: debugInfo ? gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) || '' : '',
+					maxTextureSize,
+					maxViewportDims,
+					antialias
+				};
+			}
+		} catch (e) {
+			console.error('Failed to get WebGL debug info:', e);
 		}
 	});
 
@@ -90,6 +133,20 @@
 
 	const commitID = _COMMIT_ID;
 	const commitDate = _COMMIT_DATE;
+
+	let webglInfo = {
+		supported: false,
+		versionText: '',
+		unmaskedRenderer: '',
+		unmaskedVendor: '',
+		renderer: '',
+		vendor: '',
+		version: '',
+		shadingLanguageVersion: '',
+		maxTextureSize: 0,
+		maxViewportDims: '',
+		antialias: false
+	};
 </script>
 
 <HomeButton />
@@ -212,6 +269,25 @@
 	<div class="flex flex-row gap-x-2">
 		<input
 			type="checkbox"
+			checked={get(show_osm_ids_store)}
+			class="accent-seashore"
+			on:click={() => {
+				show_osm_ids_store.update((x) => !x);
+				window.localStorage.show_osm_ids = get(show_osm_ids_store);
+			}}
+			on:keydown={(e) => {
+				if (e.key === 'Enter') {
+					show_osm_ids_store.update((x) => !x);
+					window.localStorage.show_osm_ids = get(show_osm_ids_store);
+				}
+			}}
+		/>
+		<p>{$_('show_osm_ids')}</p>
+	</div>
+
+	<div class="flex flex-row gap-x-2">
+		<input
+			type="checkbox"
 			class="accent-seashore"
 			checked={show_seconds}
 			on:click={(e) => {
@@ -308,4 +384,60 @@
 	{#if clock_skew !== null}
 		<p>Clock Skew: {(clock_skew / 1000).toFixed(2)} s</p>
 	{/if}
+
+	<div
+		class="mt-4 pt-2 border-t border-gray-200 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 select-text"
+	>
+		<p class="font-semibold text-sm mb-1 text-gray-700 dark:text-gray-300">WebGL Diagnostics</p>
+		{#if webglInfo.supported}
+			<p>
+				<span class="font-medium text-gray-600 dark:text-gray-400">Context:</span>
+				{webglInfo.versionText}
+			</p>
+			{#if webglInfo.unmaskedRenderer}
+				<p>
+					<span class="font-medium text-gray-600 dark:text-gray-400">Renderer (Unmasked):</span>
+					{webglInfo.unmaskedRenderer}
+				</p>
+			{/if}
+			{#if webglInfo.unmaskedVendor}
+				<p>
+					<span class="font-medium text-gray-600 dark:text-gray-400">Vendor (Unmasked):</span>
+					{webglInfo.unmaskedVendor}
+				</p>
+			{/if}
+			<p>
+				<span class="font-medium text-gray-600 dark:text-gray-400">Renderer:</span>
+				{webglInfo.renderer}
+			</p>
+			<p>
+				<span class="font-medium text-gray-600 dark:text-gray-400">Vendor:</span>
+				{webglInfo.vendor}
+			</p>
+			<p>
+				<span class="font-medium text-gray-600 dark:text-gray-400">GL Version:</span>
+				{webglInfo.version}
+			</p>
+			<p>
+				<span class="font-medium text-gray-600 dark:text-gray-400">GLSL Version:</span>
+				{webglInfo.shadingLanguageVersion}
+			</p>
+			<p>
+				<span class="font-medium text-gray-600 dark:text-gray-400">Max Texture Size:</span>
+				{webglInfo.maxTextureSize}px
+			</p>
+			<p>
+				<span class="font-medium text-gray-600 dark:text-gray-400">Max Viewport Dims:</span>
+				{webglInfo.maxViewportDims}
+			</p>
+			<p>
+				<span class="font-medium text-gray-600 dark:text-gray-400">Antialiasing:</span>
+				{webglInfo.antialias ? 'Supported' : 'Not Supported'}
+			</p>
+		{:else}
+			<p class="text-red-500">WebGL not supported or disabled</p>
+		{/if}
+	</div>
+
+	<p>Chosen maplibre pixel ratio: {pixelRatioChosen}</p>
 </div>

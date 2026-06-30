@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="19.5" height="12" viewBox="0 0 5.1593753 3.1750001" version="1.1" id="svg19376" inkscape:version="0.92.1 r15371" sodipodi:docname="SBB_RE_Logo.svg">
+  <defs id="defs19370"/>
+  <sodipodi:namedview id="base" pagecolor="#ffffff" bordercolor="#666666" borderopacity="1.0" inkscape:pageopacity="0.0" inkscape:pageshadow="2" inkscape:zoom="11.2" inkscape:cx="13.97881" inkscape:cy="8.0398194" inkscape:document-units="mm" inkscape:current-layer="use9328" showgrid="false" inkscape:window-width="780" inkscape:window-height="405" inkscape:window-x="1050" inkscape:window-y="292" inkscape:window-maximized="0" units="px"/>
+  <metadata id="metadata19373">
+    <rdf:RDF>
+      <cc:Work rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+        <dc:title/>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g inkscape:label="Ebene 1" inkscape:groupmode="layer" id="layer1" transform="translate(0,-293.82498)">
+    <g style="fill:currentColor" transform="matrix(0.4023756,0,0,0.4023756,7.4311096,296.42087)" id="use9328">
+      <g id="g32291" transform="matrix(2.5409188,0,0,2.5409188,27.77293,9.2726936)">
+        <g transform="matrix(0.57650147,0,0,0.57650147,-18.266828,-3.1981867)" style="fill:#211e1e;fill-opacity:1" id="use24386">
+          <path style="stroke:none" d="M 0.421875,0 H 1.71875 V -1.9375 H 2 c 0.484375,0 0.640625,0.21875 0.90625,1.0625 L 3.1875,0 H 4.546875 L 4.078125,-1.328125 C 3.828125,-1.921875 3.796875,-2.296875 3.375,-2.40625 V -2.421875 C 4.015625,-2.5625 4.3125,-3 4.3125,-3.65625 4.3125,-4.5 3.609375,-4.890625 2.75,-4.890625 H 0.421875 Z M 1.71875,-3.96875 H 2.0625 c 0.5,0 0.953125,0.09375 0.953125,0.546875 0,0.546875 -0.53125,0.5625 -0.953125,0.5625 H 1.71875 Z m 0,0" id="path32283" inkscape:connector-curvature="0"/>
+        </g>
+        <g transform="matrix(0.57650147,0,0,0.57650147,-15.624564,-3.1981867)" style="fill:#211e1e;fill-opacity:1" id="use24388">
+          <path style="stroke:none" d="M 0.421875,0 H 3.9375 V -0.921875 H 1.71875 V -2.03125 H 3.75 V -2.953125 H 1.71875 V -3.96875 h 2.140625 v -0.921875 h -3.4375 z m 0,0" id="path32279" inkscape:connector-curvature="0"/>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

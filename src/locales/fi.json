@@ -28,6 +28,7 @@
   "stops": "Pysäkit",
   "stopnames": "Nimet",
   "vehicles": "Ajoneuvot",
+  "vehiclelabels": "Ajoneuvojen tunnisteet",
   "showroute": "Reitti",
   "showtrip": "Vuoro",
   "showvehicle": "Ajoneuvo",

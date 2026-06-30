@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { _ } from 'svelte-i18n';
 	import { fixRouteName, fixRouteNameLong } from './agencyspecific';
+	import SbbLogo from './SbbLogo.svelte';
 	import { lightenColour } from './lightenDarkColour';
 	import {
 		find_schedule_pdf,
@@ -24,6 +25,7 @@
 	import { MTA_CHATEAU_ID, isSubwayRouteId } from '../utils/mta_subway_utils';
 	import { IDFM_CHATEAU_ID, isRatpRoute } from '../utils/ratp_utils';
 	import MtaBullet from './mtabullet.svelte';
+	import StationScreenRouteBadge from './StationScreenRouteBadge.svelte';
 	import RatpBullet from './ratpbullet.svelte';
 
 	export let color: string;
@@ -133,12 +135,21 @@
 
 	$: isSubway = isSubwayRouteId(route_id) && chateau_id == MTA_CHATEAU_ID;
 	$: isRatp = chateau_id === IDFM_CHATEAU_ID && isRatpRoute(short_name);
+	$: is_sbahn =
+		['dbregioag', 'deutschland'].includes(chateau_id) &&
+		(short_name || '').match(/^S\d+/) !== null;
+	$: showLongName = !!(
+		long_name &&
+		(!short_name ||
+			(long_name.trim().toLowerCase() !== short_name.trim().toLowerCase() &&
+				long_name.trim().toLowerCase() !== `${short_name.trim().toLowerCase()} line`))
+	);
 </script>
 
 {#if !compact}
 	<div class="flex items-start justify-between gap-2">
 		<h2
-			class={`${window_height_known < 600 ? 'text-base' : 'text-lg md:text-xl md:mt-2'} ${
+			class={`${window_height_known < 600 ? 'text-sm' : 'text-base md:text-lg md:mt-1'} ${
 				isSubway ? '' : 'leading-tight'
 			}`}
 			style={`
@@ -165,11 +176,24 @@
 					<MtaBullet route_short_name={short_name} matchTextHeight={true} />
 				{:else if isRatp && short_name}
 					<RatpBullet route_short_name={short_name} matchTextHeight={true} />
-				{:else if short_name && (chateau_id !== 'nationalrailuk' || short_name.startsWith('LO-') || short_name === 'XR-ELIZABETH') && chateau_id !== 'metrolinktrains'}
-					<span class="font-bold">{fixRouteName(chateau_id, short_name, route_id)}</span>
+				{:else if short_name && !showLongName}
+					<StationScreenRouteBadge routeDef={{ short_name: short_name, color: color, text_color: text_color }} chateau={chateau_id} />
+				{:else if short_name}
+					{#if chateau_id === 'schweiz' && (short_name.startsWith('IR') || short_name.startsWith('IC') || short_name === 'EC')}
+						<span class="font-bold inline-flex items-center">
+							<SbbLogo text={short_name} chateau={chateau_id} />
+						</span>
+					{:else if (chateau_id !== 'nationalrailuk' || short_name.startsWith('LO-') || short_name === 'XR-ELIZABETH') && chateau_id !== 'metrolinktrains'}
+						<span
+							class="font-bold px-1.5 py-0.5 text-xs inline-block align-middle mr-1 {is_sbahn ? 'rounded-full' : 'rounded-sm'}"
+							style={`background: ${color}; color: ${text_color};`}
+						>
+							{fixRouteName(chateau_id, short_name, route_id)}
+						</span>
+					{/if}
 				{/if}
 
-				{#if long_name}
+				{#if showLongName}
 					<span class={`${short_name ? 'font-normal ml-1' : 'font-bold'}`}>
 						{fixRouteNameLong(chateau_id, long_name, route_id)}
 					</span>
@@ -208,7 +232,7 @@
 	{/if}
 
 	<h2
-		class={`${window_height_known < 600 ? 'text-base' : 'text-base md:text-lg my-0.5'}  font-medium ${arrow ? '-translate-x-1.5' : ''} leading-tight`}
+		class={`${window_height_known < 600 ? 'text-xs' : 'text-sm md:text-base my-0.5'}  font-medium ${arrow ? '-translate-x-1.5' : ''} leading-tight`}
 	>
 		{#if arrow}
 			<span class="material-symbols-outlined text-2xl align-middle">chevron_right</span>
@@ -226,11 +250,7 @@
 			{/if}
 		</span>
 		{#if vehicle && vehicle != run_number}
-			<span
-				style:background-color={color}
-				style:color={text_color}
-				class="text-sm align-middle ml-1 bg-seashore dark:bg-gray-900 text-white px-1 rounded-md translate-y-0.5 inline-block"
-			>
+			<span class="text-sm align-middle ml-2 text-gray-600 dark:text-gray-400 inline-block">
 				<span class="material-symbols-outlined !text-sm align-middle -translate-y-[0.03rem]"
 					>{#if route_type == 0}
 						tram
@@ -242,8 +262,8 @@
 						directions_bus
 					{/if}</span
 				>
-				{vehicle}</span
-			>
+				{vehicle}
+			</span>
 		{/if}
 	</h2>
 
