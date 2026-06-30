@@ -7,6 +7,7 @@ export const spruce_trip_data = writable<any>(null);
 export const spruce_update_data = writable<any>(null);
 export const spruce_error = writable<string | null>(null);
 export const spruce_map_data = writable<any>(null);
+export const spruce_trajectory_data = writable<any>(null);
 
 let socket: WebSocket | null = null;
 let heartbeatInterval: any = null;
@@ -65,6 +66,8 @@ function ensureConnection() {
 				if (payload) {
 					spruce_map_data.set(payload);
 				}
+			} else if (msg.type === 'buffer') {
+				spruce_trajectory_data.set(msg);
 			} else if (msg.type === 'error') {
 				spruce_error.set(msg.message);
 				console.error('Spruce WS Error message:', msg.message);
@@ -121,6 +124,27 @@ export function updateMap(params: any) {
 	const msg = {
 		type: 'update_map',
 		...params
+	};
+	if (socket && socket.readyState === WebSocket.OPEN) {
+		socket.send(JSON.stringify(msg));
+	}
+}
+
+export function subscribeTrajectories(params: any) {
+	ensureConnection();
+	const msg = {
+		type: 'subscribe_trajectories',
+		...params
+	};
+	if (socket && socket.readyState === WebSocket.OPEN) {
+		socket.send(JSON.stringify(msg));
+	}
+}
+
+export function unsubscribeTrajectories() {
+	ensureConnection();
+	const msg = {
+		type: 'unsubscribe_trajectories'
 	};
 	if (socket && socket.readyState === WebSocket.OPEN) {
 		socket.send(JSON.stringify(msg));

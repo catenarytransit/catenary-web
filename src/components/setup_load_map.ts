@@ -18,11 +18,12 @@ import { addGeoRadius, setUserCircles } from './userradius';
 import { addShapes } from './addLayers/addShapes';
 import { fetch_realtime_vehicle_locations } from './fetch_realtime_vehicle_locations';
 import { add_bunny_layer, make_custom_icon_source, new_jeans_buses } from './addLayers/customIcons';
-import { makeCircleLayers } from './addLayers/addLiveDots';
+import { makeCircleLayers, makeTrajectoryCircleLayers } from './addLayers/addLiveDots';
 import { makeBearingArrowPointers } from './addLayers/makebearingarrowpointers';
 import { makeGpsLayer } from './makeGpsLayer';
 import { makeContextLayerDataset, makeContextLayerDots } from './addLayers/contextLayer';
 import { start_location_watch, update_geolocation_source } from '../user_location_lib';
+import { startTrajectoryManager, stopTrajectoryManager, fetch_trajectories } from './trajectory_manager';
 import { setup_click_handler } from '../components/mapClickHandler';
 import { initSpruceWebSocket, spruce_map_data } from '../spruce_websocket';
 import { process_realtime_vehicle_locations_v2 } from './process_realtime_data';
@@ -150,12 +151,21 @@ export async function setup_load_map(
 			});
 		});
 
+		['trajectory_buses', 'trajectory_localrail', 'trajectory_intercityrail', 'trajectory_other'].forEach((category) => {
+			map.addSource(category, {
+				type: 'geojson',
+				data: emptyGeoJSON
+			});
+		});
+
 		makeFireMap(map, chateaus_in_frame);
 		console.log('setup load map start');
 		addShapes(map, darkMode);
 		addStopsLayers(map, darkMode);
 		await makeContextLayerDataset(map);
 		await makeCircleLayers(map, darkMode, layerspercategory);
+		await makeTrajectoryCircleLayers(map, darkMode);
+		startTrajectoryManager(map);
 		await makeBearingArrowPointers(map, darkMode, layerspercategory);
 
 		await makeContextLayerDots(map);
@@ -214,6 +224,7 @@ export async function setup_load_map(
 				chateau_to_realtime_feed_lookup,
 				map
 			);
+			fetch_trajectories(layersettings, map);
 			garbageCollectNotInView(chateaus_in_frame);
 		}, 700);
 
@@ -223,6 +234,7 @@ export async function setup_load_map(
 			chateau_to_realtime_feed_lookup,
 			map
 		);
+		fetch_trajectories(layersettings, map);
 
 		recompute_map_padding();
 		runSettingsAdapt();
@@ -238,8 +250,9 @@ export async function setup_load_map(
 
 	map.on('remove', () => {
 		clearInterval(updateInterval);
+		stopTrajectoryManager();
 		RASTER_SOURCES.forEach(({ id }) => map.removeSource(id));
-		RAIL_SHAPES.forEach(({ id }) => map.removeSource(id));
+		SHAPES.forEach(({ id }) => map.removeSource(id));
 		STOP_SOURCES.forEach(({ id }) => map.removeSource(id));
 	});
 }
