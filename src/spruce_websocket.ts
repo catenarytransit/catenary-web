@@ -120,9 +120,15 @@ export function connectSpruceWebSocket(chateau: string, params: any) {
 
 export function updateMap(params: any) {
 	ensureConnection();
-	// params should correspond to BulkFetchParamsV3 structure
+
+	// Defensively unwrap if passed as { params } instead of raw params
+	if (params && params.params) {
+		params = params.params;
+	}
+
+	// params should correspond to CategoryAskParamsV2 structure
 	const msg = {
-		type: 'update_map',
+		type: 'subscribe_map_v2',
 		...params
 	};
 	if (socket && socket.readyState === WebSocket.OPEN) {

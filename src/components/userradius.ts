@@ -107,12 +107,18 @@ export function setUserCircles(map: maplibregl.Map, lng: number, lat: number) {
 
 	const show_my_location = get(show_my_location_store);
 
+	const setVisSafe = (layerId: string, vis: 'visible' | 'none') => {
+		if (map.getLayer(layerId) && map.getLayoutProperty(layerId, 'visibility') !== vis) {
+			map.setLayoutProperty(layerId, 'visibility', vis);
+		}
+	};
+
 	// If user location display is disabled, hide all radius circles
 	if (!show_my_location) {
-		if (map.getLayer('km_line')) map.setLayoutProperty('km_line', 'visibility', 'none');
-		if (map.getLayer('km_text')) map.setLayoutProperty('km_text', 'visibility', 'none');
-		if (map.getLayer('miles_line')) map.setLayoutProperty('miles_line', 'visibility', 'none');
-		if (map.getLayer('miles_text')) map.setLayoutProperty('miles_text', 'visibility', 'none');
+		setVisSafe('km_line', 'none');
+		setVisSafe('km_text', 'none');
+		setVisSafe('miles_line', 'none');
+		setVisSafe('miles_text', 'none');
 
 		km_source.setData({ type: 'FeatureCollection', features: [] });
 		miles_source.setData({ type: 'FeatureCollection', features: [] });
@@ -124,8 +130,8 @@ export function setUserCircles(map: maplibregl.Map, lng: number, lat: number) {
 
 	if (use_us_units) {
 		// 1. Ensure KM layers are hidden before updating data to prevent flicker
-		if (map.getLayer('km_line')) map.setLayoutProperty('km_line', 'visibility', 'none');
-		if (map.getLayer('km_text')) map.setLayoutProperty('km_text', 'visibility', 'none');
+		setVisSafe('km_line', 'none');
+		setVisSafe('km_text', 'none');
 
 		// 2. Clear KM source to free resources
 		km_source.setData({ type: 'FeatureCollection', features: [] });
@@ -147,12 +153,12 @@ export function setUserCircles(map: maplibregl.Map, lng: number, lat: number) {
 		});
 
 		// 4. Ensure Miles layers are visible
-		if (map.getLayer('miles_line')) map.setLayoutProperty('miles_line', 'visibility', 'visible');
-		if (map.getLayer('miles_text')) map.setLayoutProperty('miles_text', 'visibility', 'visible');
+		setVisSafe('miles_line', 'visible');
+		setVisSafe('miles_text', 'visible');
 	} else {
 		// 1. Ensure Miles layers are hidden
-		if (map.getLayer('miles_line')) map.setLayoutProperty('miles_line', 'visibility', 'none');
-		if (map.getLayer('miles_text')) map.setLayoutProperty('miles_text', 'visibility', 'none');
+		setVisSafe('miles_line', 'none');
+		setVisSafe('miles_text', 'none');
 
 		// 2. Clear Miles source
 		miles_source.setData({ type: 'FeatureCollection', features: [] });
@@ -169,7 +175,7 @@ export function setUserCircles(map: maplibregl.Map, lng: number, lat: number) {
 		});
 
 		// 4. Ensure KM layers are visible
-		if (map.getLayer('km_line')) map.setLayoutProperty('km_line', 'visibility', 'visible');
-		if (map.getLayer('km_text')) map.setLayoutProperty('km_text', 'visibility', 'visible');
+		setVisSafe('km_line', 'visible');
+		setVisSafe('km_text', 'visible');
 	}
 }

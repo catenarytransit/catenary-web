@@ -75,7 +75,7 @@
 	import { setup_load_map } from '../components/setup_load_map';
 	import { interpretLabelsToCode } from '../components/rtLabelsToMapboxStyle';
 	import { locale, locales } from 'svelte-i18n';
-	import { determineFeedsUsingChateaus } from '../maploaddata';
+	//import { determineFeedsUsingChateaus } from '../maploaddata';
 	import CloseButton from '../components/CloseButton.svelte';
 	import Layerselectionbox from '../components/layerselectionbox.svelte';
 	import { determineDarkModeToBool } from '../components/determineDarkModeToBool';
@@ -1850,8 +1850,8 @@
 			});
 
 			setTimeout(() => {
-				let chateau_feed_results = determineFeedsUsingChateaus(map);
-				chateaus_in_frame.set(Array.from(chateau_feed_results.chateaus));
+				//	let chateau_feed_results = determineFeedsUsingChateaus(map);
+				//	chateaus_in_frame.set(Array.from(chateau_feed_results.chateaus));
 
 				runSettingsAdapt();
 			}, 0);
@@ -1861,13 +1861,13 @@
 			}, 1000);
 
 			setTimeout(() => {
-				let chateau_feed_results = determineFeedsUsingChateaus(map);
-				chateaus_in_frame.set(Array.from(chateau_feed_results.chateaus));
+				//	let chateau_feed_results = determineFeedsUsingChateaus(map);
+				//	chateaus_in_frame.set(Array.from(chateau_feed_results.chateaus));
 			}, 4000);
 
 			setTimeout(() => {
-				let chateau_feed_results = determineFeedsUsingChateaus(map);
-				chateaus_in_frame.set(Array.from(chateau_feed_results.chateaus));
+				//	let chateau_feed_results = determineFeedsUsingChateaus(map);
+				//	chateaus_in_frame.set(Array.from(chateau_feed_results.chateaus));
 			}, 5000);
 
 			// Start Santa tracking during Christmas window
@@ -1896,8 +1896,8 @@
 		});
 
 		map.on('moveend', (events) => {
-			let chateau_feed_results = determineFeedsUsingChateaus(map);
-			chateaus_in_frame.set(Array.from(chateau_feed_results.chateaus));
+			//let chateau_feed_results = determineFeedsUsingChateaus(map);
+			//chateaus_in_frame.set(Array.from(chateau_feed_results.chateaus));
 		});
 
 		map.on('touchmove', (events) => {
@@ -1909,8 +1909,8 @@
 		});
 
 		map.on('zoomend', (events) => {
-			let chateau_feed_results = determineFeedsUsingChateaus(map);
-			chateaus_in_frame.set(Array.from(chateau_feed_results.chateaus));
+			//let chateau_feed_results = determineFeedsUsingChateaus(map);
+			//chateaus_in_frame.set(Array.from(chateau_feed_results.chateaus));
 		});
 
 		console.log('setting up load map');

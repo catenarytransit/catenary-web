@@ -11,9 +11,9 @@ import {
 	chateaus_store
 } from '../globalstores';
 import { clearbottomright } from './clearbottomright';
-import { determineFeedsUsingChateaus } from '../maploaddata';
+// determineFeedsUsingChateaus removed
 import { addStopsLayers } from './addLayers/addStops';
-import { garbageCollectNotInView } from './garbage_collect';
+// garbageCollectNotInView removed
 import { addGeoRadius, setUserCircles } from './userradius';
 import { addShapes } from './addLayers/addShapes';
 import { fetch_realtime_vehicle_locations } from './fetch_realtime_vehicle_locations';
@@ -212,26 +212,20 @@ export async function setup_load_map(
 			});
 		}
 
-		const initialChateauData = determineFeedsUsingChateaus(map);
-		chateaus_in_frame.set(Array.from(initialChateauData.chateaus));
+		// chateaus_in_frame initialization removed
 
 		updateInterval = setInterval(() => {
 			//console.log('interval fetch');
 
 			current_request_bounds = fetch_realtime_vehicle_locations(
 				layersettings,
-				chateaus_in_frame,
-				chateau_to_realtime_feed_lookup,
 				map
 			);
 			fetch_trajectories(layersettings, map);
-			garbageCollectNotInView(chateaus_in_frame);
 		}, 700);
 
 		current_request_bounds = fetch_realtime_vehicle_locations(
 			layersettings,
-			chateaus_in_frame,
-			chateau_to_realtime_feed_lookup,
 			map
 		);
 		fetch_trajectories(layersettings, map);
