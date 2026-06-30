@@ -78,7 +78,10 @@ function ensureConnection() {
 				}
 
 				if (msg.total_chunks === 0 || msg.chunk_index === msg.total_chunks - 1) {
-					spruce_trajectory_data.set(trajectory_accumulator);
+					spruce_trajectory_data.set({
+						content: trajectory_accumulator,
+						timestamp: current_trajectory_timestamp
+					});
 				}
 			} else if (msg.type === 'error') {
 				spruce_error.set(msg.message);
