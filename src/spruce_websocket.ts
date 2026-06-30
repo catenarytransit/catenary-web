@@ -7,6 +7,10 @@ export const spruce_trip_data = writable<any>(null);
 export const spruce_update_data = writable<any>(null);
 export const spruce_error = writable<string | null>(null);
 export const spruce_map_data = writable<any>(null);
+export const spruce_trajectory_data = writable<any[]>([]);
+
+let current_trajectory_timestamp = 0;
+let trajectory_accumulator: any[] = [];
 
 let socket: WebSocket | null = null;
 let heartbeatInterval: any = null;
@@ -64,6 +68,17 @@ function ensureConnection() {
 
 				if (payload) {
 					spruce_map_data.set(payload);
+				}
+			} else if (msg.type === 'buffer') {
+				if (msg.timestamp !== current_trajectory_timestamp) {
+					current_trajectory_timestamp = msg.timestamp;
+					trajectory_accumulator = [...msg.content];
+				} else {
+					trajectory_accumulator.push(...msg.content);
+				}
+				
+				if (msg.total_chunks === 0 || msg.chunk_index === msg.total_chunks - 1) {
+					spruce_trajectory_data.set(trajectory_accumulator);
 				}
 			} else if (msg.type === 'error') {
 				spruce_error.set(msg.message);
