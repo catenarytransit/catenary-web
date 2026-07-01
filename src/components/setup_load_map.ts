@@ -215,14 +215,15 @@ export async function setup_load_map(
 		// chateaus_in_frame initialization removed
 
 		updateInterval = setInterval(() => {
-			//console.log('interval fetch');
+			fetch_trajectories(layersettings, map);
+		}, 700);
 
+		map.on('moveend', () => {
 			current_request_bounds = fetch_realtime_vehicle_locations(
 				layersettings,
 				map
 			);
-			fetch_trajectories(layersettings, map);
-		}, 700);
+		});
 
 		current_request_bounds = fetch_realtime_vehicle_locations(
 			layersettings,

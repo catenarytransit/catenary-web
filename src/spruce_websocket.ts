@@ -15,9 +15,11 @@ let trajectory_accumulator: any[] = [];
 let socket: WebSocket | null = null;
 let heartbeatInterval: any = null;
 
-// Trip State
+// Active state for resubscription on connection loss
 let activeChateau: string | null = null;
 let activeParams: any = null;
+let activeMapParams: any = null;
+let activeTrajectoryParams: any = null;
 
 function ensureConnection() {
 	if (
@@ -45,6 +47,26 @@ function ensureConnection() {
 				...activeParams
 			};
 			console.log('Resending subscribe to Spruce:', msg);
+			socket?.send(JSON.stringify(msg));
+		}
+
+		// Resubscribe Map if active
+		if (activeMapParams) {
+			const msg = {
+				type: 'subscribe_map_v2',
+				...activeMapParams
+			};
+			console.log('Resending subscribe_map to Spruce:', msg);
+			socket?.send(JSON.stringify(msg));
+		}
+
+		// Resubscribe Trajectories if active
+		if (activeTrajectoryParams) {
+			const msg = {
+				type: 'subscribe_trajectories',
+				...activeTrajectoryParams
+			};
+			console.log('Resending subscribe_trajectories to Spruce:', msg);
 			socket?.send(JSON.stringify(msg));
 		}
 	};
@@ -97,7 +119,11 @@ function ensureConnection() {
 		spruce_status.set('disconnected');
 		socket = null;
 
-		// Optional: Auto-reconnect logic could go here, but for now we rely on next action triggering ensureConnection
+		// Auto-reconnect after a delay
+		setTimeout(() => {
+			console.log('Attempting to reconnect Spruce WS...');
+			ensureConnection();
+		}, 3000);
 	};
 
 	socket.onerror = (e) => {
@@ -134,12 +160,13 @@ export function connectSpruceWebSocket(chateau: string, params: any) {
 }
 
 export function updateMap(params: any) {
-	ensureConnection();
-
 	// Defensively unwrap if passed as { params } instead of raw params
 	if (params && params.params) {
 		params = params.params;
 	}
+
+	activeMapParams = params;
+	ensureConnection();
 
 	// params should correspond to CategoryAskParamsV2 structure
 	const msg = {
@@ -152,6 +179,7 @@ export function updateMap(params: any) {
 }
 
 export function subscribeTrajectories(params: any) {
+	activeTrajectoryParams = params;
 	ensureConnection();
 	const msg = {
 		type: 'subscribe_trajectories',
@@ -163,6 +191,7 @@ export function subscribeTrajectories(params: any) {
 }
 
 export function unsubscribeTrajectories() {
+	activeTrajectoryParams = null;
 	ensureConnection();
 	const msg = {
 		type: 'unsubscribe_trajectories'
