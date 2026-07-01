@@ -159,9 +159,7 @@ export function startTrajectoryManager(map: Map) {
 
 		for (const chateau in activeTrajectoriesData) {
 			const activeTrajectories = activeTrajectoriesData[chateau].content;
-			const timestamp = activeTrajectoriesData[chateau].timestamp;
-			const offset = timestamp ? Date.now() - timestamp : 0;
-			const clientNow = Date.now() - offset; // Use offset relative to each chateau
+			const clientNow = Date.now();
 
 			for (const wrapper of activeTrajectories) {
 				const traj = wrapper.content;
