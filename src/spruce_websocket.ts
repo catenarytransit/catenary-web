@@ -92,6 +92,36 @@ function ensureConnection() {
 					spruce_map_data.set(payload);
 				}
 			} else if (msg.type === 'buffer') {
+				if (msg.content) {
+					for (const item of msg.content) {
+						const traj = item.content;
+						if (traj) {
+							if (traj.route_id === '') traj.route_id = null;
+							if (traj.start_time === '') traj.start_time = null;
+							if (traj.start_date === '') traj.start_date = null;
+
+							if (!traj.start_time && traj.stops && traj.stops.length > 0 && traj.stops[0].departure) {
+								try {
+									const date = new Date(traj.stops[0].departure);
+									if (!isNaN(date.getTime())) {
+										const hh = String(date.getUTCHours()).padStart(2, '0');
+										const mm = String(date.getUTCMinutes()).padStart(2, '0');
+										const ss = String(date.getUTCSeconds()).padStart(2, '0');
+										traj.start_time = `${hh}:${mm}:${ss}`;
+
+										const yyyy = date.getUTCFullYear();
+										const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+										const day = String(date.getUTCDate()).padStart(2, '0');
+										traj.start_date = `${yyyy}${month}${day}`;
+									}
+								} catch (e) {
+									console.error('Error parsing departure in spruce_websocket', e);
+								}
+							}
+						}
+					}
+				}
+
 				if (msg.timestamp !== current_trajectory_timestamp) {
 					current_trajectory_timestamp = msg.timestamp;
 					trajectory_accumulator = [...msg.content];
@@ -138,14 +168,42 @@ export function initSpruceWebSocket() {
 
 export function connectSpruceWebSocket(chateau: string, params: any) {
 	ensureConnection();
+
+	const sanitizedParams = { ...params };
+	for (const key in sanitizedParams) {
+		if (sanitizedParams[key] === '') {
+			sanitizedParams[key] = null;
+		}
+	}
+	if (sanitizedParams.start_time && sanitizedParams.start_time.includes('T')) {
+		try {
+			const date = new Date(sanitizedParams.start_time);
+			if (!isNaN(date.getTime())) {
+				const hh = String(date.getUTCHours()).padStart(2, '0');
+				const mm = String(date.getUTCMinutes()).padStart(2, '0');
+				const ss = String(date.getUTCSeconds()).padStart(2, '0');
+				sanitizedParams.start_time = `${hh}:${mm}:${ss}`;
+
+				if (!sanitizedParams.start_date) {
+					const yyyy = date.getUTCFullYear();
+					const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+					const day = String(date.getUTCDate()).padStart(2, '0');
+					sanitizedParams.start_date = `${yyyy}${month}${day}`;
+				}
+			}
+		} catch (e) {
+			console.error('Error formatting start_time/start_date in spruce_websocket', e);
+		}
+	}
+
 	activeChateau = chateau;
-	activeParams = params;
+	activeParams = sanitizedParams;
 
 	// Send subscribe
 	const msg = {
 		type: 'subscribe_trip',
 		chateau: chateau,
-		...params
+		...sanitizedParams
 	};
 
 	// reset trip data stores
