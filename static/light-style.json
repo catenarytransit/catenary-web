@@ -163,6 +163,7 @@
       "source": "esa-worldcover-polygons",
       "source-layer": "globallandcover",
       "filter": ["==", "class", "crop"],
+      "layout": {"visibility": "visible"},
       "paint": {
         "fill-color": [
           "interpolate",
@@ -178,6 +179,27 @@
           "#D3F8E2"
         ],
         "fill-opacity": {"stops": [[4, 0.4], [7, 0.1]]}
+      }
+    },
+    {
+      "id": "landcover-urban",
+      "type": "fill",
+      "source": "esa-worldcover-polygons",
+      "source-layer": "globallandcover",
+      "minzoom": 4,
+      "filter": ["==", ["get", "class"], "urban"],
+      "layout": {"visibility": "visible"},
+      "paint": {
+        "fill-antialias": false,
+        "fill-color": {
+          "stops": [
+            [9, "rgba(220, 176, 153, 1)"],
+            [12, "rgba(203, 176, 164, 1)"]
+          ]
+        },
+        "fill-opacity": {
+          "stops": [[4, 0], [5, 0.1], [6, 0.5], [7, 0.3], [9, 0]]
+        }
       }
     },
     {
@@ -384,6 +406,7 @@
       "source-layer": "landuse",
       "maxzoom": 12,
       "filter": ["==", ["get", "class"], "residential"],
+      "layout": {"visibility": "none"},
       "paint": {
         "fill-color": [
           "interpolate",
@@ -1246,6 +1269,7 @@
       "type": "line",
       "source": "openmaptiles",
       "source-layer": "transportation",
+      "minzoom": 7,
       "filter": [
         "all",
         [
@@ -1266,7 +1290,17 @@
       },
       "paint": {
         "line-color": "#cfcdca",
-        "line-opacity": ["interpolate", ["linear"], ["zoom"], 12, 0, 12.5, 1],
+        "line-opacity": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          12,
+          0,
+          12.4,
+          0.4,
+          12.5,
+          1
+        ],
         "line-width": [
           "interpolate",
           ["exponential", 1.2],
@@ -1478,6 +1512,7 @@
       "type": "line",
       "source": "openmaptiles",
       "source-layer": "transportation",
+      "minzoom": 7,
       "filter": [
         "all",
         [
@@ -1503,7 +1538,8 @@
           2.5,
           20,
           18
-        ]
+        ],
+        "line-opacity": ["interpolate", ["linear"], ["zoom"], 12, 0.5, 14, 1]
       }
     },
     {
@@ -2213,7 +2249,7 @@
         ["==", ["get", "brunnel"], "bridge"]
       ],
       "paint": {
-        "line-color": "#bbb",
+        "line-color": "rgba(78, 78, 78, 1)",
         "line-width": [
           "interpolate",
           ["exponential", 1.4],
