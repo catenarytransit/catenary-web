@@ -91,7 +91,7 @@ export function setup_click_handler(
 							x.properties.vehicleIdLabel,
 							x.properties.routeId,
 							x.properties.headsign,
-							x.properties.tripIdLabel,
+							x.properties.trip_short_name || x.properties.tripIdLabel,
 							x.properties.color,
 							x.properties.route_short_name,
 							x.properties.route_long_name,
