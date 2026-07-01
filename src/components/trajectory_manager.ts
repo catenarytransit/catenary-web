@@ -140,7 +140,7 @@ export function startTrajectoryManager(map: Map) {
 		}
 	});
 
-	// Run interpolation update loop every 1 second (1000ms)
+	// Run interpolation update loop every 0.5 second (500ms)
 	interpolationInterval = setInterval(() => {
 		if (!map) return;
 
@@ -305,7 +305,7 @@ export function startTrajectoryManager(map: Map) {
 		updateSource('trajectory_localrail', localrailFeatures);
 		updateSource('trajectory_intercityrail', intercityrailFeatures);
 		updateSource('trajectory_other', otherFeatures);
-	}, 1000);
+	}, 500);
 }
 
 export function stopTrajectoryManager() {
