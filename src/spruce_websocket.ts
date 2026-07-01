@@ -7,10 +7,10 @@ export const spruce_trip_data = writable<any>(null);
 export const spruce_update_data = writable<any>(null);
 export const spruce_error = writable<string | null>(null);
 export const spruce_map_data = writable<any>(null);
-export const spruce_trajectory_data = writable<any[]>([]);
+export const spruce_trajectory_data = writable<Record<string, { content: any[]; timestamp: number }>>({});
 
-let current_trajectory_timestamp = 0;
-let trajectory_accumulator: any[] = [];
+let trajectory_timestamps: Record<string, number> = {};
+let trajectory_accumulators: Record<string, any[]> = {};
 
 let socket: WebSocket | null = null;
 let heartbeatInterval: any = null;
@@ -122,17 +122,23 @@ function ensureConnection() {
 					}
 				}
 
-				if (msg.timestamp !== current_trajectory_timestamp) {
-					current_trajectory_timestamp = msg.timestamp;
-					trajectory_accumulator = [...msg.content];
+				const chateau = msg.chateau || 'unknown';
+
+				if (msg.timestamp !== trajectory_timestamps[chateau]) {
+					trajectory_timestamps[chateau] = msg.timestamp;
+					trajectory_accumulators[chateau] = [...(msg.content || [])];
 				} else {
-					trajectory_accumulator.push(...msg.content);
+					if (!trajectory_accumulators[chateau]) trajectory_accumulators[chateau] = [];
+					trajectory_accumulators[chateau].push(...(msg.content || []));
 				}
 
 				if (msg.total_chunks === 0 || msg.chunk_index === msg.total_chunks - 1) {
-					spruce_trajectory_data.set({
-						content: trajectory_accumulator,
-						timestamp: current_trajectory_timestamp
+					spruce_trajectory_data.update(data => {
+						data[chateau] = {
+							content: trajectory_accumulators[chateau],
+							timestamp: trajectory_timestamps[chateau]
+						};
+						return { ...data }; // Trigger Svelte reactivity
 					});
 				}
 			} else if (msg.type === 'error') {

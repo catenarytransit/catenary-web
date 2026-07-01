@@ -8,8 +8,7 @@ let lastTrajectorySubTime = 0;
 let lastTrajectorySubParams = '';
 let interpolationInterval: any = null;
 let wsUnsubscribe: (() => void) | null = null;
-let activeTrajectories: any[] = [];
-let clientServerOffset = 0;
+let activeTrajectoriesData: Record<string, { content: any[]; timestamp: number }> = {};
 let pendingSourceData: Record<string, any> = {};
 
 // Calculate bearing in degrees from [lon1, lat1] to [lon2, lat2]
@@ -134,51 +133,23 @@ export function startTrajectoryManager(map: Map) {
 	stopTrajectoryManager();
 
 	// Subscribe to spruce trajectory websocket updates
-	wsUnsubscribe = spruce_trajectory_data.subscribe((msg) => {
-		console.log('[DEBUGTrajectories] Received spruce_trajectory_data msg:', msg);
-		if (msg && msg.content) {
-			activeTrajectories = msg.content;
-			if (msg.timestamp) {
-				clientServerOffset = Date.now() - msg.timestamp;
-			} else {
-				clientServerOffset = 0;
-			}
+	wsUnsubscribe = spruce_trajectory_data.subscribe((data) => {
+		console.log('[DEBUGTrajectories] Received spruce_trajectory_data msg:', Object.keys(data).length, 'chateaus');
+		if (data) {
+			activeTrajectoriesData = data;
 		}
 	});
 
-	// Run interpolation update loop every 1 second (1000ms)
+	// Run interpolation update loop every 0.5 second (500ms)
 	interpolationInterval = setInterval(() => {
 		if (!map) return;
 
-		const now = Date.now() - clientServerOffset;
+		const now = Date.now();
 		const darkMode = determineDarkModeToBool();
 
-		console.log('[DEBUGTrajectories] Client tick:', {
-			now,
-			activeCount: activeTrajectories.length,
-			clientServerOffset
-		});
-
-		if (activeTrajectories.length > 0) {
-			const wrapper = activeTrajectories[0];
-			const traj = wrapper.content;
-			if (traj && traj.stops && traj.stops.length > 0) {
-				const departureStr = traj.stops[0].departure;
-				const arrivalStr = traj.stops[traj.stops.length - 1].arrival;
-				const departure = new Date(departureStr).getTime();
-				const arrival = new Date(arrivalStr).getTime();
-				console.log('[DEBUGTrajectories] First item time info:', {
-					tripId: traj.trip_id,
-					departureStr: departureStr,
-					arrivalStr: arrivalStr,
-					departureMs: departure,
-					arrivalMs: arrival,
-					nowMs: now,
-					diffStartMs: now - departure,
-					diffEndMs: arrival - now,
-					inRange: (now >= departure - 30000 && now <= arrival + 30000)
-				});
-			}
+		let activeCount = 0;
+		for (const key in activeTrajectoriesData) {
+			activeCount += activeTrajectoriesData[key].content?.length || 0;
 		}
 
 		const busesFeatures: any[] = [];
@@ -186,126 +157,130 @@ export function startTrajectoryManager(map: Map) {
 		const intercityrailFeatures: any[] = [];
 		const otherFeatures: any[] = [];
 
-		for (const wrapper of activeTrajectories) {
-			const traj = wrapper.content;
-			if (!traj || !traj.stops || traj.stops.length === 0 || !traj.segments || traj.segments.length === 0) {
-				console.log('[DEBUGTrajectories] Skipping item: no stops or segments');
-				continue;
-			}
+		for (const chateau in activeTrajectoriesData) {
+			const activeTrajectories = activeTrajectoriesData[chateau].content;
+			const clientNow = Date.now();
 
-			const departureStr = traj.stops[0].departure;
-			const arrivalStr = traj.stops[traj.stops.length - 1].arrival;
-			const departure = new Date(departureStr).getTime();
-			const arrival = new Date(arrivalStr).getTime();
-
-			// Only show vehicle if current time is within trip duration bounds (with 30-second padding)
-			if (now < departure - 30000 || now > arrival + 30000) {
-				continue;
-			}
-
-			let coordinates: number[][] = [];
-			for (const segment of traj.segments) {
-				if (segment.coordinates) {
-					coordinates = coordinates.concat(segment.coordinates);
+			for (const wrapper of activeTrajectories) {
+				const traj = wrapper.content;
+				if (!traj || !traj.stops || traj.stops.length === 0 || !traj.segments || traj.segments.length === 0) {
+					continue;
 				}
-			}
 
-			if (coordinates.length === 0) {
-				continue;
-			}
+				const departureStr = traj.stops[0].departure;
+				const arrivalStr = traj.stops[traj.stops.length - 1].arrival;
+				const departure = new Date(departureStr).getTime();
+				const arrival = new Date(arrivalStr).getTime();
 
-			// Clamp progress to [0, 1]
-			const progress = Math.max(0, Math.min(1, (now - departure) / (arrival - departure)));
-			const interpolationResult = interpolatePositionAndBearing(coordinates, progress);
-			if (!interpolationResult) continue;
-
-			const { coords, bearing } = interpolationResult;
-			const tripId = traj.trip_id || '';
-			const uniqueTripId = traj.unique_trip_id || tripId;
-			const displayName = traj.display_name || '';
-
-			const rawColor = traj.color || '#aaaaaa';
-			const { contrastdarkmode, contrastdarkmodebearing, contrastlightmode } = getContrastColours(
-				rawColor,
-				darkMode
-			);
-
-			let routeType = 3; // Default to bus
-			if (traj.route_type !== undefined) {
-				routeType = traj.route_type;
-			} else {
-				switch (traj.mode) {
-					case 'tram':
-					case 'cable_car':
-					case 'funicular':
-						routeType = 0;
-						break;
-					case 'subway':
-					case 'metro':
-						routeType = 1;
-						break;
-					case 'rail':
-						routeType = 2;
-						break;
-					case 'bus':
-					case 'trolleybus':
-						routeType = 3;
-						break;
-					case 'ferry':
-						routeType = 4;
-						break;
-					default:
-						routeType = 3;
-						break;
+				// Only show vehicle if current time is within trip duration bounds (with 30-second padding)
+				if (clientNow < departure - 30000 || clientNow > arrival + 30000) {
+					continue;
 				}
-			}
 
-			const feature = {
-				type: 'Feature' as const,
-				id: `trajectory_${uniqueTripId}`,
-				properties: {
-					vehicleIdLabel: '',
-					speed: '',
-					color: rawColor,
-					chateau: traj.chateau_id || '',
-					route_type: routeType,
-					tripIdLabel: displayName,
-					bearing: bearing,
-					has_bearing: true,
-					maptag: displayName,
-					trip_short_name: displayName,
-					route_short_name: traj.route_short_name || displayName,
-					route_long_name: traj.route_long_name || '',
-					contrastdarkmode: contrastdarkmode,
-					contrastdarkmodebearing: contrastdarkmodebearing,
-					contrastlightmode: contrastlightmode,
-					routeId: traj.route_id || '',
-					headsign: traj.stops[traj.stops.length - 1].name || '',
-					timestamp: now,
-					text_color: traj.text_color || '#ffffff',
-					trip_id: tripId,
-					start_time: traj.start_time || departureStr,
-					start_date: traj.start_date || '',
-					crowd_symbol: '',
-					occupancy_status: '',
-					delay_label: '',
-					delay: 0
-				},
-				geometry: {
-					type: 'Point' as const,
-					coordinates: coords
+				let coordinates: number[][] = [];
+				for (const segment of traj.segments) {
+					if (segment.coordinates) {
+						coordinates = coordinates.concat(segment.coordinates);
+					}
 				}
-			};
 
-			// Group features into corresponding map sources
-			if (routeType === 3 || routeType === 11) {
-				busesFeatures.push(feature);
-			} else if (routeType === 0 || routeType === 1 || routeType === 5 || routeType === 7) {
-				localrailFeatures.push(feature);
-			} else if (routeType === 2) {
-				intercityrailFeatures.push(feature);
-			} else {
-				otherFeatures.push(feature);
+				if (coordinates.length === 0) {
+					continue;
+				}
+
+				// Clamp progress to [0, 1]
+				const progress = Math.max(0, Math.min(1, (clientNow - departure) / (arrival - departure)));
+				const interpolationResult = interpolatePositionAndBearing(coordinates, progress);
+				if (!interpolationResult) continue;
+
+				const { coords, bearing } = interpolationResult;
+				const tripId = traj.trip_id || '';
+				const uniqueTripId = traj.unique_trip_id || tripId;
+				const displayName = traj.display_name || '';
+
+				const rawColor = traj.color || '#aaaaaa';
+				const { contrastdarkmode, contrastdarkmodebearing, contrastlightmode } = getContrastColours(
+					rawColor,
+					darkMode
+				);
+
+				let routeType = 3; // Default to bus
+				if (traj.route_type !== undefined) {
+					routeType = traj.route_type;
+				} else {
+					switch (traj.mode) {
+						case 'tram':
+						case 'cable_car':
+						case 'funicular':
+							routeType = 0;
+							break;
+						case 'subway':
+						case 'metro':
+							routeType = 1;
+							break;
+						case 'rail':
+							routeType = 2;
+							break;
+						case 'bus':
+						case 'trolleybus':
+							routeType = 3;
+							break;
+						case 'ferry':
+							routeType = 4;
+							break;
+						default:
+							routeType = 3;
+							break;
+					}
+				}
+
+				const feature = {
+					type: 'Feature' as const,
+					id: `trajectory_${uniqueTripId}`,
+					properties: {
+						vehicleIdLabel: '',
+						speed: '',
+						color: rawColor,
+						chateau: traj.chateau_id || '',
+						route_type: routeType,
+						tripIdLabel: traj.trip_short_name || displayName,
+						bearing: bearing,
+						has_bearing: true,
+						maptag: traj.trip_short_name || displayName,
+						trip_short_name: traj.trip_short_name || displayName,
+						route_short_name: traj.route_short_name || displayName,
+						route_long_name: traj.route_long_name || '',
+						contrastdarkmode: contrastdarkmode,
+						contrastdarkmodebearing: contrastdarkmodebearing,
+						contrastlightmode: contrastlightmode,
+						routeId: traj.route_id || '',
+						headsign: traj.stops[traj.stops.length - 1].name || '',
+						timestamp: now,
+						text_color: traj.text_color || '#ffffff',
+						trip_id: tripId,
+						start_time: traj.start_time || departureStr,
+						start_date: traj.start_date || '',
+						crowd_symbol: '',
+						occupancy_status: '',
+						delay_label: '',
+						delay: 0
+					},
+					geometry: {
+						type: 'Point' as const,
+						coordinates: coords
+					}
+				};
+
+				// Group features into corresponding map sources
+				if (routeType === 3 || routeType === 11) {
+					busesFeatures.push(feature);
+				} else if (routeType === 0 || routeType === 1 || routeType === 5 || routeType === 7) {
+					localrailFeatures.push(feature);
+				} else if (routeType === 2) {
+					intercityrailFeatures.push(feature);
+				} else {
+					otherFeatures.push(feature);
+				}
 			}
 		}
 
@@ -330,7 +305,7 @@ export function startTrajectoryManager(map: Map) {
 		updateSource('trajectory_localrail', localrailFeatures);
 		updateSource('trajectory_intercityrail', intercityrailFeatures);
 		updateSource('trajectory_other', otherFeatures);
-	}, 1000);
+	}, 500);
 }
 
 export function stopTrajectoryManager() {
@@ -342,7 +317,7 @@ export function stopTrajectoryManager() {
 		wsUnsubscribe();
 		wsUnsubscribe = null;
 	}
-	activeTrajectories = [];
+	activeTrajectoriesData = {};
 	lastTrajectorySubParams = '';
 	pendingSourceData = {};
 }
