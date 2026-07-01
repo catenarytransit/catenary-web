@@ -4,6 +4,39 @@ import { livedotscaling_store } from '../../fontscalingstores';
 import { map_pointer_store } from '../../globalstores';
 import { layerspercategory as layerspercategory_main } from '../layernames';
 
+export const trajectory_layerspercategory = {
+	bus: {
+		livedots: 'trajectory_bus',
+		labeldots: 'trajectory_labelbuses',
+		pointing: 'trajectory_busespointing',
+		pointingshell: 'trajectory_busespointingshell'
+	},
+	intercityrail: {
+		livedots: 'trajectory_intercityrail',
+		labeldots: 'trajectory_labelintercityrail',
+		pointing: 'trajectory_intercityrailpointing',
+		pointingshell: 'trajectory_intercityrailpointingshell'
+	},
+	metro: {
+		livedots: 'trajectory_metro',
+		labeldots: 'trajectory_labelmetro',
+		pointing: 'trajectory_metropointing',
+		pointingshell: 'trajectory_metropointingshell'
+	},
+	tram: {
+		livedots: 'trajectory_tram',
+		labeldots: 'trajectory_labeltram',
+		pointing: 'trajectory_trampointing',
+		pointingshell: 'trajectory_trampointingshell'
+	},
+	other: {
+		livedots: 'trajectory_other',
+		labeldots: 'trajectory_labelother',
+		pointing: 'trajectory_otherpointing',
+		pointingshell: 'trajectory_otherpointingshell'
+	}
+};
+
 export function textColorOfMapLabels(darkMode: boolean) {
 	return ['get', darkMode === true ? 'contrastdarkmode' : 'contrastlightmode'];
 }
@@ -43,26 +76,31 @@ export function changeLiveDotsTheme(map: Map, darkMode: boolean) {
 		bus: {
 			livedots: 'trajectory_bus',
 			labeldots: 'trajectory_labelbuses',
+			pointing: 'trajectory_busespointing',
 			pointingshell: 'trajectory_busespointingshell'
 		},
 		intercityrail: {
 			livedots: 'trajectory_intercityrail',
 			labeldots: 'trajectory_labelintercityrail',
+			pointing: 'trajectory_intercityrailpointing',
 			pointingshell: 'trajectory_intercityrailpointingshell'
 		},
 		metro: {
 			livedots: 'trajectory_metro',
 			labeldots: 'trajectory_labelmetro',
+			pointing: 'trajectory_metropointing',
 			pointingshell: 'trajectory_metropointingshell'
 		},
 		tram: {
 			livedots: 'trajectory_tram',
 			labeldots: 'trajectory_labeltram',
+			pointing: 'trajectory_trampointing',
 			pointingshell: 'trajectory_trampointingshell'
 		},
 		other: {
 			livedots: 'trajectory_other',
 			labeldots: 'trajectory_labelother',
+			pointing: 'trajectory_otherpointing',
 			pointingshell: 'trajectory_otherpointingshell'
 		}
 	};
@@ -970,38 +1008,7 @@ export async function makeTrajectoryCircleLayers(map: Map, darkMode: boolean) {
 		['literal', [0, -50]]
 	];
 
-	const trajectory_layerspercategory = {
-		bus: {
-			livedots: 'trajectory_bus',
-			labeldots: 'trajectory_labelbuses',
-			pointing: 'trajectory_busespointing',
-			pointingshell: 'trajectory_busespointingshell'
-		},
-		intercityrail: {
-			livedots: 'trajectory_intercityrail',
-			labeldots: 'trajectory_labelintercityrail',
-			pointing: 'trajectory_intercityrailpointing',
-			pointingshell: 'trajectory_intercityrailpointingshell'
-		},
-		metro: {
-			livedots: 'trajectory_metro',
-			labeldots: 'trajectory_labelmetro',
-			pointing: 'trajectory_metropointing',
-			pointingshell: 'trajectory_metropointingshell'
-		},
-		tram: {
-			livedots: 'trajectory_tram',
-			labeldots: 'trajectory_labeltram',
-			pointing: 'trajectory_trampointing',
-			pointingshell: 'trajectory_trampointingshell'
-		},
-		other: {
-			livedots: 'trajectory_other',
-			labeldots: 'trajectory_labelother',
-			pointing: 'trajectory_otherpointing',
-			pointingshell: 'trajectory_otherpointingshell'
-		}
-	};
+
 
 	// BUS
 	map.addLayer({

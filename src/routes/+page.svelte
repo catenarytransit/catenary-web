@@ -33,7 +33,8 @@
 	} from '../components/previously_known_location';
 	import {
 		bus_label_with_headsign,
-		bus_label_no_headsign
+		bus_label_no_headsign,
+		trajectory_layerspercategory
 	} from '../components/addLayers/addLiveDots';
 
 	import {
@@ -749,6 +750,15 @@
 				'text-field',
 				interpretLabelsToCode(this_layer_settings.label, usunits)
 			);
+
+			const traj_lpc = (trajectory_layerspercategory as any)[category];
+			if (traj_lpc && mapglobal.getLayer(traj_lpc.labeldots)) {
+				mapglobal.setLayoutProperty(
+					traj_lpc.labeldots,
+					'text-field',
+					interpretLabelsToCode(this_layer_settings.label, usunits)
+				);
+			}
 
 			if (category == 'bus') {
 				mapglobal.setLayoutProperty(
