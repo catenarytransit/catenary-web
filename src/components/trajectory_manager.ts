@@ -8,8 +8,7 @@ let lastTrajectorySubTime = 0;
 let lastTrajectorySubParams = '';
 let interpolationInterval: any = null;
 let wsUnsubscribe: (() => void) | null = null;
-let activeTrajectories: any[] = [];
-let clientServerOffset = 0;
+let activeTrajectoriesData: Record<string, { content: any[]; timestamp: number }> = {};
 
 // Calculate bearing in degrees from [lon1, lat1] to [lon2, lat2]
 function calculateBearing(lon1: number, lat1: number, lon2: number, lat2: number): number {
@@ -121,15 +120,10 @@ export function startTrajectoryManager(map: Map) {
 	stopTrajectoryManager();
 
 	// Subscribe to spruce trajectory websocket updates
-	wsUnsubscribe = spruce_trajectory_data.subscribe((msg) => {
-		console.log('[DEBUGTrajectories] Received spruce_trajectory_data msg:', msg);
-		if (msg && msg.content) {
-			activeTrajectories = msg.content;
-			if (msg.timestamp) {
-				clientServerOffset = Date.now() - msg.timestamp;
-			} else {
-				clientServerOffset = 0;
-			}
+	wsUnsubscribe = spruce_trajectory_data.subscribe((data) => {
+		console.log('[DEBUGTrajectories] Received spruce_trajectory_data msg:', Object.keys(data).length, 'chateaus');
+		if (data) {
+			activeTrajectoriesData = data;
 		}
 	});
 
@@ -137,35 +131,12 @@ export function startTrajectoryManager(map: Map) {
 	interpolationInterval = setInterval(() => {
 		if (!map || !map.isStyleLoaded()) return;
 
-		const now = Date.now() - clientServerOffset;
+		const now = Date.now();
 		const darkMode = determineDarkModeToBool();
-
-		console.log('[DEBUGTrajectories] Client tick:', {
-			now,
-			activeCount: activeTrajectories.length,
-			clientServerOffset
-		});
-
-		if (activeTrajectories.length > 0) {
-			const wrapper = activeTrajectories[0];
-			const traj = wrapper.content;
-			if (traj && traj.stops && traj.stops.length > 0) {
-				const departureStr = traj.stops[0].departure;
-				const arrivalStr = traj.stops[traj.stops.length - 1].arrival;
-				const departure = new Date(departureStr).getTime();
-				const arrival = new Date(arrivalStr).getTime();
-				console.log('[DEBUGTrajectories] First item time info:', {
-					tripId: traj.trip_id,
-					departureStr: departureStr,
-					arrivalStr: arrivalStr,
-					departureMs: departure,
-					arrivalMs: arrival,
-					nowMs: now,
-					diffStartMs: now - departure,
-					diffEndMs: arrival - now,
-					inRange: (now >= departure - 30000 && now <= arrival + 30000)
-				});
-			}
+		
+		let activeCount = 0;
+		for (const key in activeTrajectoriesData) {
+			activeCount += activeTrajectoriesData[key].content?.length || 0;
 		}
 
 		const busesFeatures: any[] = [];
@@ -173,38 +144,43 @@ export function startTrajectoryManager(map: Map) {
 		const intercityrailFeatures: any[] = [];
 		const otherFeatures: any[] = [];
 
-		for (const wrapper of activeTrajectories) {
-			const traj = wrapper.content;
-			if (!traj || !traj.stops || traj.stops.length === 0 || !traj.segments || traj.segments.length === 0) {
-				console.log('[DEBUGTrajectories] Skipping item: no stops or segments');
-				continue;
-			}
+		for (const chateau in activeTrajectoriesData) {
+			const activeTrajectories = activeTrajectoriesData[chateau].content;
+			const timestamp = activeTrajectoriesData[chateau].timestamp;
+			const offset = timestamp ? Date.now() - timestamp : 0;
+			const clientNow = Date.now() - offset; // Use offset relative to each chateau
+
+			for (const wrapper of activeTrajectories) {
+				const traj = wrapper.content;
+				if (!traj || !traj.stops || traj.stops.length === 0 || !traj.segments || traj.segments.length === 0) {
+					continue;
+				}
 
 			const departureStr = traj.stops[0].departure;
 			const arrivalStr = traj.stops[traj.stops.length - 1].arrival;
 			const departure = new Date(departureStr).getTime();
 			const arrival = new Date(arrivalStr).getTime();
 
-			// Only show vehicle if current time is within trip duration bounds (with 30-second padding)
-			if (now < departure - 30000 || now > arrival + 30000) {
-				continue;
-			}
-
-			let coordinates: number[][] = [];
-			for (const segment of traj.segments) {
-				if (segment.coordinates) {
-					coordinates = coordinates.concat(segment.coordinates);
+				// Only show vehicle if current time is within trip duration bounds (with 30-second padding)
+				if (clientNow < departure - 30000 || clientNow > arrival + 30000) {
+					continue;
 				}
-			}
 
-			if (coordinates.length === 0) {
-				continue;
-			}
+				let coordinates: number[][] = [];
+				for (const segment of traj.segments) {
+					if (segment.coordinates) {
+						coordinates = coordinates.concat(segment.coordinates);
+					}
+				}
 
-			// Clamp progress to [0, 1]
-			const progress = Math.max(0, Math.min(1, (now - departure) / (arrival - departure)));
-			const interpolationResult = interpolatePositionAndBearing(coordinates, progress);
-			if (!interpolationResult) continue;
+				if (coordinates.length === 0) {
+					continue;
+				}
+
+				// Clamp progress to [0, 1]
+				const progress = Math.max(0, Math.min(1, (clientNow - departure) / (arrival - departure)));
+				const interpolationResult = interpolatePositionAndBearing(coordinates, progress);
+				if (!interpolationResult) continue;
 
 			const { coords, bearing } = interpolationResult;
 			const tripId = traj.trip_id || '';
@@ -284,15 +260,16 @@ export function startTrajectoryManager(map: Map) {
 				}
 			};
 
-			// Group features into corresponding map sources
-			if (routeType === 3 || routeType === 11) {
-				busesFeatures.push(feature);
-			} else if (routeType === 0 || routeType === 1 || routeType === 5 || routeType === 7) {
-				localrailFeatures.push(feature);
-			} else if (routeType === 2) {
-				intercityrailFeatures.push(feature);
-			} else {
-				otherFeatures.push(feature);
+				// Group features into corresponding map sources
+				if (routeType === 3 || routeType === 11) {
+					busesFeatures.push(feature);
+				} else if (routeType === 0 || routeType === 1 || routeType === 5 || routeType === 7) {
+					localrailFeatures.push(feature);
+				} else if (routeType === 2) {
+					intercityrailFeatures.push(feature);
+				} else {
+					otherFeatures.push(feature);
+				}
 			}
 		}
 
@@ -323,6 +300,6 @@ export function stopTrajectoryManager() {
 		wsUnsubscribe();
 		wsUnsubscribe = null;
 	}
-	activeTrajectories = [];
+	activeTrajectoriesData = {};
 	lastTrajectorySubParams = '';
 }
