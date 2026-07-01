@@ -23,7 +23,7 @@ import { makeBearingArrowPointers } from './addLayers/makebearingarrowpointers';
 import { makeGpsLayer } from './makeGpsLayer';
 import { makeContextLayerDataset, makeContextLayerDots } from './addLayers/contextLayer';
 import { start_location_watch, update_geolocation_source } from '../user_location_lib';
-import { startTrajectoryManager, stopTrajectoryManager, fetch_trajectories } from './trajectory_manager';
+import { startTrajectoryManager, stopTrajectoryManager, fetch_trajectories, applyPendingSourceData } from './trajectory_manager';
 import { setup_click_handler } from '../components/mapClickHandler';
 import { initSpruceWebSocket, spruce_map_data } from '../spruce_websocket';
 import { process_realtime_vehicle_locations_v2 } from './process_realtime_data';
@@ -73,12 +73,18 @@ export async function setup_load_map(
 	let updateInterval: NodeJS.Timeout;
 	const minZoomThresholdStationEnter = 16;
 
+	// Start WebSocket and trajectory manager early, before the style / map load event
+	initSpruceWebSocket();
+	startTrajectoryManager(map);
+	fetch_trajectories(layersettings, map);
+
+	updateInterval = setInterval(() => {
+		fetch_trajectories(layersettings, map);
+	}, 700);
+
 	map.on('load', async () => {
 		recompute_map_padding();
 		clearbottomright();
-
-		// Initialize WebSocket
-		initSpruceWebSocket();
 
 		let current_request_bounds: any = null;
 
@@ -158,6 +164,8 @@ export async function setup_load_map(
 			});
 		});
 
+		applyPendingSourceData(map);
+
 		makeFireMap(map, chateaus_in_frame);
 		console.log('setup load map start');
 		addShapes(map, darkMode);
@@ -165,7 +173,6 @@ export async function setup_load_map(
 		await makeContextLayerDataset(map);
 		await makeCircleLayers(map, darkMode, layerspercategory);
 		await makeTrajectoryCircleLayers(map, darkMode);
-		startTrajectoryManager(map);
 		await makeBearingArrowPointers(map, darkMode, layerspercategory);
 
 		await makeContextLayerDots(map);
@@ -214,10 +221,6 @@ export async function setup_load_map(
 
 		// chateaus_in_frame initialization removed
 
-		updateInterval = setInterval(() => {
-			fetch_trajectories(layersettings, map);
-		}, 700);
-
 		map.on('moveend', () => {
 			current_request_bounds = fetch_realtime_vehicle_locations(
 				layersettings,
@@ -229,7 +232,6 @@ export async function setup_load_map(
 			layersettings,
 			map
 		);
-		fetch_trajectories(layersettings, map);
 
 		recompute_map_padding();
 		runSettingsAdapt();

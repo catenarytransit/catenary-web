@@ -9,6 +9,7 @@ let lastTrajectorySubParams = '';
 let interpolationInterval: any = null;
 let wsUnsubscribe: (() => void) | null = null;
 let activeTrajectoriesData: Record<string, { content: any[]; timestamp: number }> = {};
+let pendingSourceData: Record<string, any> = {};
 
 // Calculate bearing in degrees from [lon1, lat1] to [lon2, lat2]
 function calculateBearing(lon1: number, lat1: number, lon2: number, lat2: number): number {
@@ -67,11 +68,23 @@ function interpolatePositionAndBearing(coordinates: number[][], progress: number
 	return { coords: coordinates[coordinates.length - 1], bearing };
 }
 
-// Fetch trajectories depending on viewport boundaries, zoom, and layer settings
 export function fetch_trajectories(layersettings: Record<string, any>, map: Map) {
+	if (!map) return;
 	const zoom = Math.round(map.getZoom());
 	const bounds = map.getBounds();
-	const bbox = [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()];
+	if (!bounds || typeof bounds.getWest !== 'function') {
+		console.warn('[DEBUGTrajectories] Map bounds not available yet in fetch_trajectories');
+		return;
+	}
+	const west = bounds.getWest();
+	const south = bounds.getSouth();
+	const east = bounds.getEast();
+	const north = bounds.getNorth();
+	if (isNaN(west) || isNaN(south) || isNaN(east) || isNaN(north)) {
+		console.warn('[DEBUGTrajectories] Map bounds contain NaN values in fetch_trajectories');
+		return;
+	}
+	const bbox = [west, south, east, north];
 
 	const modes: string[] = [];
 
@@ -129,11 +142,11 @@ export function startTrajectoryManager(map: Map) {
 
 	// Run interpolation update loop every 1 second (1000ms)
 	interpolationInterval = setInterval(() => {
-		if (!map || !map.isStyleLoaded()) return;
+		if (!map) return;
 
 		const now = Date.now();
 		const darkMode = determineDarkModeToBool();
-		
+
 		let activeCount = 0;
 		for (const key in activeTrajectoriesData) {
 			activeCount += activeTrajectoriesData[key].content?.length || 0;
@@ -156,10 +169,10 @@ export function startTrajectoryManager(map: Map) {
 					continue;
 				}
 
-			const departureStr = traj.stops[0].departure;
-			const arrivalStr = traj.stops[traj.stops.length - 1].arrival;
-			const departure = new Date(departureStr).getTime();
-			const arrival = new Date(arrivalStr).getTime();
+				const departureStr = traj.stops[0].departure;
+				const arrivalStr = traj.stops[traj.stops.length - 1].arrival;
+				const departure = new Date(departureStr).getTime();
+				const arrival = new Date(arrivalStr).getTime();
 
 				// Only show vehicle if current time is within trip duration bounds (with 30-second padding)
 				if (clientNow < departure - 30000 || clientNow > arrival + 30000) {
@@ -182,83 +195,83 @@ export function startTrajectoryManager(map: Map) {
 				const interpolationResult = interpolatePositionAndBearing(coordinates, progress);
 				if (!interpolationResult) continue;
 
-			const { coords, bearing } = interpolationResult;
-			const tripId = traj.trip_id || '';
-			const uniqueTripId = traj.unique_trip_id || tripId;
-			const displayName = traj.display_name || '';
+				const { coords, bearing } = interpolationResult;
+				const tripId = traj.trip_id || '';
+				const uniqueTripId = traj.unique_trip_id || tripId;
+				const displayName = traj.display_name || '';
 
-			const rawColor = traj.color || '#aaaaaa';
-			const { contrastdarkmode, contrastdarkmodebearing, contrastlightmode } = getContrastColours(
-				rawColor,
-				darkMode
-			);
+				const rawColor = traj.color || '#aaaaaa';
+				const { contrastdarkmode, contrastdarkmodebearing, contrastlightmode } = getContrastColours(
+					rawColor,
+					darkMode
+				);
 
-			let routeType = 3; // Default to bus
-			if (traj.route_type !== undefined) {
-				routeType = traj.route_type;
-			} else {
-				switch (traj.mode) {
-					case 'tram':
-					case 'cable_car':
-					case 'funicular':
-						routeType = 0;
-						break;
-					case 'subway':
-					case 'metro':
-						routeType = 1;
-						break;
-					case 'rail':
-						routeType = 2;
-						break;
-					case 'bus':
-					case 'trolleybus':
-						routeType = 3;
-						break;
-					case 'ferry':
-						routeType = 4;
-						break;
-					default:
-						routeType = 3;
-						break;
+				let routeType = 3; // Default to bus
+				if (traj.route_type !== undefined) {
+					routeType = traj.route_type;
+				} else {
+					switch (traj.mode) {
+						case 'tram':
+						case 'cable_car':
+						case 'funicular':
+							routeType = 0;
+							break;
+						case 'subway':
+						case 'metro':
+							routeType = 1;
+							break;
+						case 'rail':
+							routeType = 2;
+							break;
+						case 'bus':
+						case 'trolleybus':
+							routeType = 3;
+							break;
+						case 'ferry':
+							routeType = 4;
+							break;
+						default:
+							routeType = 3;
+							break;
+					}
 				}
-			}
 
-			const feature = {
-				type: 'Feature' as const,
-				id: `trajectory_${uniqueTripId}`,
-				properties: {
-					vehicleIdLabel: '',
-					speed: '',
-					color: rawColor,
-					chateau: traj.chateau_id || '',
-					route_type: routeType,
-					tripIdLabel: displayName,
-					bearing: bearing,
-					has_bearing: true,
-					maptag: displayName,
-					trip_short_name: displayName,
-					route_short_name: traj.route_short_name || displayName,
-					route_long_name: traj.route_long_name || '',
-					contrastdarkmode: contrastdarkmode,
-					contrastdarkmodebearing: contrastdarkmodebearing,
-					contrastlightmode: contrastlightmode,
-					routeId: traj.route_id || '',
-					headsign: traj.stops[traj.stops.length - 1].name || '',
-					timestamp: now,
-					text_color: traj.text_color || '#ffffff',
-					trip_id: tripId,
-					start_time: traj.start_time || departureStr,
-					start_date: traj.start_date || '',
-					crowd_symbol: '',
-					occupancy_status: '',
-					delay_label: '',
-					delay: 0
-				},
-				geometry: {
-					type: 'Point' as const,
-					coordinates: coords
-				}
-			};
+				const feature = {
+					type: 'Feature' as const,
+					id: `trajectory_${uniqueTripId}`,
+					properties: {
+						vehicleIdLabel: '',
+						speed: '',
+						color: rawColor,
+						chateau: traj.chateau_id || '',
+						route_type: routeType,
+						tripIdLabel: displayName,
+						bearing: bearing,
+						has_bearing: true,
+						maptag: displayName,
+						trip_short_name: displayName,
+						route_short_name: traj.route_short_name || displayName,
+						route_long_name: traj.route_long_name || '',
+						contrastdarkmode: contrastdarkmode,
+						contrastdarkmodebearing: contrastdarkmodebearing,
+						contrastlightmode: contrastlightmode,
+						routeId: traj.route_id || '',
+						headsign: traj.stops[traj.stops.length - 1].name || '',
+						timestamp: now,
+						text_color: traj.text_color || '#ffffff',
+						trip_id: tripId,
+						start_time: traj.start_time || departureStr,
+						start_date: traj.start_date || '',
+						crowd_symbol: '',
+						occupancy_status: '',
+						delay_label: '',
+						delay: 0
+					},
+					geometry: {
+						type: 'Point' as const,
+						coordinates: coords
+					}
+				};
 
 				// Group features into corresponding map sources
 				if (routeType === 3 || routeType === 11) {
@@ -281,6 +294,12 @@ export function startTrajectoryManager(map: Map) {
 					type: 'FeatureCollection',
 					features
 				});
+				delete pendingSourceData[sourceName];
+			} else {
+				pendingSourceData[sourceName] = {
+					type: 'FeatureCollection',
+					features
+				};
 			}
 		};
 
@@ -302,4 +321,16 @@ export function stopTrajectoryManager() {
 	}
 	activeTrajectoriesData = {};
 	lastTrajectorySubParams = '';
+	pendingSourceData = {};
+}
+
+export function applyPendingSourceData(map: Map) {
+	for (const sourceName in pendingSourceData) {
+		const source = map.getSource(sourceName) as GeoJSONSource;
+		if (source) {
+			console.log(`[DEBUGTrajectories] Applying pending data for ${sourceName}`);
+			source.setData(pendingSourceData[sourceName]);
+			delete pendingSourceData[sourceName];
+		}
+	}
 }
