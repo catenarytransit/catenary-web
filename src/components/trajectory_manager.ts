@@ -10,6 +10,7 @@ let interpolationInterval: any = null;
 let wsUnsubscribe: (() => void) | null = null;
 let activeTrajectories: any[] = [];
 let clientServerOffset = 0;
+let pendingSourceData: Record<string, any> = {};
 
 // Calculate bearing in degrees from [lon1, lat1] to [lon2, lat2]
 function calculateBearing(lon1: number, lat1: number, lon2: number, lat2: number): number {
@@ -68,11 +69,23 @@ function interpolatePositionAndBearing(coordinates: number[][], progress: number
 	return { coords: coordinates[coordinates.length - 1], bearing };
 }
 
-// Fetch trajectories depending on viewport boundaries, zoom, and layer settings
 export function fetch_trajectories(layersettings: Record<string, any>, map: Map) {
+	if (!map) return;
 	const zoom = Math.round(map.getZoom());
 	const bounds = map.getBounds();
-	const bbox = [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()];
+	if (!bounds || typeof bounds.getWest !== 'function') {
+		console.warn('[DEBUGTrajectories] Map bounds not available yet in fetch_trajectories');
+		return;
+	}
+	const west = bounds.getWest();
+	const south = bounds.getSouth();
+	const east = bounds.getEast();
+	const north = bounds.getNorth();
+	if (isNaN(west) || isNaN(south) || isNaN(east) || isNaN(north)) {
+		console.warn('[DEBUGTrajectories] Map bounds contain NaN values in fetch_trajectories');
+		return;
+	}
+	const bbox = [west, south, east, north];
 
 	const modes: string[] = [];
 
@@ -135,7 +148,7 @@ export function startTrajectoryManager(map: Map) {
 
 	// Run interpolation update loop every 1 second (1000ms)
 	interpolationInterval = setInterval(() => {
-		if (!map || !map.isStyleLoaded()) return;
+		if (!map) return;
 
 		const now = Date.now() - clientServerOffset;
 		const darkMode = determineDarkModeToBool();
@@ -304,6 +317,12 @@ export function startTrajectoryManager(map: Map) {
 					type: 'FeatureCollection',
 					features
 				});
+				delete pendingSourceData[sourceName];
+			} else {
+				pendingSourceData[sourceName] = {
+					type: 'FeatureCollection',
+					features
+				};
 			}
 		};
 
@@ -325,4 +344,16 @@ export function stopTrajectoryManager() {
 	}
 	activeTrajectories = [];
 	lastTrajectorySubParams = '';
+	pendingSourceData = {};
+}
+
+export function applyPendingSourceData(map: Map) {
+	for (const sourceName in pendingSourceData) {
+		const source = map.getSource(sourceName) as GeoJSONSource;
+		if (source) {
+			console.log(`[DEBUGTrajectories] Applying pending data for ${sourceName}`);
+			source.setData(pendingSourceData[sourceName]);
+			delete pendingSourceData[sourceName];
+		}
+	}
 }
