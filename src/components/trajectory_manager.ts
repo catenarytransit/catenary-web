@@ -196,7 +196,7 @@ export function startTrajectoryManager(map: Map) {
 				const { coords, bearing } = interpolationResult;
 				const tripId = traj.trip_id || '';
 				const uniqueTripId = traj.unique_trip_id || tripId;
-				const displayName = traj.display_name || '';
+				const displayName = traj.route_short_name || traj.display_name || '';
 
 				const rawColor = traj.color || '#aaaaaa';
 				const { contrastdarkmode, contrastdarkmodebearing, contrastlightmode } = getContrastColours(
