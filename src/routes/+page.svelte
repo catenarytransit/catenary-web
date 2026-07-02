@@ -1179,6 +1179,10 @@
 							collapser_left_offset = `${collapser_left_offset_number}px`;
 						} else {
 							clearInterval(last_sidebar_interval_id);
+							translate_x_sidebar_number = 0;
+							translate_x_sidebar = '0px';
+							collapser_left_offset_number = sidebar_width;
+							collapser_left_offset = `${collapser_left_offset_number}px`;
 						}
 					}
 
@@ -1192,6 +1196,10 @@
 							collapser_left_offset = `${collapser_left_offset_number}px`;
 						} else {
 							clearInterval(last_sidebar_interval_id);
+							translate_x_sidebar_number = -sidebar_width;
+							translate_x_sidebar = `${translate_x_sidebar_number}px`;
+							collapser_left_offset_number = 0;
+							collapser_left_offset = '0px';
 						}
 					}
 				}
@@ -1273,6 +1281,10 @@
 			previous_form_factor = 'mobile';
 		} else {
 			sidebarOpen = 'full';
+			if (window.innerWidth >= 1024) {
+				collapser_left_offset_number = 480;
+				collapser_left_offset = '480px';
+			}
 			sidebar_height_output = '100vh';
 			//px from bottom
 			sidebar_height_number = window.innerHeight - dragger;
@@ -1313,6 +1325,7 @@
 				sidebar_height_output = '100vh';
 			}
 
+			moveToPos({});
 			recompute_map_padding();
 		});
 
@@ -2080,7 +2093,7 @@
 			<div
 				id="catenary-sidebar"
 				style="height: {sidebar_height_output}; transform: translateX({translate_x_sidebar});"
-				class="z-20 rounded-t-2xl md:rounded-none fixed bottom-0 w-full sm:w-2/5 md:h-full md:w-[380px] bg-white dark:bg-gray-900 bg-opacity-70 dark:bg-opacity-70 md:bg-opacity-80 md:dark:bg-opacity-70 backdrop-blur-xs md:backdrop-blur-sm md:fixed md:left-0 md:top-0 md:bottom-0 text-black dark:text-white flex flex-col select-text"
+				class="z-20 rounded-t-2xl md:rounded-none fixed bottom-0 w-full sm:w-2/5 md:h-full md:w-[380px] lg:w-[480px] bg-white dark:bg-gray-900 bg-opacity-70 dark:bg-opacity-70 md:bg-opacity-80 md:dark:bg-opacity-70 backdrop-blur-xs md:backdrop-blur-sm md:fixed md:left-0 md:top-0 md:bottom-0 text-black dark:text-white flex flex-col select-text"
 			>
 				<div
 					class="flex md:hidden py-2 flex-row"
