@@ -7,6 +7,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400..700;1,400..700&display=swap');
 
 @custom-variant dark (&:where(.dark, .dark *));
+
 input[type='checkbox'] {
 	appearance: none;
 	-webkit-appearance: none;
@@ -157,14 +158,16 @@ input[type='radio']:focus-visible {
 }
 
 .catenary-scroll {
-	--sb-track-color: #f3f3f3;
-	--sb-thumb-color: var(--color-seashore);
-	--sb-size: 16px;
+	--sb-track-color: transparent;
+	--sb-thumb-color: color-mix(in srgb, black 30%, transparent);
+	--sb-thumb-color-hover: color-mix(in srgb, black 60%, transparent);
+	--sb-size: 0.5rem;
 }
 
 .dark .catenary-scroll {
-	--sb-track-color: #0a233f;
-	--sb-thumb-color: var(--color-seashoredark);
+	--sb-track-color: transparent;
+	--sb-thumb-color: color-mix(in srgb, white 30%, transparent);
+	--sb-thumb-color-hover: color-mix(in srgb, white 60%, transparent);
 }
 
 body::-webkit-scrollbar {
@@ -179,7 +182,10 @@ body::-webkit-scrollbar-track {
 body::-webkit-scrollbar-thumb {
 	background: var(--sb-thumb-color);
 	border-radius: 1px;
-	border: 2px solid #232e33;
+}
+
+body::-webkit-scrollbar-thumb:hover {
+	background: var(--sb-thumb-color-hover);
 }
 
 @supports not selector(::-webkit-scrollbar) {
@@ -190,7 +196,7 @@ body::-webkit-scrollbar-thumb {
 
 .catenary-scroll {
 	scrollbar-color: var(--sb-thumb-color) var(--sb-track-color);
-	scrollbar-width: thin;
+	scrollbar-width: auto;
 }
 
 .catenary-scroll::-webkit-scrollbar {
@@ -205,7 +211,10 @@ body::-webkit-scrollbar-thumb {
 .catenary-scroll::-webkit-scrollbar-thumb {
 	background: var(--sb-thumb-color);
 	border-radius: 1px;
-	border: 2px solid #232e33;
+}
+
+.catenary-scroll::-webkit-scrollbar-thumb:hover {
+	background: var(--sb-thumb-color-hover);
 }
 
 html,
@@ -365,7 +374,9 @@ $icon-padding: 0.4em;
 
 		@if $value2==$mta-yellow {
 			color: #000;
-		} @else {
+		}
+
+		@else {
 			color: #fff;
 		}
 	}
