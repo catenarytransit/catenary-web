@@ -246,7 +246,7 @@ export function startTrajectoryManager(map: Map) {
 						tripIdLabel: traj.trip_short_name || displayName,
 						bearing: bearing,
 						has_bearing: true,
-						maptag: traj.trip_short_name || displayName,
+						maptag: displayName,
 						trip_short_name: traj.trip_short_name || displayName,
 						route_short_name: traj.route_short_name || displayName,
 						route_long_name: traj.route_long_name || '',
