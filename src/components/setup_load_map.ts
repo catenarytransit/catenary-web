@@ -26,6 +26,7 @@ import { start_location_watch, update_geolocation_source } from '../user_locatio
 import { startTrajectoryManager, stopTrajectoryManager, fetch_trajectories, applyPendingSourceData } from './trajectory_manager';
 import { setup_click_handler } from '../components/mapClickHandler';
 import { initSpruceWebSocket, spruce_map_data } from '../spruce_websocket';
+import { initRamondaWebSocket } from '../ramonda_websocket';
 import { process_realtime_vehicle_locations_v2 } from './process_realtime_data';
 
 const RASTER_SOURCES = [
@@ -75,6 +76,7 @@ export async function setup_load_map(
 
 	// Start WebSocket and trajectory manager early, before the style / map load event
 	initSpruceWebSocket();
+	initRamondaWebSocket();
 	startTrajectoryManager(map);
 	fetch_trajectories(layersettings, map);
 

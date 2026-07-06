@@ -25,13 +25,12 @@
 		additional_filter_for_vehicles_store
 	} from './filterState';
 	import {
-		connectSpruceWebSocket,
-		disconnectSpruceWebSocket,
-		spruce_trip_data,
-		spruce_update_data,
-		spruce_error,
-		spruce_status
-	} from '../spruce_websocket';
+		connectRamondaWebSocket,
+		disconnectRamondaWebSocket,
+		ramonda_trip_data,
+		ramonda_update_data,
+		ramonda_error
+	} from '../ramonda_websocket';
 
 	import {
 		fixHeadsignIcon,
@@ -493,7 +492,7 @@
 		if (updatetimecounter != null) {
 			clearInterval(updatetimecounter);
 		}
-		disconnectSpruceWebSocket();
+		disconnectRamondaWebSocket();
 	});
 
 	export let trip_selected: SingleTrip;
@@ -998,7 +997,7 @@
 		has_scrolled_to_current = false;
 		show_scroll_button = false;
 
-		connectSpruceWebSocket(trip_selected.chateau_id, {
+		connectRamondaWebSocket(trip_selected.chateau_id, {
 			trip_id: trip_selected.trip_id,
 			start_date: trip_selected.start_date,
 			start_time: trip_selected.start_time
@@ -1013,16 +1012,16 @@
 		autoScrollToCurrentStop();
 	}
 
-	$: if ($spruce_trip_data) {
-		handle_trip_initial($spruce_trip_data);
+	$: if ($ramonda_trip_data) {
+		handle_trip_initial($ramonda_trip_data);
 	}
 
-	$: if ($spruce_update_data) {
-		handle_trip_update($spruce_update_data);
+	$: if ($ramonda_update_data) {
+		handle_trip_update($ramonda_update_data);
 	}
 
-	$: if ($spruce_error) {
-		error = $spruce_error;
+	$: if ($ramonda_error) {
+		error = $ramonda_error;
 		is_loading_trip_data = false;
 	}
 

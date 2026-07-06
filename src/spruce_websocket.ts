@@ -3,8 +3,6 @@ import { writable } from 'svelte/store';
 export const spruce_status = writable<'connecting' | 'connected' | 'disconnected' | 'error'>(
 	'disconnected'
 );
-export const spruce_trip_data = writable<any>(null);
-export const spruce_update_data = writable<any>(null);
 export const spruce_error = writable<string | null>(null);
 export const spruce_map_data = writable<any>(null);
 export const spruce_trajectory_data = writable<Record<string, { content: any[]; timestamp: number }>>({});
@@ -16,8 +14,6 @@ let socket: WebSocket | null = null;
 let heartbeatInterval: any = null;
 
 // Active state for resubscription on connection loss
-let activeChateau: string | null = null;
-let activeParams: any = null;
 let activeMapParams: any = null;
 let activeTrajectoryParams: any = null;
 
@@ -39,16 +35,12 @@ function ensureConnection() {
 		console.log('Spruce WS Connected');
 		spruce_status.set('connected');
 
-		// Resubscribe Trip if active
-		if (activeChateau && activeParams) {
-			const msg = {
-				type: 'subscribe_trip',
-				chateau: activeChateau,
-				...activeParams
-			};
-			console.log('Resending subscribe to Spruce:', msg);
-			socket?.send(JSON.stringify(msg));
-		}
+		heartbeatInterval = setInterval(() => {
+			if (socket && socket.readyState === WebSocket.OPEN) {
+				socket.send(JSON.stringify({ type: 'unsubscribe_trip', chateau: 'ping-noop' }));
+			}
+		}, 10000);
+
 
 		// Resubscribe Map if active
 		if (activeMapParams) {
@@ -75,11 +67,7 @@ function ensureConnection() {
 		try {
 			const msg = JSON.parse(event.data);
 
-			if (msg.type === 'initial_trip') {
-				spruce_trip_data.set(msg.data);
-			} else if (msg.type === 'update_trip') {
-				spruce_update_data.set(msg.data);
-			} else if (msg.type === 'map_update') {
+			if (msg.type === 'map_update') {
 				// Check for payload in possibly different locations due to serde serialization
 				// Try msg.data, msg.map_update, or msg itself if fields like 'chateaus' are present
 				let payload = msg.data || msg.map_update;
@@ -141,6 +129,8 @@ function ensureConnection() {
 						return { ...data }; // Trigger Svelte reactivity
 					});
 				}
+			} else if (msg.type === 'pong') {
+				console.log('Spruce WS received pong');
 			} else if (msg.type === 'error') {
 				spruce_error.set(msg.message);
 				console.error('Spruce WS Error message:', msg.message);
@@ -154,6 +144,11 @@ function ensureConnection() {
 		console.log('Spruce WS Closed', event.code, event.reason);
 		spruce_status.set('disconnected');
 		socket = null;
+
+		if (heartbeatInterval) {
+			clearInterval(heartbeatInterval);
+			heartbeatInterval = null;
+		}
 
 		// Auto-reconnect after a delay
 		setTimeout(() => {
@@ -170,57 +165,6 @@ function ensureConnection() {
 
 export function initSpruceWebSocket() {
 	ensureConnection();
-}
-
-export function connectSpruceWebSocket(chateau: string, params: any) {
-	ensureConnection();
-
-	const sanitizedParams = { ...params };
-	for (const key in sanitizedParams) {
-		if (sanitizedParams[key] === '') {
-			sanitizedParams[key] = null;
-		}
-	}
-	if (sanitizedParams.start_time && sanitizedParams.start_time.includes('T')) {
-		try {
-			const date = new Date(sanitizedParams.start_time);
-			if (!isNaN(date.getTime())) {
-				const hh = String(date.getUTCHours()).padStart(2, '0');
-				const mm = String(date.getUTCMinutes()).padStart(2, '0');
-				const ss = String(date.getUTCSeconds()).padStart(2, '0');
-				sanitizedParams.start_time = `${hh}:${mm}:${ss}`;
-
-				if (!sanitizedParams.start_date) {
-					const yyyy = date.getUTCFullYear();
-					const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-					const day = String(date.getUTCDate()).padStart(2, '0');
-					sanitizedParams.start_date = `${yyyy}${month}${day}`;
-				}
-			}
-		} catch (e) {
-			console.error('Error formatting start_time/start_date in spruce_websocket', e);
-		}
-	}
-
-	activeChateau = chateau;
-	activeParams = sanitizedParams;
-
-	// Send subscribe
-	const msg = {
-		type: 'subscribe_trip',
-		chateau: chateau,
-		...sanitizedParams
-	};
-
-	// reset trip data stores
-	spruce_trip_data.set(null);
-	spruce_update_data.set(null);
-	spruce_error.set(null);
-
-	if (socket && socket.readyState === WebSocket.OPEN) {
-		console.log('Sending subscribe to Spruce:', msg);
-		socket.send(JSON.stringify(msg));
-	}
 }
 
 export function updateMap(params: any) {
@@ -265,22 +209,4 @@ export function unsubscribeTrajectories() {
 	}
 }
 
-export function disconnectSpruceWebSocket() {
-	if (socket && socket.readyState === WebSocket.OPEN && activeChateau) {
-		console.log('Unsubscribing from Trip');
-		const msg = {
-			type: 'unsubscribe_trip',
-			chateau: activeChateau,
-			// Include params if needed for unsubscribe
-			...activeParams
-		};
-		socket.send(JSON.stringify(msg));
-	}
 
-	activeChateau = null;
-	activeParams = null;
-	spruce_trip_data.set(null);
-	spruce_update_data.set(null);
-
-	// We do NOT close the socket, to allow Map updates to continue.
-}
