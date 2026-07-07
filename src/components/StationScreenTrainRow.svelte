@@ -8,6 +8,7 @@
 	import { SingleTrip, StackInterface } from './stackenum';
 	import { data_stack_store } from '../globalstores';
 	import StationScreenRouteBadge from './StationScreenRouteBadge.svelte';
+	import db_train_lookup from '../../static/fernverkehr_2026_train_lookup.json';
 
 	export let event: any;
 	export let data_from_server: any;
@@ -32,6 +33,11 @@
 	// event.chateau !== 'nationalrailuk' || ['TW', 'ME', 'LO', 'XR', 'HX'].includes(agency_id_local)
 	$: show_route_name =
 		event.chateau !== 'nationalrailuk' || ['TW', 'ME', 'LO', 'XR', 'HX'].includes(agencyId);
+
+	$: is_db_fernverkehr = event.chateau === 'deutschland' && agencyId && ['12681', '13557', '10918'].includes(agencyId.toString());
+	$: trip_short_name_no_zeros = event.trip_short_name ? event.trip_short_name.replace(/^0+/, '') : null;
+	$: db_train_data = is_db_fernverkehr && trip_short_name_no_zeros ? (db_train_lookup as Record<string, any[]>)[trip_short_name_no_zeros] : null;
+	$: db_display_name = db_train_data ? db_train_data[0].display_name : event.trip_short_name;
 </script>
 
 <tr
@@ -58,7 +64,9 @@
 	<!-- Leftmost: Route Name -->
 	{#if swiss_style}
 		<td class="px-1 py-0.5 w-[40px] align-middle text-left">
-			{#if show_route_name && routeDef?.short_name}
+			{#if is_db_fernverkehr}
+				<span class="font-bold px-1 rounded bg-gray-200 dark:bg-gray-700 text-sm whitespace-nowrap">{db_display_name}</span>
+			{:else if show_route_name && routeDef?.short_name}
 				<StationScreenRouteBadge
 					{routeDef}
 					chateau={event.chateau}
@@ -124,7 +132,9 @@
 	<!-- Middle: Route Name for Eurostyle -->
 	{#if eurostyle && !swiss_style}
 		<td class="px-1 py-0.5 w-[40px] align-middle text-left">
-			{#if show_route_name && routeDef?.short_name}
+			{#if is_db_fernverkehr}
+				<span class="font-bold px-1 rounded bg-gray-200 dark:bg-gray-700 text-sm whitespace-nowrap">{db_display_name}</span>
+			{:else if show_route_name && routeDef?.short_name}
 				<StationScreenRouteBadge
 					{routeDef}
 					chateau={event.chateau}
@@ -141,7 +151,7 @@
 			<div class="flex flex-row items-center gap-2 mb-1">
 				<div class="text-base font-medium font-normal leading-tight">
 					{event.headsign}
-					{#if event.trip_short_name}
+					{#if event.trip_short_name && !is_db_fernverkehr}
 						<span class="ml-1">{event.trip_short_name}</span>
 					{/if}
 					{#if eventAlerts.length > 0}
@@ -155,7 +165,9 @@
 			<div
 				class="flex flex-row text-sm text-gray-600 dark:text-gray-400 gap-2 items-center flex-wrap"
 			>
-				{#if show_route_name && routeDef && !eurostyle && !swiss_style}
+				{#if is_db_fernverkehr && !eurostyle && !swiss_style}
+					<span class="font-bold px-1 rounded bg-gray-200 dark:bg-gray-700 text-sm whitespace-nowrap">{db_display_name}</span>
+				{:else if show_route_name && routeDef && !eurostyle && !swiss_style}
 					<StationScreenRouteBadge {routeDef} chateau={event.chateau} fallback_long_name={true} />
 				{/if}
 

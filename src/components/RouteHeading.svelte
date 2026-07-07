@@ -41,6 +41,9 @@
 
 	export let route_id: string;
 	export let chateau_id: string;
+	export let agency_id: string | null = null;
+	export let agency_name: string | null = null;
+	export let trip_short_name: string | null = null;
 
 	export let text: string;
 
@@ -138,6 +141,18 @@
 	$: is_sbahn =
 		['dbregioag', 'deutschland'].includes(chateau_id) &&
 		(short_name || '').match(/^S\d+/) !== null;
+	
+	import db_train_lookup from '../../static/fernverkehr_2026_train_lookup.json';
+	$: is_db_fernverkehr =
+		chateau_id === 'deutschland' &&
+		((agency_id !== null && ['12681', '13557', '10918'].includes(agency_id.toString())) ||
+		 (agency_name !== null && (agency_name === 'DB Fernverkehr AG' || agency_name === 'DB Fernverkehr (Codesharing)')));
+	
+	$: effective_trip_short_name = trip_short_name || run_number;
+	$: trip_short_name_no_zeros = effective_trip_short_name ? effective_trip_short_name.replace(/^0+/, '') : null;
+	$: db_train_data = is_db_fernverkehr && trip_short_name_no_zeros ? (db_train_lookup as Record<string, any[]>)[trip_short_name_no_zeros] : null;
+	$: db_display_name = db_train_data ? db_train_data[0].display_name : effective_trip_short_name;
+
 	$: showLongName = !!(
 		long_name &&
 		(!short_name ||
@@ -150,10 +165,10 @@
 	<div class="flex items-start justify-between gap-2">
 		<h2
 			class={`${window_height_known < 600 ? 'text-sm' : 'text-base md:text-lg md:mt-1'} ${
-				isSubway ? '' : 'leading-tight'
+				isSubway || is_db_fernverkehr ? '' : 'leading-tight'
 			}`}
 			style={`
-				${isSubway ? '' : `color: ${darkMode ? lightenColour(color) : color}`}`}
+				${isSubway || is_db_fernverkehr ? '' : `color: ${darkMode ? lightenColour(color) : color}`}`}
 		>
 			<span
 				class={`
@@ -172,7 +187,9 @@
 					}
 				}}
 			>
-				{#if isSubway && short_name}
+				{#if is_db_fernverkehr}
+					<span class="font-bold mr-1 inline-block">{db_display_name || short_name}</span>
+				{:else if isSubway && short_name}
 					<MtaBullet route_short_name={short_name} matchTextHeight={true} />
 				{:else if isRatp && short_name}
 					<RatpBullet route_short_name={short_name} matchTextHeight={true} />
@@ -240,8 +257,11 @@
 		<span class="align-middle">
 			{text}
 
-			{#if run_number}
+			{#if run_number && !(is_db_fernverkehr && run_number)}
 				<span class="font-bold text-md px-1 py-0.5 mr-1 rounded-md w-min">{run_number}</span>
+			{/if}
+			{#if is_db_fernverkehr && short_name}
+				<span class="font-medium text-sm ml-1 text-gray-600 dark:text-gray-400 inline-block align-middle -translate-y-0.5">Linie {short_name}</span>
 			{/if}
 			{#if icon}
 				<span class="material-symbols-outlined text-xl align-middle -translate-y-0.5 ml-1"

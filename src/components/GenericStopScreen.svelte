@@ -42,6 +42,7 @@
 	import RatpBullet from './ratpbullet.svelte';
 	import DatePicker from './DatePicker.svelte';
 	import ServiceAlerts from './serviceAlerts.svelte';
+	import db_train_lookup from '../../static/fernverkehr_2026_train_lookup.json';
 
 	export let initial_is_now: boolean = true;
 	export let initial_selected_unix_time: number = Date.now() / 1000;
@@ -197,9 +198,25 @@
 	function get_train_category(
 		primaryChateau: string,
 		shortName: string | null | undefined,
-		routeType: number
+		routeType: number,
+		event?: any,
+		routeDef?: any
 	): string {
-		const sn = (shortName || '').toUpperCase().trim();
+		let sn = (shortName || '').toUpperCase().trim();
+		
+		if (primaryChateau === 'deutschland' && event && routeDef) {
+			const agencyId = routeDef.agency_id;
+			const is_db_fernverkehr = event.chateau === 'deutschland' && agencyId && ['12681', '13557', '10918'].includes(agencyId.toString());
+			if (is_db_fernverkehr) {
+				const trip_short_name_no_zeros = event.trip_short_name ? event.trip_short_name.replace(/^0+/, '') : null;
+				const db_train_data = trip_short_name_no_zeros ? (db_train_lookup as Record<string, any[]>)[trip_short_name_no_zeros] : null;
+				const db_display_name = db_train_data ? db_train_data[0].display_name : event.trip_short_name;
+				if (db_display_name) {
+					sn = db_display_name.toUpperCase().trim();
+				}
+			}
+		}
+
 		if (primaryChateau === 'île~de~france~mobilités') {
 			if (['A', 'B', 'C', 'D', 'E'].includes(sn)) {
 				return 'RER';
@@ -303,7 +320,7 @@
 					const routeDef = data_meta?.routes?.[event.chateau]?.[event.route_id];
 					const rType = routeDef?.route_type ?? event.route_type ?? 3;
 					const shortName = routeDef?.short_name;
-					const cat = get_train_category(primaryChateauId, shortName, rType);
+					const cat = get_train_category(primaryChateauId, shortName, rType, event, routeDef);
 					if (!enabled_categories.has(cat)) return false;
 				}
 

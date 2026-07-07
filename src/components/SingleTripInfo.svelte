@@ -1171,6 +1171,9 @@
 				text_color={trip_data.text_color}
 				route_id={trip_data.route_id}
 				chateau_id={trip_selected.chateau_id}
+				agency_id={trip_data.agency_id}
+				agency_name={trip_data.agency_name}
+				trip_short_name={trip_data.trip_short_name}
 				vehicle={fix_vehicle_number(
 					trip_selected.chateau_id,
 					trip_data.vehicle?.label || trip_data.vehicle?.id || trip_selected.vehicle_id

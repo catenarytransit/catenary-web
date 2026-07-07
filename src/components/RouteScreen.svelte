@@ -768,6 +768,7 @@
 					color={route_data.color}
 					route_id={routestack.route_id}
 					chateau_id={routestack.chateau_id}
+					agency_id={route_data.agency_id}
 					text={route_data.agency_name}
 					compact={false}
 					short_name={route_data.short_name}
