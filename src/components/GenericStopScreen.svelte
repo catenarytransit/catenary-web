@@ -160,27 +160,25 @@
 		return 'other';
 	}
 
-	$: primaryChateauId = (() => {
+	$: regionId = (() => {
 		if (chateau) return chateau;
 		if (data_meta?.primary?.chateau_id) return data_meta.primary.chateau_id;
 		if (data_meta?.primary?.chateau) return data_meta.primary.chateau;
 		const chateaus = Object.keys(data_meta?.routes || {});
-		if (chateaus.includes('deutschland')) return 'deutschland';
-		if (chateaus.includes('schweiz')) return 'schweiz';
+		if (chateaus.includes('deutschland') || chateaus.includes('schweiz') || chateaus.includes('trenord') || chateaus.includes('oebb~at')) return 'dach_lombardia';
 		if (chateaus.includes('île~de~france~mobilités')) return 'île~de~france~mobilités';
 		return chateaus[0] || null;
 	})();
 
 	const train_categories: Record<string, string[]> = {
 		'île~de~france~mobilités': ['Grandes lignes', 'RER', 'Transilien'],
-		deutschland: ['S-Bahn', 'ICE/TGV/RJX', 'IC/EC', 'IR', 'RE/RB', 'Other'],
-		schweiz: ['ICE/TGV/RJX', 'EC/IC', 'IR/PE', 'RE', 'S/SN/R', 'ARZ/EXT']
+		dach_lombardia: ['ICE/TGV/RJX', 'IC/EC/RJ', 'IR/PE', 'RE/REX/RV', 'R/RB', 'S-Bahn', 'Other'],
 	};
 
 	let enabled_categories = new Set<string>();
 	$: {
-		if (primaryChateauId && train_categories[primaryChateauId]) {
-			enabled_categories = new Set(train_categories[primaryChateauId]);
+		if (regionId && train_categories[regionId]) {
+			enabled_categories = new Set(train_categories[regionId]);
 		} else {
 			enabled_categories = new Set();
 		}
@@ -196,7 +194,7 @@
 	}
 
 	function get_train_category(
-		primaryChateau: string,
+		regionId: string,
 		shortName: string | null | undefined,
 		routeType: number,
 		event?: any,
@@ -204,7 +202,7 @@
 	): string {
 		let sn = (shortName || '').toUpperCase().trim();
 		
-		if (primaryChateau === 'deutschland' && event && routeDef) {
+		if (regionId === 'dach_lombardia' && event && routeDef) {
 			const agencyId = routeDef.agency_id;
 			const is_db_fernverkehr = event.chateau === 'deutschland' && agencyId && ['12681', '13557', '10918'].includes(agencyId.toString());
 			if (is_db_fernverkehr) {
@@ -215,9 +213,17 @@
 					sn = db_display_name.toUpperCase().trim();
 				}
 			}
+			if(event.chateau === 'oebb~at') {
+				sn = event.trip_short_name;
+			}
+			// We have no way of distinguishing Trenitalia routes
+			// and they might accidentally start with a valid train category
+			if(event.chateau === 'trenitalia') {
+				return 'Other';
+			}
 		}
 
-		if (primaryChateau === 'île~de~france~mobilités') {
+		if (regionId === 'île~de~france~mobilités' && event.chateau === 'île~de~france~mobilités') {
 			if (['A', 'B', 'C', 'D', 'E'].includes(sn)) {
 				return 'RER';
 			}
@@ -226,44 +232,31 @@
 			}
 			return 'Grandes lignes';
 		}
-		if (primaryChateau === 'deutschland') {
-			if (sn.match(/^S\d+/)) {
+		if (regionId === 'dach_lombardia') {
+			if (sn.startsWith('S')) {
 				return 'S-Bahn';
 			}
-			if (sn.startsWith('ICE') || sn.startsWith('TGV') || sn.startsWith('RJX')) {
+			if (sn.startsWith('ICE') || sn.startsWith('TGV') || sn.startsWith('RJX') || sn.startsWith('ECE')) {
 				return 'ICE/TGV/RJX';
 			}
-			if (sn.startsWith('IC') || sn.startsWith('EC')) {
-				return 'IC/EC';
+			if (sn.startsWith('IC') || sn.startsWith('EC') || sn.startsWith('RJ') || sn.startsWith('WB') || sn.startsWith('FLX')) {
+				// WB is Westbahn of Austria
+				// FLX is Flixtrain
+				return 'IC/EC/RJ';
 			}
-			if (sn.startsWith('IR')) {
-				return 'IR';
-			}
-			if (sn.startsWith('RE') || sn.startsWith('RB')) {
-				return 'RE/RB';
-			}
-			return 'Other';
-		}
-		if (primaryChateau === 'schweiz') {
-			if (sn.startsWith('ICE') || sn.startsWith('TGV') || sn.startsWith('RJX')) {
-				return 'ICE/TGV/RJX';
-			}
-			if (sn.startsWith('EC') || sn.startsWith('IC')) {
-				return 'EC/IC';
-			}
-			if (sn.startsWith('IR') || sn.startsWith('PE')) {
+			if (sn.startsWith('IR') || sn.startsWith('PE') || sn.startsWith('IRE') || sn.startsWith('CJX')) {
+				// CJX is Cityjet-Express of ÖBB
 				return 'IR/PE';
 			}
-			if (sn.startsWith('RE')) {
-				return 'RE';
+			if (sn.startsWith('RE') || sn.startsWith('RV') || sn.startsWith('MEX') || sn.startsWith('FEX')) {
+				// MEX is Metropolexpress of Baden-Württemberg
+				// FEX is Flughafen-Express
+				return 'RE/REX/RV';
 			}
-			if (sn.startsWith('S') || sn.startsWith('SN') || sn.startsWith('R')) {
-				return 'S/SN/R';
+			if (sn.startsWith('R')) {
+				return 'R/RB';
 			}
-			if (sn.startsWith('ARZ') || sn.startsWith('EXT')) {
-				return 'ARZ/EXT';
-			}
-			return 'S/SN/R'; // Fallback
+			return 'Other';
 		}
 		return 'Other';
 	}
@@ -316,11 +309,11 @@
 				}
 
 				// Train Category filter
-				if (active_tab === 'rail' && primaryChateauId && train_categories[primaryChateauId]) {
+				if (active_tab === 'rail' && regionId && train_categories[regionId]) {
 					const routeDef = data_meta?.routes?.[event.chateau]?.[event.route_id];
 					const rType = routeDef?.route_type ?? event.route_type ?? 3;
 					const shortName = routeDef?.short_name;
-					const cat = get_train_category(primaryChateauId, shortName, rType, event, routeDef);
+					const cat = get_train_category(regionId, shortName, rType, event, routeDef);
 					if (!enabled_categories.has(cat)) return false;
 				}
 
@@ -1046,9 +1039,9 @@
 					</div>
 				{/if}
 
-				{#if active_tab === 'rail' && primaryChateauId && train_categories[primaryChateauId]}
+				{#if active_tab === 'rail' && regionId && train_categories[regionId]}
 					<div class="flex flex-row flex-wrap gap-2 ml-1 mb-3 mt-2 items-center">
-						{#each train_categories[primaryChateauId] as cat}
+						{#each train_categories[regionId] as cat}
 							{@const active = enabled_categories.has(cat)}
 							<button
 								class={`px-3 py-1 text-xs font-semibold rounded-full border transition-all cursor-pointer ${
