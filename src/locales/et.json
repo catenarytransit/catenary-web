@@ -19,6 +19,8 @@
   "credits": "Autorid ja litsentsid",
   "headingRail": "Raudtee",
   "headingLocalRail": "Metroo/Tramm",
+  "headingMetro": "Metroo",
+  "headingTram": "Tramm",
   "headingIntercityRail": "Raudtee",
   "headingBus": "Buss",
   "headingOther": "Muu",

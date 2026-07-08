@@ -6,16 +6,10 @@
 	import RatpBullet from './ratpbullet.svelte';
 	import { getAgencyInfo } from '../utils/national_rail_utils';
 
-	// Interface for route info
-	interface RouteInfo {
-		route_id?: string;
-		short_name?: string;
-		long_name?: string;
-		color?: string;
-		text_color?: string;
-		agency_id?: string;
-		route_type?: number;
-	}
+	import { _ } from 'svelte-i18n';
+	import StationScreenRouteBadge from './StationScreenRouteBadge.svelte';
+
+	import type { Route } from '../utils/models';
 
 	// Route type categories: Rail (2), Metro (1), Tram (0), Bus (3), Other (everything else)
 	function getRouteCategory(
@@ -37,7 +31,7 @@
 
 	// Props
 	export let routeIds: string[] = [];
-	export let getRouteInfo: (routeId: string) => RouteInfo | undefined;
+	export let getRouteInfo: (routeId: string) => Route | undefined;
 	// For GTFS stops, pass the chateau_id. For OSM stations, pass null/undefined
 	export let chateau_id: string | null = null;
 
@@ -91,7 +85,7 @@
 	$: has_other = other_routes.length > 0;
 
 	// Check if a route should show MTA bullet
-	function shouldShowMtaBullet(routeId: string, routeInfo: RouteInfo | undefined): boolean {
+	function shouldShowMtaBullet(routeId: string, routeInfo: Route | undefined): boolean {
 		if (!isSubwayRouteId(routeId)) return false;
 		// For GTFS stops, check chateau_id
 		if (chateau_id) return chateau_id === MTA_CHATEAU_ID;
@@ -100,7 +94,7 @@
 	}
 
 	// Check if a route should show RATP bullet
-	function shouldShowRatpBullet(routeInfo: RouteInfo | undefined): boolean {
+	function shouldShowRatpBullet(routeInfo: Route | undefined): boolean {
 		if (!routeInfo?.short_name || !isRatpRoute(routeInfo.short_name)) return false;
 		// For GTFS stops, check chateau_id
 		if (chateau_id) return chateau_id === IDFM_CHATEAU_ID;
@@ -110,6 +104,9 @@
 </script>
 
 <div class="flex flex-row gap-x-0.5 w-full flex-wrap gap-y-1 items-center">
+	{#if has_rail}
+		<div class="font-bold text-sm mr-1">{$_('headingRail')}:</div>
+	{/if}
 	<!-- RAIL category (UK grouped routes + rail_routes) -->
 	<!-- RAIL category (UK grouped routes + rail_routes) -->
 	{#each grouped_agencies as agency}
@@ -128,22 +125,13 @@
 	{#each rail_routes as routeId}
 		{@const routeInfo = getRouteInfo(routeId)}
 		{#if routeInfo}
-			{#if shouldShowMtaBullet(routeId, routeInfo)}
-				<MtaBullet route_short_name={routeInfo.short_name} matchTextHeight={false} />
-			{:else if shouldShowRatpBullet(routeInfo)}
-				<RatpBullet route_short_name={routeInfo.short_name} matchTextHeight={false} />
-			{:else}
-				<div
-					class="px-1 py-0.5 md:py-1 text-xs rounded-sm"
-					style={`background-color: ${routeInfo.color}; color: ${routeInfo.text_color};`}
-				>
-					{#if routeInfo.short_name}
-						<span class="font-medium">{routeInfo.short_name}</span>
-					{:else if routeInfo.long_name}
-						{routeInfo.long_name.replace(' Line', '')}
-					{/if}
-				</div>
-			{/if}
+			<StationScreenRouteBadge
+				routeDef={routeInfo}
+				chateau={routeInfo.chateau}
+				fallback_long_name={true}
+				text_size_class="text-xs"
+				is_route_only={true}
+			/>
 		{/if}
 	{/each}
 
@@ -152,26 +140,21 @@
 		<span class="text-gray-400 dark:text-gray-600 mx-1">|</span>
 	{/if}
 
+	{#if has_metro}
+		<div class="font-bold text-sm mr-1">{$_('headingMetro')}:</div>
+	{/if}
+
 	<!-- METRO category -->
 	{#each metro_routes as routeId}
 		{@const routeInfo = getRouteInfo(routeId)}
 		{#if routeInfo}
-			{#if shouldShowMtaBullet(routeId, routeInfo)}
-				<MtaBullet route_short_name={routeInfo.short_name} matchTextHeight={false} />
-			{:else if shouldShowRatpBullet(routeInfo)}
-				<RatpBullet route_short_name={routeInfo.short_name} matchTextHeight={false} />
-			{:else}
-				<div
-					class="px-1 py-0.5 md:py-1 text-xs rounded-sm"
-					style={`background-color: ${routeInfo.color}; color: ${routeInfo.text_color};`}
-				>
-					{#if routeInfo.short_name}
-						<span class="font-medium">{routeInfo.short_name}</span>
-					{:else if routeInfo.long_name}
-						{routeInfo.long_name.replace(' Line', '')}
-					{/if}
-				</div>
-			{/if}
+			<StationScreenRouteBadge
+				routeDef={routeInfo}
+				chateau={routeInfo.chateau}
+				fallback_long_name={true}
+				text_size_class="text-xs"
+				is_route_only={true}
+			/>
 		{/if}
 	{/each}
 
@@ -180,26 +163,21 @@
 		<span class="text-gray-400 dark:text-gray-600 mx-1">|</span>
 	{/if}
 
+	{#if has_tram}
+		<div class="font-bold text-sm mr-1">{$_('headingTram')}:</div>
+	{/if}
+
 	<!-- TRAM category -->
 	{#each tram_routes as routeId}
 		{@const routeInfo = getRouteInfo(routeId)}
 		{#if routeInfo}
-			{#if shouldShowMtaBullet(routeId, routeInfo)}
-				<MtaBullet route_short_name={routeInfo.short_name} matchTextHeight={false} />
-			{:else if shouldShowRatpBullet(routeInfo)}
-				<RatpBullet route_short_name={routeInfo.short_name} matchTextHeight={false} />
-			{:else}
-				<div
-					class="px-1 py-0.5 md:py-1 text-xs rounded-sm"
-					style={`background-color: ${routeInfo.color}; color: ${routeInfo.text_color};`}
-				>
-					{#if routeInfo.short_name}
-						<span class="font-medium">{routeInfo.short_name}</span>
-					{:else if routeInfo.long_name}
-						{routeInfo.long_name.replace(' Line', '')}
-					{/if}
-				</div>
-			{/if}
+			<StationScreenRouteBadge
+				routeDef={routeInfo}
+				chateau={routeInfo.chateau}
+				fallback_long_name={true}
+				text_size_class="text-xs"
+				is_route_only={true}
+			/>
 		{/if}
 	{/each}
 
@@ -208,26 +186,21 @@
 		<span class="text-gray-400 dark:text-gray-600 mx-1">|</span>
 	{/if}
 
+	{#if has_bus}
+		<div class="font-bold text-sm mr-1">{$_('headingBus')}:</div>
+	{/if}
+
 	<!-- BUS category -->
 	{#each bus_routes as routeId}
 		{@const routeInfo = getRouteInfo(routeId)}
 		{#if routeInfo}
-			{#if shouldShowMtaBullet(routeId, routeInfo)}
-				<MtaBullet route_short_name={routeInfo.short_name} matchTextHeight={false} />
-			{:else if shouldShowRatpBullet(routeInfo)}
-				<RatpBullet route_short_name={routeInfo.short_name} matchTextHeight={false} />
-			{:else}
-				<div
-					class="px-1 py-0.5 md:py-1 text-xs rounded-sm"
-					style={`background-color: ${routeInfo.color}; color: ${routeInfo.text_color};`}
-				>
-					{#if routeInfo.short_name}
-						<span class="font-medium">{routeInfo.short_name}</span>
-					{:else if routeInfo.long_name}
-						{routeInfo.long_name.replace(' Line', '')}
-					{/if}
-				</div>
-			{/if}
+			<StationScreenRouteBadge
+				routeDef={routeInfo}
+				chateau={routeInfo.chateau}
+				fallback_long_name={true}
+				text_size_class="text-xs"
+				is_route_only={true}
+			/>
 		{/if}
 	{/each}
 
@@ -236,26 +209,21 @@
 		<span class="text-gray-400 dark:text-gray-600 mx-1">|</span>
 	{/if}
 
+	{#if has_other}
+		<div class="font-bold text-sm mr-1">{$_('headingOther')}:</div>
+	{/if}
+
 	<!-- OTHER category -->
 	{#each other_routes as routeId}
 		{@const routeInfo = getRouteInfo(routeId)}
 		{#if routeInfo}
-			{#if shouldShowMtaBullet(routeId, routeInfo)}
-				<MtaBullet route_short_name={routeInfo.short_name} matchTextHeight={false} />
-			{:else if shouldShowRatpBullet(routeInfo)}
-				<RatpBullet route_short_name={routeInfo.short_name} matchTextHeight={false} />
-			{:else}
-				<div
-					class="px-1 py-0.5 md:py-1 text-xs rounded-sm"
-					style={`background-color: ${routeInfo.color}; color: ${routeInfo.text_color};`}
-				>
-					{#if routeInfo.short_name}
-						<span class="font-medium">{routeInfo.short_name}</span>
-					{:else if routeInfo.long_name}
-						{routeInfo.long_name.replace(' Line', '')}
-					{/if}
-				</div>
-			{/if}
+			<StationScreenRouteBadge
+				routeDef={routeInfo}
+				chateau={routeInfo.chateau}
+				fallback_long_name={true}
+				text_size_class="text-xs"
+				is_route_only={true}
+			/>
 		{/if}
 	{/each}
 </div>

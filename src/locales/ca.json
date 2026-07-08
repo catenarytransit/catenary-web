@@ -19,6 +19,8 @@
   "credits": "Atribució i crèdits",
   "headingRail": "Ferrocarril",
   "headingLocalRail": "Metro/Tramvia",
+  "headingMetro": "Metro",
+  "headingTram": "Tramvia",
   "headingIntercityRail": "Ferrocarril",
   "headingBus": "Autobús",
   "headingOther": "Altres",

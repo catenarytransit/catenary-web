@@ -19,6 +19,8 @@
   "credits": "Erkännande och Krediter",
   "headingRail": "Tåg",
   "headingLocalRail": "Metro/Spårvagn",
+  "headingMetro": "Metro",
+  "headingTram": "Spårvagn",
   "headingIntercityRail": "Tåg",
   "headingBus": "Buss",
   "headingOther": "Övrigt",

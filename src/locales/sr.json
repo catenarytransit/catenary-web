@@ -19,6 +19,8 @@
   "credits": "Pripisivanje i zasluge",
   "headingRail": "Železnica",
   "headingLocalRail": "Gradska železnica/Tramvaj",
+  "headingMetro": "Gradska železnica",
+  "headingTram": "Tramvaj",
   "headingIntercityRail": "Železnica",
   "headingBus": "Autobus",
   "headingOther": "Ostalo",

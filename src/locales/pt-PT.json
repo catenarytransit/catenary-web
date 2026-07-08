@@ -19,6 +19,8 @@
   "credits": "Atribuição e Créditos",
   "headingRail": "Ferrovia",
   "headingLocalRail": "Metro/Elétrico",
+  "headingMetro": "Metro",
+  "headingTram": "Elétrico",
   "headingIntercityRail": "Ferrovia",
   "headingBus": "Autocarro",
   "headingOther": "Outro",

@@ -20,6 +20,8 @@
   "headingRail": "철도/기타",
   "headingBus": "버스",
   "headingLocalRail": "지하철/트램",
+  "headingMetro": "지하철",
+  "headingTram": "트램",
   "headingIntercityRail": "철도",
   "headingOther": "다른",
   "headingMisc": "기타 레이어",

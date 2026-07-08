@@ -134,6 +134,7 @@
 		<h3 class="text-xl my-1">{$_('vehicles')}</h3>
 		<div class="flex flex-col gap-y-1 md:gap-y-2">
 			{#each map_selection_screen.arrayofoptions.filter((x) => x.data instanceof VehicleMapSelector) as option}
+				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (FIXME) -->
 				<div
 					on:click={() => {
 						data_stack_store.update((data_stack) => {
@@ -184,20 +185,17 @@
 					{#if option.data.trip_id}
 						{#if option.data.route_long_name || option.data.route_short_name}
 							<span class="text-md align-middle">
-								{#if isSubwayRouteId(option.data.route_id) && option.data.chateau_id === MTA_CHATEAU_ID && option.data.route_short_name}
-									<MtaBullet route_short_name={option.data.route_short_name} matchTextHeight={true} />
-								{:else if option.data.chateau_id === IDFM_CHATEAU_ID && isRatpRoute(option.data.route_short_name) && option.data.route_short_name}
-									<RatpBullet route_short_name={option.data.route_short_name} matchTextHeight={true} />
-								{:else if option.data.route_short_name}
-									<StationScreenRouteBadge
-										routeDef={{
-											short_name: option.data.route_short_name,
-											color: option.data.colour,
-											text_color: option.data.text_colour
-										}}
-										chateau={option.data.chateau_id}
-									/>
-								{/if}
+								<StationScreenRouteBadge
+									routeDef={{
+										short_name: option.data.route_short_name,
+										color: option.data.colour,
+										text_color: option.data.text_colour,
+										route_id: option.data.route_id,
+										chateau: option.data.chateau_id,
+									}}
+									chateau={option.data.chateau_id}
+									text_size_class="text-base"
+								/>
 
 								{#if option.data.route_long_name && (!option.data.route_short_name || (option.data.route_long_name.trim().toLowerCase() !== option.data.route_short_name.trim().toLowerCase() && option.data.route_long_name.trim().toLowerCase() !== `${option.data.route_short_name.trim().toLowerCase()} line`))}
 									<span
@@ -264,6 +262,7 @@
 		<h3 class="text-xl my-2">{$_('stations')}</h3>
 		<div class="flex flex-col gap-y-1 md:gap-y-2">
 			{#each map_selection_screen.arrayofoptions.filter((x) => x.data instanceof OsmStationMapSelector) as option}
+				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (FIXME) -->
 				<div
 					class="px-1 py-0.5 md:px-2 md:py-2 bg-gray-100 hover:bg-blue-100 dark:bg-gray-800 hover:dark:bg-hover text-sm md:text-base leading-snug rounded-lg bg-opacity-80"
 					on:click={() => {
@@ -286,7 +285,7 @@
 					tabindex="0"
 				>
 					<p class="font-semibold">{option.data.name}</p>
-					<p class="text-xs text-gray-500 dark:text-gray-400">
+					<!-- <p class="text-xs text-gray-500 dark:text-gray-400">
 						{option.data.mode_type === 'subway'
 							? 'Metro'
 							: option.data.mode_type === 'rail'
@@ -294,7 +293,7 @@
 								: option.data.mode_type === 'tram' || option.data.mode_type === 'light_rail'
 									? 'Tram'
 									: option.data.mode_type}
-					</p>
+					</p> -->
 					{#if show_osm_ids}
 						<p class="font-mono text-xs dark:text-gray-400 text-gray-500">osm id: {option.data.osm_id}</p>
 					{/if}
@@ -327,6 +326,7 @@
 		<h3 class="text-xl my-2">{$_('stops')}</h3>
 		<div class="flex flex-col gap-y-1 md:gap-y-2">
 			{#each map_selection_screen.arrayofoptions.filter((x) => x.data instanceof StopMapSelector) as option}
+				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (FIXME) -->
 				<div
 					class="px-1 py-0.5 md:px-2 md:py-2 bg-gray-100 hover:bg-blue-100 dark:bg-gray-800 hover:dark:bg-hover text-sm md:text-base leading-snug rounded-lg bg-opacity-80"
 					on:click={() => {
@@ -394,6 +394,7 @@
 		<h3 class="text-xl my-2">{$_('routes')}</h3>
 		<div class="flex flex-col gap-y-1 md:gap-y-2">
 			{#each map_selection_screen.arrayofoptions.filter((x) => x.data instanceof RouteMapSelector) as option}
+				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (FIXME) -->
 				<div
 					class="px-1 py-0.5 md:px-2 md:py-2 bg-gray-100 hover:bg-blue-100 dark:bg-gray-800 hover:dark:bg-hover text-sm md:text-base leading-snug rounded-lg bg-opacity-80"
 					on:click={() => {
@@ -418,20 +419,16 @@
 							{/if}
 						</p>
 					{/if}
-					{#if isSubwayRouteId(option.data.route_id) && option.data.chateau_id === MTA_CHATEAU_ID}
-						<MtaBullet route_short_name={option.data.name} matchTextHeight={false} />
-					{:else if option.data.chateau_id === IDFM_CHATEAU_ID && isRatpRoute(option.data.name)}
-						<RatpBullet route_short_name={option.data.name} matchTextHeight={false} />
-					{:else if option.data.name}
-						<StationScreenRouteBadge
-							routeDef={{
-								short_name: option.data.name,
-								color: option.data.colour,
-								text_color: option.data.text_colour
-							}}
-							chateau={option.data.chateau_id}
-						/>
-					{/if}
+					<!-- TODO: Lookup the rest of the route data -->
+					<StationScreenRouteBadge
+						routeDef={{
+							short_name: option.data.name,
+							color: option.data.colour,
+							text_color: option.data.text_colour
+						}}
+						chateau={option.data.chateau_id}
+						is_route_only={true}
+					/>
 				</div>
 			{/each}
 		</div>

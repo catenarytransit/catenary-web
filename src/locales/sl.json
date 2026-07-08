@@ -19,6 +19,8 @@
   "credits": "Pripis in zasluge",
   "headingRail": "Železnica",
   "headingLocalRail": "Metro/Tramvaj",
+  "headingMetro": "Metro",
+  "headingTram": "Tramvaj",
   "headingIntercityRail": "Železnica",
   "headingBus": "Avtobus",
   "headingOther": "Drugo",

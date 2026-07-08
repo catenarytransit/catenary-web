@@ -20,6 +20,8 @@
   "headingRail": "Ferrocarril/Otros",
   "headingBus": "Autobuses",
   "headingLocalRail": "Metro/Tranvía",
+  "headingMetro": "Metro",
+  "headingTram": "Tranvía",
   "headingIntercityRail": "Ferrocarril",
   "headingOther": "Otros",
   "headingMisc": "Misc",

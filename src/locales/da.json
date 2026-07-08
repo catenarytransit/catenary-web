@@ -19,6 +19,8 @@
   "credits": "Ophavsret og kreditter",
   "headingRail": "Jernbane",
   "headingLocalRail": "Metro/Sporvogn",
+  "headingMetro": "Metro",
+  "headingTram": "Sporvogn",
   "headingIntercityRail": "Jernbane",
   "headingBus": "Bus",
   "headingOther": "Andet",

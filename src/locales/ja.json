@@ -19,6 +19,8 @@
   "credits": "帰属とクレジット",
   "headingRail": "鉄道",
   "headingLocalRail": "地下鉄/トラム",
+  "headingMetro": "地下鉄",
+  "headingTram": "トラム",
   "headingIntercityRail": "鉄道",
   "headingBus": "バス",
   "headingOther": "その他",

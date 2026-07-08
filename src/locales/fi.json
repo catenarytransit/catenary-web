@@ -19,6 +19,8 @@
   "credits": "Tekijätiedot ja kiitokset",
   "headingRail": "Junat",
   "headingLocalRail": "Metro/Raitiovaunu",
+  "headingMetro": "Metro",
+  "headingTram": "Raitiovaunu",
   "headingIntercityRail": "Kaukojunat",
   "headingBus": "Bussi",
   "headingOther": "Muu",

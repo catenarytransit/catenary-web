@@ -79,6 +79,7 @@
 	export let stationTimezone: string | null = null;
 
 	import { recordStationVisit } from './search/station_history';
+	import type { Route } from '../utils/models';
 
 	let eurostyle_geojson: any = null;
 	let is_inside_eurostyle: boolean = false;
@@ -198,7 +199,7 @@
 		shortName: string | null | undefined,
 		routeType: number,
 		event?: any,
-		routeDef?: any
+		routeDef?: Route
 	): string {
 		let sn = (shortName || '').toUpperCase().trim();
 		

@@ -19,6 +19,8 @@
   "credits": "Atribucion e crèdits",
   "headingRail": "Ralhs/Autres",
   "headingLocalRail": "Mètro/Tram",
+  "headingMetro": "Mètro",
+  "headingTram": "Tram",
   "headingIntercityRail": "Ralhs",
   "headingBus": "Autobús",
   "headingOther": "Autres",

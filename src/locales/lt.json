@@ -19,6 +19,8 @@
   "credits": "Autorystė ir kreditai",
   "headingRail": "Geležinkelis",
   "headingLocalRail": "Metro/Tramvajus",
+  "headingMetro": "Metro",
+  "headingTram": "Tramvajus",
   "headingIntercityRail": "Geležinkelis",
   "headingBus": "Autobusas",
   "headingOther": "Kita",

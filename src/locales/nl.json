@@ -19,6 +19,8 @@
   "credits": "Auteursrecht en credits",
   "headingRail": "Spoor",
   "headingLocalRail": "Metro/Tram",
+  "headingMetro": "Metro",
+  "headingTram": "Tram",
   "headingIntercityRail": "Spoor",
   "headingBus": "Bus",
   "headingOther": "Overig",

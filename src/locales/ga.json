@@ -19,6 +19,8 @@
   "credits": "Tagairt agus Creidiúintí",
   "headingRail": "Iarnród",
   "headingLocalRail": "Metró/Tram",
+  "headingMetro": "Metró",
+  "headingTram": "Tram",
   "headingIntercityRail": "Iarnród idirchathrach",
   "headingBus": "Bus",
   "headingOther": "Eile",

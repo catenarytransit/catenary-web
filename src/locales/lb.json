@@ -19,6 +19,8 @@
   "credits": "Attributioun a Credits",
   "headingRail": "Zuch",
   "headingLocalRail": "Metro/Tram",
+  "headingMetro": "Metro",
+  "headingTram": "Tram",
   "headingIntercityRail": "Zuch",
   "headingBus": "Bus",
   "headingOther": "Aner",

@@ -19,6 +19,8 @@
   "credits": "Hozzájárulások és köszönetnyilvánítás",
   "headingRail": "Vasút",
   "headingLocalRail": "Metró/Villamos",
+  "headingMetro": "Metró",
+  "headingTram": "Villamos",
   "headingIntercityRail": "Vasút",
   "headingBus": "Busz",
   "headingOther": "Egyéb",

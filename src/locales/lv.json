@@ -19,6 +19,8 @@
   "credits": "Atsauces un autori",
   "headingRail": "Dzelzceļš",
   "headingLocalRail": "Metro/Tramvajs",
+  "headingMetro": "Metro",
+  "headingTram": "Tramvajs",
   "headingIntercityRail": "Dzelzceļš",
   "headingBus": "Autobuss",
   "headingOther": "Cits",

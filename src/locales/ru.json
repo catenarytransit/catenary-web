@@ -19,6 +19,8 @@
   "credits": "Атрибуция и благодарности",
   "headingRail": "Железная дорога",
   "headingLocalRail": "Метро/Трамвай",
+  "headingMetro": "Метро",
+  "headingTram": "Трамвай",
   "headingIntercityRail": "Железная дорога",
   "headingBus": "Автобус",
   "headingOther": "Другое",

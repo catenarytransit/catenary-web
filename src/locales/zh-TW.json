@@ -19,6 +19,8 @@
   "credits": "Attribution and Credits",
   "headingRail": "鐵路",
   "headingLocalRail": "捷運/輕軌",
+  "headingMetro": "捷運",
+  "headingTram": "輕軌",
   "headingIntercityRail": "鐵路",
   "headingBus": "公車",
   "headingOther": "其他",

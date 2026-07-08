@@ -19,6 +19,8 @@
   "credits": "Kreditering og kilder",
   "headingRail": "Tog",
   "headingLocalRail": "T-bane/Bybane",
+  "headingMetro": "T-bane",
+  "headingTram": "Bybane",
   "headingIntercityRail": "Tog",
   "headingBus": "Buss",
   "headingOther": "Annet",

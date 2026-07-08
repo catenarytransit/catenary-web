@@ -20,6 +20,8 @@
   "headingRail": "Schienen/Sonstiges",
   "headingBus": "Busse",
   "headingLocalRail": "Metro/Straßenbahn",
+  "headingMetro": "Metro",
+  "headingTram": "Straßenbahn",
   "headingIntercityRail": "Schienen",
   "headingOther": "Andere",
   "headingMisc": "Verschiedenes",

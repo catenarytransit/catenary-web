@@ -19,6 +19,8 @@
   "credits": "Atrybucja i kredyty",
   "headingRail": "Kolej",
   "headingLocalRail": "Metro/Tramwaj",
+  "headingMetro": "Metro",
+  "headingTram": "Tramwaj",
   "headingIntercityRail": "Kolej",
   "headingBus": "Autobus",
   "headingOther": "Inne",

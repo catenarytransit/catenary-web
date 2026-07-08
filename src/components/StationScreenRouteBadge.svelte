@@ -1,7 +1,7 @@
 <script lang="ts">
 	import SbbLogo from './SbbLogo.svelte';
 
-	export let routeDef: any;
+	export let routeDef: Route;
 	export let chateau: string;
 	export let remove_line: boolean = false;
 	export let fallback_long_name: boolean = false;
@@ -11,10 +11,14 @@
 
 	export let db_train_data: any = null;
 
+	// Set true if this is a route badge which is not associated with a trip, for example on route screen
+	export let is_route_only: boolean = false;
+
 	import { MTA_CHATEAU_ID, isSubwayRouteId } from '../utils/mta_subway_utils';
 	import { IDFM_CHATEAU_ID, isRatpRoute } from '../utils/ratp_utils';
 	import MtaBullet from './mtabullet.svelte';
 	import RatpBullet from './ratpbullet.svelte';
+	import type { Route } from '../utils/models';
 
 	$: is_sbahn =
 		['dbregioag', 'deutschland'].includes(chateau) &&
@@ -32,7 +36,14 @@
 
 	$: isSbb = chateau === 'schweiz' && (text.startsWith('IR') || text.startsWith('IC') || text === 'EC');
 
-	$: db_route_short_name = db_train_data ? db_train_data[0].category + (fallback_long_name ? "-Linie " + routeDef.short_name : "") : routeDef.short_name;
+	$: is_db_fernverkehr = routeDef.chateau === 'deutschland' && routeDef.agency_id && ['12681', '13557', '10918'].includes(routeDef.agency_id.toString());
+	$: db_route_short_name = db_train_data 
+		? db_train_data[0].category + (fallback_long_name ? "-Linie " + routeDef.short_name : "")
+		: (is_route_only && is_db_fernverkehr)
+			? routeDef.short_name.match(/^\d/) && (routeDef.route_id.split("_").length === 2)
+				? (routeDef.route_id.split("_")[1] === "101" ? "ICE" : "IC") + "-Linie " + routeDef.short_name
+				: null
+			: null;
 
 	$: isSubway = routeDef.chateau === MTA_CHATEAU_ID && isSubwayRouteId(routeDef.route_id);
 	$: isRatp = routeDef.chateau === IDFM_CHATEAU_ID && isRatpRoute(routeDef.short_name);
@@ -50,7 +61,7 @@
 		>
 			<SbbLogo {text} {chateau} />
 		</span>
-	{:else if db_train_data}
+	{:else if db_route_short_name}
 		<span
 			class="{rounded_class} font-bold px-1 py-0.5 {text_size_class} bg-gray-200 dark:bg-gray-700 {extra_classes}"
 		>

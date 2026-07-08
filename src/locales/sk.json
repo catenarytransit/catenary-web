@@ -19,6 +19,8 @@
   "credits": "Autorstvo a zásluhy",
   "headingRail": "Železnica",
   "headingLocalRail": "Metro/Električka",
+  "headingMetro": "Metro",
+  "headingTram": "Električka",
   "headingIntercityRail": "Železnica",
   "headingBus": "Autobus",
   "headingOther": "Iné",

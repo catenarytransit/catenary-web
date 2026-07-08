@@ -19,6 +19,8 @@
   "credits": "Attribution and Credits",
   "headingRail": "铁路",
   "headingLocalRail": "地铁/轻轨",
+  "headingMetro": "地铁",
+  "headingTram": "轻轨",
   "headingIntercityRail": "铁路",
   "headingBus": "公車",
   "headingOther": "其他",
