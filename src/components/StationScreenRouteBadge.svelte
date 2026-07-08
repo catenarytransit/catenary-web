@@ -11,7 +11,7 @@
 		['dbregioag', 'deutschland'].includes(chateau) &&
 		(routeDef?.short_name || '').match(/^S\d+/) !== null;
 
-	$: rounded_class = is_sbahn ? 'rounded-full' : 'rounded-xs';
+	$: rounded_class = is_sbahn ? 'rounded-full' : 'rounded-sm';
 
 	$: text = routeDef?.short_name
 		? remove_line
@@ -27,14 +27,14 @@
 {#if text}
 	{#if isSbb}
 		<span
-			class="{rounded_class} font-bold px-1 py-0.5 text-xs sbb-badge {extra_classes}"
+			class="{rounded_class} font-bold px-1 py-0.5 text-sm sbb-badge {extra_classes}"
 			style={`background: ${routeDef?.color || '#eb0000'}; color: ${routeDef?.text_color || '#ffffff'};`}
 		>
 			<SbbLogo {text} {chateau} />
 		</span>
 	{:else}
 		<span
-			class="{rounded_class} font-bold px-1 py-0.5 text-xs {extra_classes}"
+			class="{rounded_class} font-bold px-1 py-0.5 text-sm {extra_classes}"
 			style={`background: ${routeDef?.color}; color: ${routeDef?.text_color};`}
 		>
 			{text}

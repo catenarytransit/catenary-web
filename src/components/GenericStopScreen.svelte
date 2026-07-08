@@ -1092,7 +1092,8 @@
 							</p>
 
 							<!-- Correct Logic Implementation -->
-							{#if active_tab === 'rail' || active_tab === 'rer' || active_tab === 'transilien'}
+							<!-- {#if active_tab === 'rail' || active_tab === 'rer' || active_tab === 'transilien'} -->
+							{#if true}
 								<table class="w-full border-collapse">
 									<tbody>
 										{#each filtered_dates_to_events[date_code] as event}

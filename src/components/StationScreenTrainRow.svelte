@@ -10,6 +10,11 @@
 	import StationScreenRouteBadge from './StationScreenRouteBadge.svelte';
 	import db_train_lookup from '../../static/fernverkehr_2026_train_lookup.json';
 
+	import { MTA_CHATEAU_ID, isSubwayRouteId } from '../utils/mta_subway_utils';
+	import { IDFM_CHATEAU_ID, isRatpRoute } from '../utils/ratp_utils';
+	import MtaBullet from './mtabullet.svelte';
+	import RatpBullet from './ratpbullet.svelte';
+
 	export let event: any;
 	export let data_from_server: any;
 	export let current_time: number;
@@ -38,6 +43,9 @@
 	$: trip_short_name_no_zeros = event.trip_short_name ? event.trip_short_name.replace(/^0+/, '') : null;
 	$: db_train_data = is_db_fernverkehr && trip_short_name_no_zeros ? (db_train_lookup as Record<string, any[]>)[trip_short_name_no_zeros] : null;
 	$: db_display_name = db_train_data ? db_train_data[0].display_name : event.trip_short_name;
+	$: db_route_short_name = db_train_data ? db_train_data[0].category + "-Linie " + routeDef.short_name : routeDef.short_name;
+	$: isSubway = event.chateau === MTA_CHATEAU_ID && isSubwayRouteId(event.route_id);
+	$: isRatp = event.chateau === IDFM_CHATEAU_ID && isRatpRoute(shortName);
 </script>
 
 <tr
@@ -62,7 +70,7 @@
 	}}
 >
 	<!-- Leftmost: Route Name -->
-	{#if swiss_style}
+	<!-- {#if swiss_style}
 		<td class="px-1 py-0.5 w-[40px] align-middle text-left">
 			{#if is_db_fernverkehr}
 				<span class="font-bold px-1 rounded bg-gray-200 dark:bg-gray-700 text-sm whitespace-nowrap">{db_display_name}</span>
@@ -75,7 +83,7 @@
 				/>
 			{/if}
 		</td>
-	{/if}
+	{/if} -->
 
 	<!-- Left: Time (Vertical Stack) -->
 	<td class="px-2 py-2 w-[80px] align-middle">
@@ -130,7 +138,7 @@
 	</td>
 
 	<!-- Middle: Route Name for Eurostyle -->
-	{#if eurostyle && !swiss_style}
+	<!-- {#if eurostyle && !swiss_style}
 		<td class="px-1 py-0.5 w-[40px] align-middle text-left">
 			{#if is_db_fernverkehr}
 				<span class="font-bold px-1 rounded bg-gray-200 dark:bg-gray-700 text-sm whitespace-nowrap">{db_display_name}</span>
@@ -143,34 +151,14 @@
 				/>
 			{/if}
 		</td>
-	{/if}
+	{/if} -->
 
 	<!-- Middle: Info -->
 	<td class="px-2 py-2 align-top">
 		<div class="flex flex-col justify-start">
-			<div class="flex flex-row items-center gap-2 mb-1">
-				<div class="text-base font-medium font-normal leading-tight">
-					{event.headsign}
-					{#if event.trip_short_name && !is_db_fernverkehr}
-						<span class="ml-1">{event.trip_short_name}</span>
-					{/if}
-					{#if eventAlerts.length > 0}
-						<span class="inline-block align-middle ml-1">
-							<img src="/icons/service_alert.svg" alt="" class="w-3.5 h-3.5" />
-						</span>
-					{/if}
-				</div>
-			</div>
-
 			<div
-				class="flex flex-row text-sm text-gray-600 dark:text-gray-400 gap-2 items-center flex-wrap"
+				class="flex flex-row text-sm text-gray-600 dark:text-gray-400 gap-2 mb-1 items-center flex-wrap"
 			>
-				{#if is_db_fernverkehr && !eurostyle && !swiss_style}
-					<span class="font-bold px-1 rounded bg-gray-200 dark:bg-gray-700 text-sm whitespace-nowrap">{db_display_name}</span>
-				{:else if show_route_name && routeDef && !eurostyle && !swiss_style}
-					<StationScreenRouteBadge {routeDef} chateau={event.chateau} fallback_long_name={true} />
-				{/if}
-
 				{#if agencyName && show_agency_name}
 					{#if agencyId === 'GWR' || agencyName?.trim().toLowerCase() === 'gwr'}
 						<img
@@ -185,14 +173,19 @@
 						/>
 						<span class="ml-1">Great Western Railway</span>
 					{:else if agencyName?.trim().toLowerCase() === 'london overground'}
-						<img
-							src="/agencyicons/uk-london-overground.svg"
-							alt={agencyName}
-							class="h-4 inline-block"
-						/>
+						<!-- Nothing, since we'll put it on the route badge -->
 					{:else if agencyId === 'CC' || agencyName?.trim().toLowerCase() === 'c2c'}
 						<img src="/agencyicons/c2c_logo.svg" alt={agencyName} class="h-4 inline-block" />
 						<span class="ml-1">c2c</span>
+					{:else if agencyId === 'SW'}
+						<img src="/agencyicons/SouthWesternRailway.svg" alt="South Western Railway" class="h-4 inline-block" />
+						<span class="ml-1">South Western Railway</span>
+					{:else if agencyId === 'SN'}
+						<img src="/agencyicons/SouthernIcon.svg" alt="Southern" class="h-4 inline-block" />
+						<span class="ml-1">Southern</span>
+					{:else if agencyId === 'TL'}
+						<img src="/agencyicons/ThamesLink.svg" alt="Thameslink" class="h-4 inline-block" />
+						<span class="ml-1">Thameslink</span>
 					{:else if agencyName?.trim().toLowerCase() === 'elizabeth line'}
 						<img
 							src="/agencyicons/Elizabeth_line_roundel.png"
@@ -200,10 +193,55 @@
 							class="h-4 inline-block"
 						/>
 					{:else}
-						<span class="text-[10px] leading-none">{agencyName}</span>
+						<span class="leading-none">{agencyName}</span>
 					{/if}
 				{/if}
 			</div>
+
+			<div
+				class="flex flex-row items-center gap-2 mb-1"
+			>
+				{#if agencyName?.trim().toLowerCase() === 'london overground'}
+					<img
+						src="/agencyicons/uk-london-overground.svg"
+						alt={agencyName}
+						class="h-4 inline-block"
+					/>
+				{/if}
+				{#if show_route_name}
+					{#if isSubway && routeDef.short_name}
+						<MtaBullet route_short_name={routeDef.short_name} matchTextHeight={true} />
+					{:else if isRatp && routeDef.short_name}
+						<RatpBullet route_short_name={routeDef.short_name} matchTextHeight={true} />
+					{:else if is_db_fernverkehr}
+						<span
+							class="rounded-sm font-bold px-1 py-0.5 text-sm bg-gray-200 dark:bg-gray-700"
+						>
+							{db_route_short_name}
+						</span>
+					{:else if routeDef}
+						<StationScreenRouteBadge {routeDef} chateau={event.chateau} fallback_long_name={true} />
+					{/if}	
+				{/if}
+				{#if event.trip_short_name}
+					<span
+						class="text-sm"
+					>
+						{is_db_fernverkehr ? db_display_name : event.trip_short_name}
+					</span>
+				{/if}			
+			</div>
+
+			<div class="flex flex-row items-center gap-2 mb-1">
+				<div class="text-base font-medium font-bold leading-tight">
+					{event.headsign}
+					{#if eventAlerts.length > 0}
+						<span class="inline-block align-middle ml-1">
+							<img src="/icons/service_alert.svg" alt="" class="w-3.5 h-3.5" />
+						</span>
+					{/if}
+				</div>
+			</div>			
 		</div>
 	</td>
 
