@@ -1216,6 +1216,7 @@
 							<div class="flex flex-col gap-y-3">
 								<div class="flex flex-row w-full justify-between items-center mb-1">
 									<span class="font-bold text-sm">{$_('settings', { default: 'Settings' })}</span>
+									<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions, a11y_no_noninteractive_element_interactions, https://svelte.dev/e/a11y_consider_explicit_label (FIXME) -->
 									<button
 										on:click={() => (show_floating_controls = false)}
 										class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -1245,6 +1246,7 @@
 										class="accent-seashore w-4 h-4 cursor-pointer"
 										bind:checked={show_original_timetable}
 									/>
+									<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions, a11y_no_noninteractive_element_interactions, https://svelte.dev/e/a11y_consider_explicit_label (FIXME) -->
 									<p
 										class="text-sm cursor-pointer select-none"
 										on:click={() => (show_original_timetable = !show_original_timetable)}
@@ -1265,6 +1267,7 @@
 											);
 										}}
 									/>
+									<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions, a11y_no_noninteractive_element_interactions, https://svelte.dev/e/a11y_consider_explicit_label (FIXME) -->
 									<p
 										class="text-sm cursor-pointer select-none"
 										on:click={() => {
@@ -1284,6 +1287,7 @@
 										class="accent-seashore w-4 h-4 cursor-pointer"
 										bind:checked={show_connections}
 									/>
+									<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions, a11y_no_noninteractive_element_interactions, https://svelte.dev/e/a11y_consider_explicit_label (FIXME) -->
 									<p
 										class="text-sm cursor-pointer select-none"
 										on:click={() => (show_connections = !show_connections)}
@@ -1300,7 +1304,7 @@
 			<p class="p-4 text-red-500">Error loading component: {error.message}</p>
 		{/await}
 
-		<span class={`block ${window_height_known < 600 ? 'leading-none text-xs' : 'mt-1 text-sm'}`} />
+		<span class={`block ${window_height_known < 600 ? 'leading-none text-xs' : 'mt-1 text-sm'}`}></span>
 
 		<p class={`${window_height_known < 600 ? ' text-xs' : 'text-sm'} leading-none`}>
 			{#if show_gtfs_ids}
@@ -1309,6 +1313,7 @@
 			{/if}
 			{#if trip_data.block_id != null}
 				<span>{' | '}</span>
+				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions, a11y_no_noninteractive_element_interactions, https://svelte.dev/e/a11y_consider_explicit_label (FIXME) -->
 				<span
 					on:click={() => {
 						data_stack_store.update((x) => {
@@ -1512,7 +1517,7 @@
 					expanded={false}
 				/>
 
-				<table class="w-full border-collapse">
+				<table class="w-full border-collapse"><tbody>
 					{#each stoptimes_cleaned_dataset as stoptime, i}
 						{@const connectionKey = stop_connections[stoptime.stop_id] ? stoptime.stop_id : null}
 						{@const isDoubleTime = shouldShowDoubleTime(stoptime)}
@@ -1744,6 +1749,7 @@
 									<div class="flex flex-row justify-between items-start leading-none gap-2">
 										<div class="text-charcoal dark:text-gray-200">
 											{#if stoptime.name}
+												<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions, a11y_no_noninteractive_element_interactions, https://svelte.dev/e/a11y_consider_explicit_label (FIXME) -->
 												<span
 													on:click={() => {
 														data_stack_store.update((x) => {
@@ -1819,7 +1825,7 @@
 							</td>
 						</tr>
 					{/each}
-				</table>
+				</tbody></table>
 			{/if}
 		</div>
 		{#if show_scroll_button}
