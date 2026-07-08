@@ -61,24 +61,8 @@
 		});
 	}}
 >
-	<!-- Leftmost: Route Name -->
-	{#if swiss_style}
-		<td class="px-1 py-0.5 w-[40px] align-middle text-left">
-			{#if is_db_fernverkehr}
-				<span class="font-bold px-1 rounded bg-gray-200 dark:bg-gray-700 text-sm whitespace-nowrap">{db_display_name}</span>
-			{:else if show_route_name && routeDef?.short_name}
-				<StationScreenRouteBadge
-					{routeDef}
-					chateau={event.chateau}
-					remove_line={true}
-					extra_classes="inline-block min-w-[24px]"
-				/>
-			{/if}
-		</td>
-	{/if}
-
 	<!-- Left: Time (Vertical Stack) -->
-	<td class="px-1 py-0.5 w-[70px] align-middle">
+	<td class="px-1 py-0.5 w-[50px] align-middle">
 		<div class="flex flex-col items-start justify-center text-xs">
 			{#if event.trip_cancelled}
 				<span class="text-red-500 font-semibold text-xs">{$_('cancelled')}</span>
@@ -145,21 +129,23 @@
 		</div>
 	</td>
 
-	<!-- Middle: Route Name for Eurostyle -->
-	{#if eurostyle && !swiss_style}
-		<td class="px-1 py-0.5 w-[40px] align-middle text-left">
-			{#if is_db_fernverkehr}
-				<span class="font-bold px-1 rounded bg-gray-200 dark:bg-gray-700 text-sm whitespace-nowrap">{db_display_name}</span>
-			{:else if show_route_name && routeDef?.short_name}
-				<StationScreenRouteBadge
-					{routeDef}
-					chateau={event.chateau}
-					remove_line={true}
-					extra_classes="inline-block min-w-[24px]"
-				/>
-			{/if}
-		</td>
-	{/if}
+	<!-- Middle: Route Name + Trip Short Name -->
+	<td class="px-1 py-0.5 w-[100px] align-middle text-left">
+		{#if show_route_name && routeDef?.short_name}
+			<StationScreenRouteBadge
+				{routeDef}
+				chateau={event.chateau}
+				remove_line={true}
+				{db_train_data}
+				text_size_class="text-xs"
+				extra_classes="inline-block min-w-[24px]"
+			/>
+		{/if}
+		{#if event.trip_short_name}
+			<span class="font-bold ml-1 text-xs">{is_db_fernverkehr ? db_display_name : event.trip_short_name}</span>
+		{/if}
+	</td>
+
 
 	<!-- Middle: Info -->
 	<td class="px-1 py-0.5 align-middle">
@@ -167,19 +153,11 @@
 			<div class="flex flex-row items-center gap-2 mb-0.5">
 				<div class="text-sm font-normal leading-none">
 					{event.headsign}
-					{#if event.trip_short_name && !is_db_fernverkehr}
-						<span class="font-bold ml-1 text-xs">{event.trip_short_name}</span>
-					{/if}
 				</div>
 			</div>
 			<div
 				class="flex flex-row text-xs text-gray-600 dark:text-gray-400 gap-2 items-center flex-wrap"
 			>
-				{#if is_db_fernverkehr && !((eurostyle || swiss_style) && routeDef?.short_name)}
-					<span class="font-bold px-1 rounded bg-gray-200 dark:bg-gray-700 text-xs whitespace-nowrap">{db_display_name}</span>
-				{:else if show_route_name && !((eurostyle || swiss_style) && routeDef?.short_name)}
-					<StationScreenRouteBadge {routeDef} chateau={event.chateau} fallback_long_name={true} />
-				{/if}
 				{#if agencyName && show_agency_name}
 					{#if agencyId === 'GWR' || agencyName?.trim().toLowerCase() === 'gwr'}
 						<img
@@ -202,6 +180,15 @@
 					{:else if agencyId === 'CC' || agencyName?.trim().toLowerCase() === 'c2c'}
 						<img src="/agencyicons/c2c_logo.svg" alt={agencyName} class="h-4 inline-block" />
 						<span class="ml-1">c2c</span>
+					{:else if agencyId === 'SW'}
+						<img src="/agencyicons/SouthWesternRailway.svg" alt="South Western Railway" class="h-4 inline-block" />
+						<span class="ml-1">South Western Railway</span>
+					{:else if agencyId === 'SN'}
+						<img src="/agencyicons/SouthernIcon.svg" alt="Southern" class="h-4 inline-block" />
+						<span class="ml-1">Southern</span>
+					{:else if agencyId === 'TL'}
+						<img src="/agencyicons/ThamesLink.svg" alt="Thameslink" class="h-4 inline-block" />
+						<span class="ml-1">Thameslink</span>
 					{:else if agencyName?.trim().toLowerCase() === 'elizabeth line'}
 						<img
 							src="/agencyicons/Elizabeth_line_roundel.png"

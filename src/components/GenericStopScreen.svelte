@@ -1091,126 +1091,24 @@
 								)}
 							</p>
 
-							<!-- Correct Logic Implementation -->
-							<!-- {#if active_tab === 'rail' || active_tab === 'rer' || active_tab === 'transilien'} -->
-							{#if true}
-								<table class="w-full border-collapse">
-									<tbody>
-										{#each filtered_dates_to_events[date_code] as event}
-											{@const eventAlerts = alertsByEventKey[composeEventKey(event)] ?? []}
-											<StationScreenTrainRow
-												eurostyle={is_inside_eurostyle}
-												swiss_style={is_inside_switzerland}
-												{event}
-												data_from_server={data_meta}
-												{current_time}
-												{show_seconds}
-												use_symbol_sign={true}
-												timezone={displayTimezone}
-												{eventAlerts}
-											/>
-										{/each}
-									</tbody>
-								</table>
-							{:else}
-								<!-- Non-Rail (Div) List -->
-								{#each filtered_dates_to_events[date_code] as event}
-									{@const shortName =
-										data_meta.routes?.[event.chateau]?.[event.route_id]?.short_name}
-									{@const longName = data_meta.routes?.[event.chateau]?.[event.route_id]?.long_name}
-									{@const routeColor = data_meta.routes?.[event.chateau]?.[event.route_id]?.color}
-									{@const textColor =
-										data_meta.routes?.[event.chateau]?.[event.route_id]?.text_color}
-									{@const isSubway =
-										event.chateau === MTA_CHATEAU_ID && isSubwayRouteId(event.route_id)}
-									{@const isRatp = event.chateau === IDFM_CHATEAU_ID && isRatpRoute(shortName)}
-									{@const eventAlerts = alertsByEventKey[composeEventKey(event)] ?? []}
-									<div
-										class="mx-1 py-1 border-b-1 border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
-										on:click={() => {
-											data_stack_store.update((x) => {
-												x.push(
-													new StackInterface(
-														new SingleTrip(
-															event.chateau,
-															event.trip_id,
-															event.route_id,
-															null,
-															event.service_date.replace(/-/g, ''),
-															null,
-															null
-														)
-													)
-												);
-												return x;
-											});
-										}}
-									>
-										<div
-											class={`${(event.realtime_departure || event.scheduled_departure) < current_time / 1000 && event.scheduled_departure < current_time / 1000 ? 'opacity-80' : ''} ${event.trip_cancelled ? 'opacity-60' : ''}`}
-										>
-											<p>
-												{#if isSubway && shortName}
-													<MtaBullet route_short_name={shortName} matchTextHeight={true} />
-												{:else if isRatp && shortName}
-													<RatpBullet route_short_name={shortName} matchTextHeight={true} />
-												{:else if shortName}
-													<span
-														class="rounded-xs font-bold px-0.5 mx-1 py-0.5"
-														style={`background: ${routeColor}; color: ${textColor};`}
-													>
-														{shortName}
-													</span>
-												{:else if longName}
-													<span
-														class="rounded-xs font-semibold px-0.5 mx-1 py-0.5"
-														style={`background: ${routeColor}; color: ${textColor};`}
-													>
-														{longName}
-													</span>
-												{/if}
-												{#if event.trip_short_name}
-													<span class="font-bold">{event.trip_short_name}</span>
-												{/if}
-												{event.headsign}
-												{#if eventAlerts.length > 0}
-													<span class="inline-block align-middle ml-1">
-														<img src="/icons/service_alert.svg" alt="" class="w-3.5 h-3.5" />
-													</span>
-												{/if}
-											</p>
-
-											{#if event.last_stop}
-												<p>
-													<span class="ml-1 text-xs font-bold align-middle">
-														{$_('last_stop')}</span
-													>
-												</p>
-											{/if}
-										</div>
-
-										<StopScreenRow
+							<table class="w-full border-collapse">
+								<tbody>
+									{#each filtered_dates_to_events[date_code] as event}
+										{@const eventAlerts = alertsByEventKey[composeEventKey(event)] ?? []}
+										<StationScreenTrainRow
+											eurostyle={is_inside_eurostyle}
+											swiss_style={is_inside_switzerland}
 											{event}
-											timezone={displayTimezone}
+											data_from_server={data_meta}
 											{current_time}
 											{show_seconds}
 											use_symbol_sign={true}
-											show_arrivals={event.last_stop}
+											timezone={displayTimezone}
+											{eventAlerts}
 										/>
-
-										{#if show_gtfs_ids}
-											<p>trip id: {event.trip_id}</p>
-										{/if}
-
-										{#if event.platform_string_realtime}
-											<p>{$_('platform')} {event.platform_string_realtime}</p>
-										{/if}
-										{#if event.vehicle_number}
-											<p class="text-sm opacity-80">{$_('vehicle')}: {event.vehicle_number}</p>
-										{/if}
-									</div>
-								{/each}
-							{/if}
+									{/each}
+								</tbody>
+							</table>
 						{/each}
 
 						<!-- Loader / pager hint -->

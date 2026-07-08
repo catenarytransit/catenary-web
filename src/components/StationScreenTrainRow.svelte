@@ -10,11 +10,6 @@
 	import StationScreenRouteBadge from './StationScreenRouteBadge.svelte';
 	import db_train_lookup from '../../static/fernverkehr_2026_train_lookup.json';
 
-	import { MTA_CHATEAU_ID, isSubwayRouteId } from '../utils/mta_subway_utils';
-	import { IDFM_CHATEAU_ID, isRatpRoute } from '../utils/ratp_utils';
-	import MtaBullet from './mtabullet.svelte';
-	import RatpBullet from './ratpbullet.svelte';
-
 	export let event: any;
 	export let data_from_server: any;
 	export let current_time: number;
@@ -43,9 +38,6 @@
 	$: trip_short_name_no_zeros = event.trip_short_name ? event.trip_short_name.replace(/^0+/, '') : null;
 	$: db_train_data = is_db_fernverkehr && trip_short_name_no_zeros ? (db_train_lookup as Record<string, any[]>)[trip_short_name_no_zeros] : null;
 	$: db_display_name = db_train_data ? db_train_data[0].display_name : event.trip_short_name;
-	$: db_route_short_name = db_train_data ? db_train_data[0].category + "-Linie " + routeDef.short_name : routeDef.short_name;
-	$: isSubway = event.chateau === MTA_CHATEAU_ID && isSubwayRouteId(event.route_id);
-	$: isRatp = event.chateau === IDFM_CHATEAU_ID && isRatpRoute(shortName);
 </script>
 
 <tr
@@ -209,18 +201,13 @@
 					/>
 				{/if}
 				{#if show_route_name}
-					{#if isSubway && routeDef.short_name}
-						<MtaBullet route_short_name={routeDef.short_name} matchTextHeight={true} />
-					{:else if isRatp && routeDef.short_name}
-						<RatpBullet route_short_name={routeDef.short_name} matchTextHeight={true} />
-					{:else if is_db_fernverkehr}
-						<span
-							class="rounded-sm font-bold px-1 py-0.5 text-sm bg-gray-200 dark:bg-gray-700"
-						>
-							{db_route_short_name}
-						</span>
-					{:else if routeDef}
-						<StationScreenRouteBadge {routeDef} chateau={event.chateau} fallback_long_name={true} />
+					{#if routeDef}
+						<StationScreenRouteBadge 
+							{routeDef}
+							chateau={event.chateau}
+							fallback_long_name={true}
+							{db_train_data}
+						/>
 					{/if}	
 				{/if}
 				{#if event.trip_short_name}
