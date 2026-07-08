@@ -93,7 +93,7 @@
         "background-color": {
           "stops": [
             [12, "rgba(251, 251, 251, 1)"],
-            [15, "rgba(248, 247, 247, 1)"]
+            [15, "rgba(248, 248, 247, 1)"]
           ]
         }
       }
@@ -1155,6 +1155,45 @@
       }
     },
     {
+      "id": "level-street-area-lvl",
+      "type": "fill",
+      "metadata": {"general.floor": "level", "geops.filter": "level"},
+      "source": "openmaptiles",
+      "source-layer": "transportation",
+      "minzoom": 16,
+      "maxzoom": 24,
+      "filter": [
+        "all",
+        ["==", ["case", ["has", "level"], ["get", "level"], 0], 0],
+        ["match", ["get", "class"], ["path", "pier"], true, false],
+        ["==", ["geometry-type"], "Polygon"],
+        [
+          "match",
+          ["get", "subclass"],
+          ["escalator", "ramp", "steps"],
+          false,
+          true
+        ]
+      ],
+      "layout": {"visibility": "visible"},
+      "paint": {"fill-antialias": false, "fill-color": "rgba(247, 242, 237, 1)"}
+    },
+    {
+      "id": "pedestrian_area_pattern-line",
+      "type": "line",
+      "source": "openmaptiles",
+      "source-layer": "transportation",
+      "filter": [
+        "match",
+        ["geometry-type"],
+        ["Polygon", "MultiPolygon"],
+        ["match", ["get", "subclass"], "pedestrian", true, false],
+        false
+      ],
+      "layout": {"visibility": "visible"},
+      "paint": {"line-color": "rgba(168, 168, 168, 1)", "line-offset": -0.5}
+    },
+    {
       "id": "tunnel_major_rail_hatching",
       "type": "line",
       "source": "openmaptiles",
@@ -1908,7 +1947,8 @@
                 "tertiary",
                 "minor",
                 "service",
-                "track"
+                "track",
+                "path"
               ],
               true,
               false
@@ -2080,40 +2120,6 @@
         "icon-image": "arrow",
         "icon-rotate": 180,
         "symbol-placement": "line"
-      }
-    },
-    {
-      "id": "pedestrian_area_pattern-line",
-      "type": "line",
-      "source": "openmaptiles",
-      "source-layer": "transportation",
-      "filter": [
-        "match",
-        ["geometry-type"],
-        ["Polygon", "MultiPolygon"],
-        ["match", ["get", "subclass"], "pedestrian", true, false],
-        false
-      ],
-      "layout": {"visibility": "none"},
-      "paint": {"line-color": "rgba(168, 168, 168, 1)", "line-offset": -0.5}
-    },
-    {
-      "id": "pedestrian_area_pattern",
-      "type": "fill",
-      "source": "openmaptiles",
-      "source-layer": "transportation",
-      "filter": [
-        "match",
-        ["geometry-type"],
-        ["Polygon", "MultiPolygon"],
-        ["match", ["get", "subclass"], "pedestrian", true, false],
-        false
-      ],
-      "layout": {"visibility": "visible"},
-      "paint": {
-        "fill-color": "#fefefe",
-        "fill-antialias": false,
-        "fill-opacity": 1
       }
     },
     {
@@ -2699,19 +2705,23 @@
       "source-layer": "building",
       "minzoom": 14,
       "maxzoom": 24,
+      "filter": [
+        "match",
+        ["get", "building_type"],
+        ["", "roof", "train_station", "station"],
+        false,
+        true
+      ],
       "layout": {"visibility": "visible"},
       "paint": {
-        "fill-color": "#e8e9ed",
-        "fill-outline-color": [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          13.5,
-          "hsla(35,6%,95%,0.32)",
-          14,
-          "hsl(35,6%,79%)"
-        ],
-        "fill-opacity": {"stops": [[13, 0.2], [15.5, 0.4], [16, 0.8]]}
+        "fill-color": {
+          "stops": [
+            [15, "rgba(206, 211, 217, 0.5)"],
+            [16, "rgba(206, 211, 217, 1)"]
+          ],
+          "type": "exponential"
+        },
+        "fill-opacity": {"stops": [[14, 0.7], [14.5, 1]]}
       }
     },
     {
