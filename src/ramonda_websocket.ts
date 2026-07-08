@@ -1,10 +1,11 @@
 import { writable } from 'svelte/store';
+import type { GtfsRtRefreshData, TripIntroductionInformation } from './utils/models';
 
 export const ramonda_status = writable<'connecting' | 'connected' | 'disconnected' | 'error'>(
 	'disconnected'
 );
-export const ramonda_trip_data = writable<any>(null);
-export const ramonda_update_data = writable<any>(null);
+export const ramonda_trip_data = writable<TripIntroductionInformation>(null);
+export const ramonda_update_data = writable<GtfsRtRefreshData>(null);
 export const ramonda_error = writable<string | null>(null);
 
 let socket: WebSocket | null = null;

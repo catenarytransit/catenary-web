@@ -42,6 +42,7 @@
 		fixStationName
 	} from './agencyspecific';
 	import { cleanStationName, cleanPlatformName } from '../utils/national_rail_utils';
+
 	let is_loading_trip_data: boolean = true;
 	let trip_data: Record<string, any> | null = null;
 	let init_loaded = 0;
@@ -60,6 +61,10 @@
 	let coach_sequence_screen_shown: boolean = false;
 
 	export let window_height_known: number = 500;
+	export let usunits: boolean;
+	export let trip_selected: SingleTrip;
+	export let darkMode: boolean = determineDarkModeToBool();
+
 	onMount(() => {
 		window_height_known = window.innerHeight;
 
@@ -67,8 +72,6 @@
 			window_height_known = window.innerHeight;
 		});
 	});
-
-	export let usunits: boolean;
 
 	import {
 		data_stack_store,
@@ -100,6 +103,7 @@
 	import VehicleInfo from './vehicle_info.svelte';
 	import ConsolidatedRouteList from './ConsolidatedRouteList.svelte';
 	import CoachSequencePage from './CoachSequencePage.svelte';
+	import type { GtfsRtRefreshData, TripIntroductionInformation } from '../utils/models';
 
 	function fix_vehicle_number(chateau_id: string, vehicle_id: string) {
 		if (chateau_id == 'translink-queensland-au') {
@@ -292,7 +296,7 @@
 		}
 	}
 
-	function handle_trip_update(data: any) {
+	function handle_trip_update(data: GtfsRtRefreshData) {
 		try {
 			if (data) {
 				let next_stoptimes_cleaned: any[] = stoptimes_cleaned_dataset;
@@ -495,10 +499,6 @@
 		disconnectRamondaWebSocket();
 	});
 
-	export let trip_selected: SingleTrip;
-
-	export let darkMode: boolean = determineDarkModeToBool();
-
 	function label_stops_on_map() {
 		let map = get(map_pointer_store);
 
@@ -601,7 +601,7 @@
 		return false;
 	}
 
-	function handle_trip_initial(data: any) {
+	function handle_trip_initial(data: TripIntroductionInformation) {
 		let map = get(map_pointer_store);
 		let success = true;
 
