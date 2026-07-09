@@ -973,7 +973,7 @@
 
 						<div
 							aria-label={'Go to stop' + stopRefToUse.name}
-							class="relative px-3 underline decoration-sky-500/80 hover:decoration-sky-500 cursor-pointer"
+							class="relative px-3 decoration-sky-500/80 hover:decoration-sky-500 cursor-pointer"
 							on:click={() => {
 								data_stack_store.update((stack) => {
 									stack.push(

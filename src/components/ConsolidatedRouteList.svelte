@@ -1,11 +1,14 @@
 <script lang="ts">
+	import type { RouteMinimal } from '../utils/models';
 	import { MTA_CHATEAU_ID, isSubwayRouteId } from '../utils/mta_subway_utils';
 	import { IDFM_CHATEAU_ID, isRatpRoute } from '../utils/ratp_utils';
 	import MtaBullet from './mtabullet.svelte';
 	import RatpBullet from './ratpbullet.svelte';
+	import StationScreenRouteBadge from './StationScreenRouteBadge.svelte';
 
-	export let connections: { chateau_id: string; route_id: string; route: any }[] = [];
+	export let connections: { chateau_id: string; route_id: string; route: RouteMinimal }[] = [];
 	export let darkMode: boolean = false;
+	export let text_size_class: string = "text-[10px]";
 
 	$: national_rail_connections = connections.filter((c) => c.chateau_id === 'nationalrailuk');
 
@@ -73,21 +76,12 @@
 
 {#each connections as conn}
 	{#if !grouped_route_ids.has(conn.route_id) || conn.chateau_id !== 'nationalrailuk'}
-		{#if isSubwayRouteId(conn.route_id) && conn.chateau_id === MTA_CHATEAU_ID}
-			<MtaBullet route_short_name={conn.route.short_name} matchTextHeight={false} />
-		{:else if conn.chateau_id === IDFM_CHATEAU_ID && isRatpRoute(conn.route.short_name)}
-			<RatpBullet route_short_name={conn.route.short_name} matchTextHeight={false} />
-		{:else}
-			<div
-				class="px-0.5 py-0.5 text-[10px] leading-none rounded-sm"
-				style={`background-color: ${conn.route.color}; color: ${conn.route.text_color};`}
-			>
-				{#if conn.route.short_name}
-					<span class="font-semibold">{conn.route.short_name}</span>
-				{:else if conn.route.long_name}
-					<span class="font-medium">{conn.route.long_name}</span>
-				{/if}
-			</div>
-		{/if}
+		<StationScreenRouteBadge
+			routeDef={conn.route}
+			chateau={conn.chateau_id}
+			fallback_long_name={true}
+			{text_size_class}
+			is_route_only={true}
+		/>
 	{/if}
 {/each}
