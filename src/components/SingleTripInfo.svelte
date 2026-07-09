@@ -44,7 +44,7 @@
 	import { cleanStationName, cleanPlatformName } from '../utils/national_rail_utils';
 
 	let is_loading_trip_data: boolean = true;
-	let trip_data: Record<string, any> | null = null;
+	let trip_data: TripIntroductionInformation | null = null;
 	let init_loaded = 0;
 	let timezones: string[] = [];
 	let error: string | null = '';
@@ -1167,14 +1167,19 @@
 	<div class="px-3">
 		{#await import('./RouteHeading.svelte') then { default: RouteHeading }}
 			<RouteHeading
-				color={trip_data.color}
-				text_color={trip_data.text_color}
-				route_id={trip_data.route_id}
-				chateau_id={trip_selected.chateau_id}
-				agency_id={trip_data.agency_id}
+				routeDef={{
+					color: trip_data.color,
+					text_color: trip_data.text_color,
+					route_id: trip_data.route_id,
+					chateau: trip_selected.chateau_id,
+					short_name: trip_data.route_short_name,
+					long_name: trip_data.route_long_name,
+					agency_id: trip_data.agency_id,
+				}}
 				agency_name={trip_data.agency_name}
 				trip_short_name={trip_data.trip_short_name}
-				vehicle={fix_vehicle_number(
+
+				routeDef.vehicle={fix_vehicle_number(
 					trip_selected.chateau_id,
 					trip_data.vehicle?.label || trip_data.vehicle?.id || trip_selected.vehicle_id
 				)}
@@ -1193,12 +1198,12 @@
 					trip_data.vehicle?.label || trip_data.vehicle?.id,
 					trip_data.trip_id
 				)}
-				short_name={trip_data.route_short_name}
-				long_name={trip_data.route_long_name}
 				{darkMode}
 				disable_pdf={true}
-				route_type={trip_data.route_type}
+				routeDef.route_type={trip_data.route_type}
 				make_clickable_route_name={true}
+
+				is_route_only={false}
 			>
 				<div slot="controls" class="relative">
 					<button
@@ -1216,7 +1221,7 @@
 							<div class="flex flex-col gap-y-3">
 								<div class="flex flex-row w-full justify-between items-center mb-1">
 									<span class="font-bold text-sm">{$_('settings', { default: 'Settings' })}</span>
-									<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions, a11y_no_noninteractive_element_interactions, https://svelte.dev/e/a11y_consider_explicit_label (FIXME) -->
+									<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions, a11y_no_noninteractive_element_interactions, a11y_consider_explicit_label (FIXME) -->
 									<button
 										on:click={() => (show_floating_controls = false)}
 										class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -1246,7 +1251,7 @@
 										class="accent-seashore w-4 h-4 cursor-pointer"
 										bind:checked={show_original_timetable}
 									/>
-									<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions, a11y_no_noninteractive_element_interactions, https://svelte.dev/e/a11y_consider_explicit_label (FIXME) -->
+									<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions, a11y_no_noninteractive_element_interactions, a11y_consider_explicit_label (FIXME) -->
 									<p
 										class="text-sm cursor-pointer select-none"
 										on:click={() => (show_original_timetable = !show_original_timetable)}
@@ -1267,7 +1272,7 @@
 											);
 										}}
 									/>
-									<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions, a11y_no_noninteractive_element_interactions, https://svelte.dev/e/a11y_consider_explicit_label (FIXME) -->
+									<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions, a11y_no_noninteractive_element_interactions, a11y_consider_explicit_label (FIXME) -->
 									<p
 										class="text-sm cursor-pointer select-none"
 										on:click={() => {
@@ -1287,7 +1292,7 @@
 										class="accent-seashore w-4 h-4 cursor-pointer"
 										bind:checked={show_connections}
 									/>
-									<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions, a11y_no_noninteractive_element_interactions, https://svelte.dev/e/a11y_consider_explicit_label (FIXME) -->
+									<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions, a11y_no_noninteractive_element_interactions, a11y_consider_explicit_label (FIXME) -->
 									<p
 										class="text-sm cursor-pointer select-none"
 										on:click={() => (show_connections = !show_connections)}
@@ -1313,7 +1318,7 @@
 			{/if}
 			{#if trip_data.block_id != null}
 				<span>{' | '}</span>
-				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions, a11y_no_noninteractive_element_interactions, https://svelte.dev/e/a11y_consider_explicit_label (FIXME) -->
+				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions, a11y_no_noninteractive_element_interactions, a11y_consider_explicit_label (FIXME) -->
 				<span
 					on:click={() => {
 						data_stack_store.update((x) => {
@@ -1749,7 +1754,7 @@
 									<div class="flex flex-row justify-between items-start leading-none gap-2">
 										<div class="text-charcoal dark:text-gray-200">
 											{#if stoptime.name}
-												<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions, a11y_no_noninteractive_element_interactions, https://svelte.dev/e/a11y_consider_explicit_label (FIXME) -->
+												<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions, a11y_no_noninteractive_element_interactions, a11y_consider_explicit_label (FIXME) -->
 												<span
 													on:click={() => {
 														data_stack_store.update((x) => {

@@ -114,7 +114,7 @@ export function fixRouteNameLong(chateau: string, route: string, rid: string): s
 export function fixRunNumber(
 	chateau: string,
 	type: number,
-	route: number,
+	route: string,
 	tripname: string | null,
 	vehicle: string,
 	trip_id: string | null

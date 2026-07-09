@@ -9,6 +9,7 @@
 	import { data_stack_store } from '../globalstores';
 	import StationScreenRouteBadge from './StationScreenRouteBadge.svelte';
 	import db_train_lookup from '../../static/fernverkehr_2026_train_lookup.json';
+	import type { Route } from '../utils/models';
 
 	export let event: any;
 	export let data_from_server: any;
@@ -25,7 +26,7 @@
 	$: shared_rt_time = event.last_stop ? event.realtime_arrival : event.realtime_departure;
 	$: shared_scheduled_time = event.last_stop ? event.scheduled_arrival : event.scheduled_departure;
 
-	$: routeDef = data_from_server.routes?.[event.chateau]?.[event.route_id];
+	$: routeDef = data_from_server.routes?.[event.chateau]?.[event.route_id] as Route;
 	$: agencyId = routeDef?.agency_id;
 	$: agencyName = data_from_server.agencies?.[event.chateau]?.[agencyId]?.agency_name;
 

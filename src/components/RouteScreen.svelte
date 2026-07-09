@@ -67,6 +67,8 @@
 	import { getContrastColours, makeDelayLabel } from './processVehicleFeature';
 	import TripDataForVehicleOnRouteScreen from './TripDataForVehicleOnRouteScreen.svelte';
 	import ConsolidatedRouteList from './ConsolidatedRouteList.svelte';
+	import type { Route, RouteInfoResponseV2 } from '../utils/models';
+	import { nonpassive } from 'svelte/legacy';
 
 	let activePattern: string = '';
 
@@ -88,7 +90,7 @@
 
 	let loaded = false;
 
-	let route_data: any = null;
+	let route_data: RouteInfoResponseV2 = null;
 
 	let pdf_url: string | null = null;
 
@@ -765,20 +767,17 @@
 		<div class="px-3">
 			{#await import('./RouteHeading.svelte') then { default: RouteHeading }}
 				<RouteHeading
-					color={route_data.color}
-					route_id={routestack.route_id}
-					chateau_id={routestack.chateau_id}
-					agency_id={route_data.agency_id}
+					routeDef={{
+						...route_data,
+						route_id: routestack.route_id,
+						chateau: routestack.chateau_id,
+						gtfs_desc: null,
+					}}
 					text={route_data.agency_name}
 					compact={false}
-					short_name={route_data.short_name}
-					long_name={route_data.long_name}
-					url={route_data.url}
 					{darkMode}
-					route_type={route_data.route_type}
-					gtfs_desc={route_data.gtfs_desc}
-					text_color={route_data.text_color}
 					pin_route_setting_shown={true}
+					is_route_only={true}
 				/>
 			{:catch error}
 				<p class="p-4 text-red-500">Error loading component: {error.message}</p>

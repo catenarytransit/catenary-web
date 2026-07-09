@@ -28,20 +28,23 @@
 	import StationScreenRouteBadge from './StationScreenRouteBadge.svelte';
 	import RatpBullet from './ratpbullet.svelte';
 
-	export let color: string;
-	export let text_color: string;
+	export let routeDef: RouteMinimal;
+	// export let routeDef.color: string;
+	// export let routeDef.text_color: string;
 
-	export let short_name: string | null;
-	export let long_name: string | null;
-	export let url: string | null = null;
+	// export let routeDef.short_name: string | null;
+	// export let routeDef.long_name: string | null;
+	// export let routeDef.url: string | null = null;
 
 	export let run_number: string | null = null;
 	export let icon: string | null = null;
 	export let vehicle: string | null = null;
 
-	export let route_id: string;
-	export let chateau_id: string;
-	export let agency_id: string | null = null;
+	export let is_route_only: boolean;
+
+	// export let routeDef.route_id: string;
+	// export let routeDef.chateau: string;
+	// export let routeDef.agency_id: string | null = null;
 	export let agency_name: string | null = null;
 	export let trip_short_name: string | null = null;
 
@@ -55,9 +58,9 @@
 
 	export let window_height_known: number = window.innerHeight || 500;
 
-	export let route_type: number;
+	// export let routeDef.route_type: number;
 
-	export let gtfs_desc: string | null = null;
+	// export let routeDef.gtfs_desc: string | null = null;
 
 	export let make_clickable_route_name: boolean = false;
 
@@ -85,13 +88,13 @@
 		localStorage.setItem(LS_KEY, JSON.stringify([...new Set(pins)]));
 	}
 	function refreshPinnedState() {
-		if (!route_id || !chateau_id) return;
-		const k = keyForRoute(chateau_id, route_id);
+		if (!routeDef.route_id || !routeDef.chateau) return;
+		const k = keyForRoute(routeDef.chateau, routeDef.route_id);
 		isPinned = readPins().includes(k);
 	}
 	function togglePin() {
-		if (!route_id || !chateau_id) return;
-		const k = keyForRoute(chateau_id, route_id);
+		if (!routeDef.route_id || !routeDef.chateau) return;
+		const k = keyForRoute(routeDef.chateau, routeDef.route_id);
 		const pins = readPins();
 		if (pins.includes(k)) {
 			writePins(pins.filter((p) => p !== k));
@@ -124,40 +127,38 @@
 	});
 	let pdf_url: string | undefined;
 
-	if (has_schedule_pdf(chateau_id) && !disable_pdf) {
-		pdf_url = find_schedule_pdf_initial(chateau_id, route_id);
+	if (has_schedule_pdf(routeDef.chateau) && !disable_pdf) {
+		pdf_url = find_schedule_pdf_initial(routeDef.chateau, routeDef.route_id);
 	}
 
-	if (schedule_pdf_needs_hydration(chateau_id) && !disable_pdf) {
-		find_schedule_pdf(chateau_id, route_id)
+	if (schedule_pdf_needs_hydration(routeDef.chateau) && !disable_pdf) {
+		find_schedule_pdf(routeDef.chateau, routeDef.route_id)
 			.then((answer) => (pdf_url = answer))
 			.catch((pdferr) => console.error(pdferr));
 	}
 
-	$: (chateau_id, route_id, refreshPinnedState());
+	$: (routeDef.chateau, routeDef.route_id, refreshPinnedState());
 
-	$: isSubway = isSubwayRouteId(route_id) && chateau_id == MTA_CHATEAU_ID;
-	$: isRatp = chateau_id === IDFM_CHATEAU_ID && isRatpRoute(short_name);
+	$: isSubway = isSubwayRouteId(routeDef.route_id) && routeDef.chateau == MTA_CHATEAU_ID;
+	$: isRatp = routeDef.chateau === IDFM_CHATEAU_ID && isRatpRoute(routeDef.short_name);
 	$: is_sbahn =
-		['dbregioag', 'deutschland'].includes(chateau_id) &&
-		(short_name || '').match(/^S\d+/) !== null;
+		['dbregioag', 'deutschland'].includes(routeDef.chateau) &&
+		(routeDef.short_name || '').match(/^S\d+/) !== null;
 	
 	import db_train_lookup from '../../static/fernverkehr_2026_train_lookup.json';
-	$: is_db_fernverkehr =
-		chateau_id === 'deutschland' &&
-		((agency_id !== null && ['12681', '13557', '10918'].includes(agency_id.toString())) ||
-		 (agency_name !== null && (agency_name === 'DB Fernverkehr AG' || agency_name === 'DB Fernverkehr (Codesharing)')));
-	
-	$: effective_trip_short_name = trip_short_name || run_number;
-	$: trip_short_name_no_zeros = effective_trip_short_name ? effective_trip_short_name.replace(/^0+/, '') : null;
+	import type { RouteMinimal } from '../utils/models';
+
+	$: is_db_fernverkehr = routeDef.chateau === 'deutschland' && routeDef.agency_id && ['12681', '13557', '10918'].includes(routeDef.agency_id.toString());
+	$: trip_short_name_no_zeros = trip_short_name ? trip_short_name.replace(/^0+/, '') : null;
 	$: db_train_data = is_db_fernverkehr && trip_short_name_no_zeros ? (db_train_lookup as Record<string, any[]>)[trip_short_name_no_zeros] : null;
-	$: db_display_name = db_train_data ? db_train_data[0].display_name : effective_trip_short_name;
+	$: db_display_name = db_train_data ? db_train_data[0].display_name : trip_short_name;
+	$: effective_trip_short_name = db_display_name || trip_short_name || run_number;
 
 	$: showLongName = !!(
-		long_name &&
-		(!short_name ||
-			(long_name.trim().toLowerCase() !== short_name.trim().toLowerCase() &&
-				long_name.trim().toLowerCase() !== `${short_name.trim().toLowerCase()} line`))
+		routeDef.long_name &&
+		(!routeDef.short_name ||
+			(routeDef.long_name.trim().toLowerCase() !== routeDef.short_name.trim().toLowerCase() &&
+				routeDef.long_name.trim().toLowerCase() !== `${routeDef.short_name.trim().toLowerCase()} line`))
 	);
 </script>
 
@@ -165,11 +166,12 @@
 	<div class="flex items-start justify-between gap-2">
 		<h2
 			class={`${window_height_known < 600 ? 'text-sm' : 'text-base md:text-lg md:mt-1'} ${
-				isSubway || is_db_fernverkehr ? '' : 'leading-tight'
+				isSubway ? '' : 'leading-tight'
 			}`}
 			style={`
-				${isSubway || is_db_fernverkehr ? '' : `color: ${darkMode ? lightenColour(color) : color}`}`}
+				${isSubway || is_db_fernverkehr ? '' : `color: ${darkMode ? lightenColour(routeDef.color) : routeDef.color}`}`}
 		>
+			<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions, a11y_no_noninteractive_element_interactions, a11y_consider_explicit_label (FIXME) -->
 			<span
 				class={`
 					${
@@ -181,38 +183,46 @@
 				on:click={() => {
 					if (make_clickable_route_name) {
 						data_stack_store.update((stack) => {
-							stack.push(new StackInterface(new RouteStack(chateau_id, route_id)));
+							stack.push(new StackInterface(new RouteStack(routeDef.chateau, routeDef.route_id)));
 							return stack;
 						});
 					}
 				}}
 			>
-				{#if is_db_fernverkehr}
-					<span class="font-bold mr-1 inline-block">{db_display_name || short_name}</span>
-				{:else if isSubway && short_name}
-					<MtaBullet route_short_name={short_name} matchTextHeight={true} />
-				{:else if isRatp && short_name}
-					<RatpBullet route_short_name={short_name} matchTextHeight={true} />
-				{:else if short_name && !showLongName}
-					<StationScreenRouteBadge routeDef={{ short_name: short_name, color: color, text_color: text_color }} chateau={chateau_id} />
-				{:else if short_name}
-					{#if chateau_id === 'schweiz' && (short_name.startsWith('IR') || short_name.startsWith('IC') || short_name === 'EC')}
+				<StationScreenRouteBadge
+					{routeDef}
+					chateau={routeDef.chateau}
+					text_size_class="text-base"
+					db_show_linie={true}
+					{is_route_only}
+					{db_train_data}
+				/>
+				<!-- {#if is_db_fernverkehr}
+					<span class="font-bold mr-1 inline-block">{db_display_name || routeDef.short_name}</span>
+				{:else if isSubway && routeDef.short_name}
+					<MtaBullet route_short_name={routeDef.short_name} matchTextHeight={true} />
+				{:else if isRatp && routeDef.short_name}
+					<RatpBullet route_short_name={routeDef.short_name} matchTextHeight={true} />
+				{:else if routeDef.short_name && !showLongName}
+					<StationScreenRouteBadge routeDef={{ short_name: routeDef.short_name, color: routeDef.color, text_color: routeDef.text_color }} chateau={routeDef.chateau} />
+				{:else if routeDef.short_name}
+					{#if routeDef.chateau === 'schweiz' && (routeDef.short_name.startsWith('IR') || routeDef.short_name.startsWith('IC') || routeDef.short_name === 'EC')}
 						<span class="font-bold inline-flex items-center">
-							<SbbLogo text={short_name} chateau={chateau_id} />
+							<SbbLogo text={routeDef.short_name} chateau={routeDef.chateau} />
 						</span>
-					{:else if (chateau_id !== 'nationalrailuk' || short_name.startsWith('LO-') || short_name === 'XR-ELIZABETH') && chateau_id !== 'metrolinktrains'}
+					{:else if (routeDef.chateau !== 'nationalrailuk' || routeDef.short_name.startsWith('LO-') || routeDef.short_name === 'XR-ELIZABETH') && routeDef.chateau !== 'metrolinktrains'}
 						<span
 							class="font-bold px-1.5 py-0.5 text-xs inline-block align-middle mr-1 {is_sbahn ? 'rounded-full' : 'rounded-sm'}"
-							style={`background: ${color}; color: ${text_color};`}
+							style={`background: ${routeDef.color}; color: ${routeDef.text_color};`}
 						>
-							{fixRouteName(chateau_id, short_name, route_id)}
+							{fixRouteName(routeDef.chateau, routeDef.short_name, routeDef.route_id)}
 						</span>
 					{/if}
-				{/if}
+				{/if} -->
 
 				{#if showLongName}
-					<span class={`${short_name ? 'font-normal ml-1' : 'font-bold'}`}>
-						{fixRouteNameLong(chateau_id, long_name, route_id)}
+					<span class={`${routeDef.short_name ? 'font-normal ml-1' : 'font-bold'}`}>
+						{fixRouteNameLong(routeDef.chateau, routeDef.long_name, routeDef.route_id)}
 					</span>
 				{/if}
 			</span>
@@ -244,8 +254,8 @@
 		</div>
 	</div>
 
-	{#if gtfs_desc}
-		<span>{gtfs_desc}</span>
+	{#if routeDef.gtfs_desc}
+		<span>{routeDef.gtfs_desc}</span>
 	{/if}
 
 	<h2
@@ -257,11 +267,8 @@
 		<span class="align-middle">
 			{text}
 
-			{#if run_number && !(is_db_fernverkehr && run_number)}
-				<span class="font-bold text-md px-1 py-0.5 mr-1 rounded-md w-min">{run_number}</span>
-			{/if}
-			{#if is_db_fernverkehr && short_name}
-				<span class="font-medium text-sm ml-1 text-gray-600 dark:text-gray-400 inline-block align-middle -translate-y-0.5">Linie {short_name}</span>
+			{#if run_number}
+				<span class="font-bold text-md px-1 py-0.5 mr-1 rounded-md w-min">{effective_trip_short_name}</span>
 			{/if}
 			{#if icon}
 				<span class="material-symbols-outlined text-xl align-middle -translate-y-0.5 ml-1"
@@ -272,11 +279,11 @@
 		{#if vehicle && vehicle != run_number}
 			<span class="text-sm align-middle ml-2 text-gray-600 dark:text-gray-400 inline-block">
 				<span class="material-symbols-outlined !text-sm align-middle -translate-y-[0.03rem]"
-					>{#if route_type == 0}
+					>{#if routeDef.route_type == 0}
 						tram
-					{:else if route_type == 1}
+					{:else if routeDef.route_type == 1}
 						subway
-					{:else if route_type == 2}
+					{:else if routeDef.route_type == 2}
 						train
 					{:else}
 						directions_bus
@@ -300,8 +307,8 @@
 				</div>
 			</a>
 		{/if}
-		{#if url != null}
-			<a target="_blank" href={url}>
+		{#if routeDef.url != null}
+			<a target="_blank" href={routeDef.url}>
 				<div
 					class="px-2 py-0.5 my-1 border-seashore dark:border-seashoredark text-seashore dark:text-seashoredark flex flex-row align-middle justify-center rounded-xl border-2 hover:text-white hover:bg-seashore hover:transition-colors"
 				>

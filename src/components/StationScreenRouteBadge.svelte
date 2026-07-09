@@ -1,7 +1,7 @@
 <script lang="ts">
 	import SbbLogo from './SbbLogo.svelte';
 
-	export let routeDef: Route;
+	export let routeDef: RouteMinimal;
 	export let chateau: string;
 	export let remove_line: boolean = false;
 	export let fallback_long_name: boolean = false;
@@ -10,6 +10,7 @@
 	export let text_size_class: string = 'text-sm';
 
 	export let db_train_data: any = null;
+	export let db_show_linie: boolean = true;
 
 	// Set true if this is a route badge which is not associated with a trip, for example on route screen
 	export let is_route_only: boolean = false;
@@ -18,7 +19,7 @@
 	import { IDFM_CHATEAU_ID, isRatpRoute } from '../utils/ratp_utils';
 	import MtaBullet from './mtabullet.svelte';
 	import RatpBullet from './ratpbullet.svelte';
-	import type { Route } from '../utils/models';
+	import type { RouteMinimal } from '../utils/models';
 
 	$: is_sbahn =
 		['dbregioag', 'deutschland'].includes(chateau) &&
@@ -38,10 +39,10 @@
 
 	$: is_db_fernverkehr = routeDef.chateau === 'deutschland' && routeDef.agency_id && ['12681', '13557', '10918'].includes(routeDef.agency_id.toString());
 	$: db_route_short_name = db_train_data 
-		? db_train_data[0].category + (fallback_long_name ? "-Linie " + routeDef.short_name : "")
+		? db_train_data[0].category + (db_show_linie ? "-Linie " + routeDef.short_name : "")
 		: (is_route_only && is_db_fernverkehr)
 			? routeDef.short_name.match(/^\d/) && (routeDef.route_id.split("_").length === 2)
-				? (routeDef.route_id.split("_")[1] === "101" ? "ICE" : "IC") + "-Linie " + routeDef.short_name
+				? (routeDef.route_id.split("_")[1] === "101" ? "ICE" : "IC") + (db_show_linie ? "-Linie " + routeDef.short_name : "")
 				: null
 			: null;
 

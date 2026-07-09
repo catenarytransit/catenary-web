@@ -4,11 +4,14 @@ export type AspenisedVehicleDescriptor = any;
 export type AspenisedAlert = any;
 export type UnifiedConsist = any;
 export type NearbyDeparturesChunk = any;
+export type SerializableStop = any;
+export type DirectionsSummary = any;
 
 type String = string;
 type EcoString = string;
 type CompactString = string;
 type BTreeMap<K extends keyof any, T> = Record<K, T>;
+type HashMap<K extends keyof any, T> = Record<K, T>;
 type u8 = number;
 type u16 = number;
 type u32 = number;
@@ -23,6 +26,7 @@ type Vec<T> = Array<T>;
 
 type Tz = any;
 type NaiveDate = any;
+type geo_Rect<T> = any;
 
 type Option<T> = T | null;
 
@@ -48,6 +52,44 @@ export interface Route {
 	continuous_drop_off: i16,
 	shapes_list: Option<Vec<Option<String>>>,
 	chateau: String,
+}
+
+// Custom for use in JS
+export interface RouteMinimal {
+	route_id: String,
+	short_name: Option<String>,
+	long_name: Option<String>,
+	gtfs_desc: Option<String>,
+	route_type: i16,
+	url: Option<String>,
+	agency_id: Option<String>,
+	color: Option<String>,
+	text_color: Option<String>,
+	chateau: String,
+}
+
+// catenary-backend/src/birch/route_info.rs
+export interface RouteInfoResponseV2 {
+	agency_name: Option<String>,
+	agency_id: Option<String>,
+	short_name: Option<String>,
+	long_name: Option<String>,
+	url: Option<String>,
+	color: Option<String>,
+	text_color: Option<String>,
+	route_type: i16,
+	pdf_url: Option<String>,
+	stops: HashMap<String, SerializableStop>,
+	direction_patterns: BTreeMap<String, DirectionsSummary>,
+	shape_ids: Vec<String>,
+	alert_ids_for_this_route: Vec<String>,
+	alert_id_to_alert: BTreeMap<String, AspenisedAlert>,
+	stop_id_to_alert_ids: BTreeMap<String, Vec<String>>,
+	onestop_feed_id: String,
+	bounding_box: Option<geo_Rect<f64>>,
+
+	connecting_routes: Option<BTreeMap<String, BTreeMap<String, Route>>>, //chateau -> route_id -> Route
+	connections_per_stop: Option<BTreeMap<String, BTreeMap<String, Vec<String>>>>, //stop_id -> chateau -> route_ids
 }
 
 // catenary-backend/src/aspen_dataset.rs

@@ -137,6 +137,7 @@
 				chateau={event.chateau}
 				remove_line={true}
 				{db_train_data}
+				db_show_linie={false}
 				text_size_class="text-xs"
 				extra_classes="inline-block min-w-[24px]"
 			/>
