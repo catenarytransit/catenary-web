@@ -185,21 +185,23 @@
 					{#if option.data.trip_id}
 						{#if option.data.route_long_name || option.data.route_short_name}
 							<span class="text-md align-middle">
-								<StationScreenRouteBadge
-									routeDef={{
-										short_name: option.data.route_short_name,
-										color: option.data.colour,
-										text_color: option.data.text_colour,
-										route_id: option.data.route_id,
-										chateau: option.data.chateau_id,
-									}}
-									chateau={option.data.chateau_id}
-									text_size_class="text-base"
-								/>
+								{#if option.data.route_short_name}
+									<StationScreenRouteBadge
+										routeDef={{
+											short_name: option.data.route_short_name,
+											color: option.data.colour,
+											text_color: option.data.text_colour,
+											route_id: option.data.route_id,
+											chateau: option.data.chateau_id,
+										}}
+										chateau={option.data.chateau_id}
+										text_size_class="text-base"
+									/>
+								{/if}
 
 								{#if option.data.route_long_name && (!option.data.route_short_name || (option.data.route_long_name.trim().toLowerCase() !== option.data.route_short_name.trim().toLowerCase() && option.data.route_long_name.trim().toLowerCase() !== `${option.data.route_short_name.trim().toLowerCase()} line`))}
 									<span
-										class="font-normal ml-1 align-middle"
+										class={`font-normal ${option.data.route_short_name ? 'ml-1' : ''} align-middle`}
 										style={`color: ${darkMode ? lightenColour(option.data.colour) : option.data.colour}`}
 									>
 										{fixRouteNameLong(
