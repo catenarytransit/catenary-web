@@ -117,6 +117,7 @@
 	let currentPageHours = 1; // default page size
 
 	let refreshTimer: any;
+	let lastShiftTime = Date.now();
 
 	// Optimization: Yield to main thread to prevent blocking
 	const yieldToMain = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -353,6 +354,7 @@
 		raw_grouped_events = {};
 		hide_past_events = true;
 		alerts_expanded = false;
+		lastShiftTime = Date.now();
 		if (clearMeta) {
 			data_meta = null;
 			fly_to_already = false;
@@ -459,6 +461,36 @@
 				}
 			}
 			if (incoming.length > CHUNK_SIZE) await yieldToMain();
+		}
+
+		// Remove any stale events for this pageId that weren't in the incoming chunk,
+		// or any event in the eventIndex whose time falls within the fetched range but was not returned
+		const incomingKeys = new Set(incoming.map((ev) => composeEventKey(ev)));
+		const [startSecStr, endSecStr] = pageId.split('-');
+		const startSec = parseInt(startSecStr, 10);
+		const endSec = parseInt(endSecStr, 10);
+		const hasValidRange = !isNaN(startSec) && !isNaN(endSec);
+
+		for (const [key, value] of eventIndex.entries()) {
+			let shouldPrune = false;
+			if (value.pageId === pageId && !incomingKeys.has(key)) {
+				shouldPrune = true;
+			} else if (hasValidRange && !incomingKeys.has(key)) {
+				const ev = value.event;
+				const eventTime =
+					ev.realtime_departure ??
+					ev.realtime_arrival ??
+					ev.scheduled_departure ??
+					ev.scheduled_arrival ??
+					0;
+				if (eventTime >= startSec && eventTime <= endSec) {
+					shouldPrune = true;
+				}
+			}
+
+			if (shouldPrune) {
+				eventIndex.delete(key);
+			}
 		}
 
 		// Rebuild merged list sorted by primary time key (RT first, then scheduled)
@@ -643,6 +675,41 @@
 
 	async function refreshAllPages() {
 		if (pages.length === 0) return;
+
+		// If is_now is true, check if we need to shift the pages forward
+		if (is_now) {
+			const nowMs = Date.now();
+			const elapsedSec = Math.floor((nowMs - lastShiftTime) / 1000);
+			if (elapsedSec >= 60) {
+				pages = pages.map((p) => {
+					const newStart = p.startSec + elapsedSec;
+					const newEnd = p.endSec + elapsedSec;
+					return {
+						...p,
+						startSec: newStart,
+						endSec: newEnd,
+						id: pageIdFor(newStart, newEnd)
+					};
+				});
+				lastShiftTime = nowMs;
+
+				// Prune eventIndex: remove events that are completely outside the new page ranges
+				const minStart = Math.min(...pages.map((p) => p.startSec));
+				const maxEnd = Math.max(...pages.map((p) => p.endSec));
+				for (const [key, value] of eventIndex.entries()) {
+					const ev = value.event;
+					const eventTime =
+						ev.realtime_departure ??
+						ev.realtime_arrival ??
+						ev.scheduled_departure ??
+						ev.scheduled_arrival ??
+						0;
+					if (eventTime < minStart || eventTime > maxEnd) {
+						eventIndex.delete(key);
+					}
+				}
+			}
+		}
 
 		// Sort by startSec
 		const sorted = [...pages].sort((a, b) => a.startSec - b.startSec);
