@@ -115,6 +115,7 @@
 
 	// dynamic page size in hours (auto-tunes based on density)
 	let currentPageHours = 1; // default page size
+	let earlier_loading = false;
 
 	let refreshTimer: any;
 	let lastShiftTime = Date.now();
@@ -804,8 +805,16 @@
 		const beforeTop = scrollContainer.scrollTop;
 
 		if (hide_past_events) {
+			const earliestStart = Math.min(...pages.map((p) => p.startSec));
+			is_now = false;
+			selected_unix_time = earliestStart;
 			hide_past_events = false;
-			await tick();
+			earlier_loading = true;
+			try {
+				await tick();
+			} finally {
+				earlier_loading = false;
+			}
 
 			// Keep the currently visible content anchored after new items are prepended
 			const afterHeight = scrollContainer.scrollHeight;
@@ -832,12 +841,81 @@
 			return;
 		}
 
-		await fetchPage(newStart, newEnd);
+		earlier_loading = true;
+		try {
+			await fetchPage(newStart, newEnd);
+			await tick();
+		} finally {
+			earlier_loading = false;
+		}
 
 		// Keep the currently visible content anchored after new items are prepended
 		const afterHeight = scrollContainer.scrollHeight;
 		const delta = afterHeight - beforeHeight;
 		scrollContainer.scrollTop = beforeTop + delta;
+	}
+
+	async function handleTimeSelectorChange() {
+		const targetTimeSec = is_now ? Math.floor(Date.now() / 1000) : selected_unix_time;
+
+		if (is_now) {
+			hide_past_events = true;
+		}
+
+		if (pages.length === 0) {
+			resetState(false);
+			await loadInitialPages();
+			return;
+		}
+
+		const earliestStart = Math.min(...pages.map((p) => p.startSec));
+		const latestEnd = Math.max(...pages.map((p) => p.endSec));
+
+		// Drastic change check (more than 3 hours outside the currently loaded range)
+		const DRASTIC_LIMIT = 3 * 3600;
+		if (targetTimeSec < earliestStart - DRASTIC_LIMIT || targetTimeSec > latestEnd + DRASTIC_LIMIT) {
+			console.log('Drastic time change, resetting state', targetTimeSec, earliestStart, latestEnd);
+			resetState(false);
+			await loadInitialPages();
+			return;
+		}
+
+		if (targetTimeSec < earliestStart) {
+			// Seamlessly prepend earlier data
+			const newStart = Math.max(0, Math.floor(targetTimeSec));
+			const newEnd = earliestStart;
+			if (newStart < newEnd) {
+				hide_past_events = false;
+
+				let beforeHeight = 0;
+				let beforeTop = 0;
+				if (scrollContainer) {
+					beforeHeight = scrollContainer.scrollHeight;
+					beforeTop = scrollContainer.scrollTop;
+				}
+
+				earlier_loading = true;
+				try {
+					await fetchPage(newStart, newEnd);
+					await tick();
+				} finally {
+					earlier_loading = false;
+				}
+
+				if (scrollContainer) {
+					const afterHeight = scrollContainer.scrollHeight;
+					const delta = afterHeight - beforeHeight;
+					scrollContainer.scrollTop = beforeTop + delta;
+				}
+			}
+		} else if (targetTimeSec > latestEnd) {
+			// Seamlessly append later data
+			const newStart = latestEnd - OVERLAP_SECONDS;
+			const newEnd = Math.floor(targetTimeSec) + currentPageHours * 3600;
+			if (newStart < newEnd) {
+				await fetchPage(newStart, newEnd);
+			}
+		}
 	}
 
 	// Infinite scroll detection
@@ -1048,10 +1126,7 @@
 						bind:unixTime={selected_unix_time}
 						bind:isNow={is_now}
 						timezone={displayTimezone}
-						on:change={() => {
-							resetState(false);
-							loadInitialPages();
-						}}
+						on:change={handleTimeSelectorChange}
 					/>
 				</div>
 
@@ -1140,11 +1215,19 @@
 				<div class="flex flex-col">
 					<div>
 						<button
-							class="mt-1 ml-1 mb-1 px-3 py-1.5 font-semibold border border-gray-400 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-[1px] inline-flex items-center w-auto"
+							class="mt-1 ml-1 mb-1 px-3 py-1.5 font-semibold border border-gray-400 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-[1px] inline-flex items-center w-auto cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
 							on:click={loadEarlier}
+							disabled={earlier_loading}
 						>
 							<span class="inline-block align-bottom mr-1">
-								<span class="material-symbols-outlined"> keyboard_arrow_up </span>
+								{#if earlier_loading}
+									<svg class="animate-spin h-4 w-4 text-gray-900 dark:text-gray-100" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+										<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+										<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+									</svg>
+								{:else}
+									<span class="material-symbols-outlined"> keyboard_arrow_up </span>
+								{/if}
 							</span>
 							<span>{$_('earlier')}</span>
 						</button>

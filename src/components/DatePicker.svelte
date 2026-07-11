@@ -13,28 +13,78 @@
 	let dateString = '';
 	let timeString = '';
 
-	$: {
-		if (!isNow) {
-			const d = new Date(unixTime * 1000);
-			const f = new Intl.DateTimeFormat('en-CA', {
-				timeZone: timezone === 'Local Time' || !timezone ? undefined : timezone,
-				year: 'numeric',
-				month: '2-digit',
-				day: '2-digit'
-			}).format(d);
-			dateString = f;
-			timeString = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-		} else {
-			const d = new Date();
-			const f = new Intl.DateTimeFormat('en-CA', {
-				timeZone: timezone === 'Local Time' || !timezone ? undefined : timezone,
-				year: 'numeric',
-				month: '2-digit',
-				day: '2-digit'
-			}).format(d);
-			dateString = f;
-			timeString = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+	function getTzParts(unixTimeSec: number, tz: string) {
+		const d = new Date(unixTimeSec * 1000);
+		const options = {
+			timeZone: tz === 'Local Time' || !tz ? undefined : tz,
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit',
+			hour: '2-digit',
+			minute: '2-digit',
+			hour12: false
+		} as const;
+		const formatter = new Intl.DateTimeFormat('en-CA', options);
+		const parts = formatter.formatToParts(d);
+
+		let year = '', month = '', day = '', hour = '', minute = '';
+		for (const part of parts) {
+			if (part.type === 'year') year = part.value;
+			if (part.type === 'month') month = part.value;
+			if (part.type === 'day') day = part.value;
+			if (part.type === 'hour') hour = part.value;
+			if (part.type === 'minute') minute = part.value;
 		}
+		return { year, month, day, hour, minute };
+	}
+
+	function getUnixTimeInTz(
+		year: number,
+		month: number,
+		day: number,
+		hour: number,
+		minute: number,
+		tz: string
+	): number {
+		const utcTimestamp = Date.UTC(year, month - 1, day, hour, minute, 0, 0);
+		const options = {
+			timeZone: tz === 'Local Time' || !tz ? undefined : tz,
+			year: 'numeric',
+			month: 'numeric',
+			day: 'numeric',
+			hour: 'numeric',
+			minute: 'numeric',
+			second: 'numeric',
+			hour12: false
+		} as const;
+
+		const formatter = new Intl.DateTimeFormat('en-US', options);
+		const tempDate = new Date(utcTimestamp);
+		const formattedStr = formatter.format(tempDate);
+		const match = formattedStr.match(/(\d+)\/(\d+)\/(\d+),\s+(\d+):(\d+):(\d+)/);
+		if (!match) {
+			return utcTimestamp / 1000;
+		}
+
+		const [_, mStr, dStr, yStr, hStr, minStr, sStr] = match;
+		const parsedY = parseInt(yStr, 10);
+		const parsedM = parseInt(mStr, 10);
+		const parsedD = parseInt(dStr, 10);
+		const parsedH = parseInt(hStr, 10);
+		const parsedMin = parseInt(minStr, 10);
+		const parsedSec = parseInt(sStr, 10);
+
+		const formattedUtc = Date.UTC(parsedY, parsedM - 1, parsedD, parsedH, parsedMin, parsedSec, 0);
+		const offsetMs = formattedUtc - utcTimestamp;
+
+		return (utcTimestamp - offsetMs) / 1000;
+	}
+
+	$: {
+		const currentUnix = isNow ? Date.now() / 1000 : unixTime;
+		const parts = getTzParts(currentUnix, timezone);
+		dateString = `${parts.year}-${parts.month}-${parts.day}`;
+		timeString = `${parts.hour}:${parts.minute}`;
 	}
 
 	function handleDateChange(e: Event) {
@@ -44,20 +94,17 @@
 			dateString = target.value;
 			const [y, m, d] = target.value.split('-').map(Number);
 
-			const newDate = new Date();
-			newDate.setFullYear(y, m - 1, d);
-
-			// Try to parse existing timeString to apply to new date
+			let h = 0;
+			let min = 0;
 			if (timeString && timeString.includes(':')) {
-				const [h, min] = timeString.split(':').map(Number);
-				if (!isNaN(h) && !isNaN(min)) {
-					newDate.setHours(h, min, 0, 0);
+				const parts = timeString.split(':').map(Number);
+				if (!isNaN(parts[0]) && !isNaN(parts[1])) {
+					h = parts[0];
+					min = parts[1];
 				}
-			} else {
-				newDate.setHours(0, 0, 0, 0);
 			}
 
-			unixTime = newDate.getTime() / 1000;
+			unixTime = getUnixTimeInTz(y, m, d, h, min, timezone);
 			dispatch('change');
 		}
 	}
@@ -100,11 +147,7 @@
 		isNow = false;
 
 		const [y, m, d] = dateString.split('-').map(Number);
-		const newDate = new Date();
-		newDate.setFullYear(y, m - 1, d);
-		newDate.setHours(hours, minutes, 0, 0);
-
-		unixTime = newDate.getTime() / 1000;
+		unixTime = getUnixTimeInTz(y, m, d, hours, minutes, timezone);
 		dispatch('change');
 	}
 
@@ -144,13 +187,19 @@
 
 		let [y, m, d] = dateString
 			? dateString.split('-').map(Number)
-			: [new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate()];
+			: (() => {
+					const parts = getTzParts(Date.now() / 1000, timezone);
+					return [parseInt(parts.year, 10), parseInt(parts.month, 10), parseInt(parts.day, 10)];
+				})();
 
-		const newDate = new Date();
-		newDate.setFullYear(y, m - 1, d);
-		newDate.setHours(currentH, newM, 0, 0);
+		const date = new Date(Date.UTC(y, m - 1, d, currentH, newM));
+		const finalY = date.getUTCFullYear();
+		const finalM = date.getUTCMonth() + 1;
+		const finalD = date.getUTCDate();
+		const finalH = date.getUTCHours();
+		const finalMin = date.getUTCMinutes();
 
-		unixTime = newDate.getTime() / 1000;
+		unixTime = getUnixTimeInTz(finalY, finalM, finalD, finalH, finalMin, timezone);
 		dispatch('change');
 	}
 
@@ -241,19 +290,17 @@
 	function selectDate(year: number, month: number, day: number) {
 		isNow = false;
 
-		const newDate = new Date();
-		newDate.setFullYear(year, month, day);
-
+		let h = 0;
+		let min = 0;
 		if (timeString && timeString.includes(':')) {
-			const [h, min] = timeString.split(':').map(Number);
-			if (!isNaN(h) && !isNaN(min)) {
-				newDate.setHours(h, min, 0, 0);
+			const parts = timeString.split(':').map(Number);
+			if (!isNaN(parts[0]) && !isNaN(parts[1])) {
+				h = parts[0];
+				min = parts[1];
 			}
-		} else {
-			newDate.setHours(0, 0, 0, 0);
 		}
 
-		unixTime = newDate.getTime() / 1000;
+		unixTime = getUnixTimeInTz(year, month + 1, day, h, min, timezone);
 		isCalendarOpen = false;
 		dispatch('change');
 	}
@@ -303,14 +350,12 @@
 	})();
 
 	$: currentTzDate = (() => {
-		const f = new Intl.DateTimeFormat('en-CA', {
-			timeZone: timezone === 'Local Time' || !timezone ? undefined : timezone,
-			year: 'numeric',
-			month: '2-digit',
-			day: '2-digit'
-		}).format(new Date());
-		const [y, m, d] = f.split('-').map(Number);
-		return { year: y, month: m - 1, day: d };
+		const parts = getTzParts(Date.now() / 1000, timezone);
+		return {
+			year: parseInt(parts.year, 10),
+			month: parseInt(parts.month, 10) - 1,
+			day: parseInt(parts.day, 10)
+		};
 	})();
 
 	$: calendarMonthName = (() => {
