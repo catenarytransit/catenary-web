@@ -258,7 +258,7 @@ export function startTrajectoryManager(map: Map) {
 						timestamp: now,
 						text_color: traj.text_color || '#ffffff',
 						trip_id: tripId,
-						start_time: traj.start_time || departureStr,
+						start_time: traj.start_time ?? null,
 						start_date: traj.start_date || '',
 						crowd_symbol: '',
 						occupancy_status: '',
