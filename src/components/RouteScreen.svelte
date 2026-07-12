@@ -14,15 +14,6 @@
 	import AlertBox from './serviceAlerts.svelte';
 	import { writable, get } from 'svelte/store';
 	import {
-		fixHeadsignIcon,
-		fixHeadsignText,
-		fixRouteIcon,
-		fixRouteName,
-		fixRouteNameLong,
-		fixRunNumber,
-		fixStationName
-	} from './agencyspecific';
-	import {
 		resetAdditionalVehicleFilter,
 		additional_filter_for_vehicles_store
 	} from './filterState';
@@ -1020,12 +1011,12 @@
 								style:border-color={route_data.color}
 							></div>
 							<span class="text-sm relative ml-[16px] translate-y-px"
-								>{fixStationName(stopRefToUse.name)}</span
+								>{stopRefToUse.name}</span
 							>
 							{#if stopRefToUse.code}
 								<span
 									class="text-sm relative ml-1 translate-y-px font-light dark:text-gray-400 text-gray-700"
-									>{' ['}{fixStationName(stopRefToUse.code)}{']'}</span
+									>{' ['}{stopRefToUse.code}{']'}</span
 								>
 							{/if}
 							{#if show_gtfs_ids}

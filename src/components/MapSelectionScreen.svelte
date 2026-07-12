@@ -18,13 +18,6 @@
 	import { get } from 'svelte/store';
 	import { data_stack_store, show_gtfs_ids_store, show_osm_ids_store } from '../globalstores';
 	import { _ } from 'svelte-i18n';
-	import {
-		fixHeadsignIcon,
-		fixRouteName,
-		fixRouteNameLong,
-		fixRunNumber,
-		fixHeadsignText
-	} from './agencyspecific';
 	import { MTA_CHATEAU_ID, isSubwayRouteId } from '../utils/mta_subway_utils';
 	import { IDFM_CHATEAU_ID, isRatpRoute } from '../utils/ratp_utils';
 	import { cleanStationName, cleanPlatformName } from '../utils/national_rail_utils';
@@ -204,11 +197,7 @@
 										class={`font-normal ${option.data.route_short_name ? 'ml-1' : ''} align-middle`}
 										style={`color: ${darkMode ? lightenColour(option.data.colour) : option.data.colour}`}
 									>
-										{fixRouteNameLong(
-											option.data.chateau_id,
-											option.data.route_long_name,
-											option.data.route_id
-										)}
+										{option.data.route_long_name}
 									</span>
 								{/if}
 							</span>
@@ -218,37 +207,15 @@
 					{/if}
 
 					<p class="text-sm lg:text-base mt-1">
-						{#if fixRunNumber(option.data.chateau_id, option.data.route_type, option.data.route_id, option.data.trip_short_name, option.data.vehicle_id)}
-							<span
-								style={`background-color: ${option.data.colour}; color: ${option.data.text_colour};`}
-								class="font-bold text-md px-1 py-0.5 mr-1 rounded-sm"
-								>{fixRunNumber(
-									option.data.chateau_id,
-									option.data.route_type,
-									option.data.route_id,
-									option.data.trip_short_name,
-									option.data.vehicle_id
-								)}</span
-							>
-						{/if}
 						{#if option.data.headsign && option.data.headsign != option.data.route_long_name && option.data.headsign != option.data.route_short_name}
 							<span class="mr-1">
 								<span class="material-symbols-outlined mr-0 align-middle -translate-y-0.5"
 									>chevron_right</span
 								>
-								{fixHeadsignText(
-									option.data.headsign,
-									option.data.chateau_id,
-									option.data.route_short_name || option.data.route_long_name
-								)}
-								{#if fixHeadsignIcon(option.data.headsign)}
-									<span class="material-symbols-outlined text-sm align-middle"
-										>{fixHeadsignIcon(option.data.headsign)}</span
-									>
-								{/if}
+								{option.data.headsign}
 							</span>
 						{/if}
-						{#if option.data.vehicle_id && !(option.data.vehicle_id == fixRunNumber(option.data.chateau_id, option.data.route_type, option.data.route_id, option.data.trip_short_name, option.data.vehicle_id))}
+						{#if option.data.vehicle_id}
 							<span class="text-xs lg:text-base bg-gray-200 dark:bg-background px-1 rounded-md">
 								<span class="material-symbols-outlined !text-xs">directions_bus</span>
 								{option.data.vehicle_id}</span

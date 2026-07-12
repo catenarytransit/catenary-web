@@ -30,14 +30,6 @@
 	import SingleTripInfo from './SingleTripInfo.svelte';
 	import OsmItemInfo from './OsmItemInfo.svelte';
 	import RouteScreen from './RouteScreen.svelte';
-	import {
-		fixHeadsignIcon,
-		fixRouteName,
-		fixRouteNameLong,
-		fixRunNumber,
-		fixHeadsignText,
-		fixRouteIcon
-	} from './agencyspecific';
 	import RouteIcon from './RouteIcon.svelte';
 	import { getLocaleStorageOrNav } from '../i18n';
 	import TidbitSidebarCard from './SidebarParts/tidbits.svelte';

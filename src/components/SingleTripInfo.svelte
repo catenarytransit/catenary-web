@@ -32,15 +32,6 @@
 		ramonda_error
 	} from '../ramonda_websocket';
 
-	import {
-		fixHeadsignIcon,
-		fixHeadsignText,
-		fixRouteIcon,
-		fixRouteName,
-		fixRouteNameLong,
-		fixRunNumber,
-		fixStationName
-	} from './agencyspecific';
 	import { cleanStationName, cleanPlatformName } from '../utils/national_rail_utils';
 
 	let is_loading_trip_data: boolean = true;
@@ -269,7 +260,7 @@
 											delay: vehicle_data.trip?.delay,
 											route_type: trip_data.route_type,
 											headsign: trip_data.trip_headsign,
-											vehicleIdLabel: fix_vehicle_number(trip_selected.chateau_id, vehicle_number)
+											vehicleIdLabel: vehicle_number
 										},
 										geometry: {
 											type: 'Point',
@@ -1179,25 +1170,9 @@
 				agency_name={trip_data.agency_name}
 				trip_short_name={trip_data.trip_short_name}
 
-				routeDef.vehicle={fix_vehicle_number(
-					trip_selected.chateau_id,
-					trip_data.vehicle?.label || trip_data.vehicle?.id || trip_selected.vehicle_id
-				)}
+				vehicle={trip_data.vehicle?.label || trip_data.vehicle?.id || trip_selected.vehicle_id}
 				arrow={true}
-				text={fixHeadsignText(
-					trip_data.trip_headsign,
-					trip_selected.chateau_id,
-					trip_data.route_short_name || trip_data.route_long_name
-				)}
-				icon={fixHeadsignIcon(trip_data.trip_headsign)}
-				run_number={fixRunNumber(
-					trip_selected.chateau_id,
-					trip_data.route_type,
-					trip_data.route_id,
-					trip_data.trip_short_name,
-					trip_data.vehicle?.label || trip_data.vehicle?.id,
-					trip_data.trip_id
-				)}
+				text={trip_data.trip_headsign}
 				{darkMode}
 				disable_pdf={true}
 				routeDef.route_type={trip_data.route_type}
@@ -1768,7 +1743,7 @@
 													}}
 													class={`cursor-pointer hover:underline ${stoptime.schedule_relationship == 1 ? 'text-[#EF3841]' : stop_id_to_alert_ids[stoptime.stop_id] ? 'text-[#F99C24]' : ''}`}
 												>
-													{cleanStationName(fixStationName(stoptime.name))}
+													{cleanStationName(stoptime.name)}
 												</span>
 											{/if}
 

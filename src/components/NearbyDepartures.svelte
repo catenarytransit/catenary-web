@@ -191,12 +191,6 @@
 	import jsonwebworkerpkg from '@cheprasov/json-web-worker';
 	const { jsonWebWorker, parse, stringify } = jsonwebworkerpkg;
 	import { t } from 'svelte-i18n';
-	import {
-		fixHeadsignText,
-		fixRouteName,
-		fixRouteNameLong,
-		fixStationName
-	} from './agencyspecific';
 	import { titleCase } from '../utils/titleCase';
 	import { lightenColour } from './lightenDarkColour';
 	import { MTA_CHATEAU_ID, isSubwayRouteId } from '../utils/mta_subway_utils';
@@ -870,22 +864,14 @@
 									<RatpBullet route_short_name={route_group.short_name} matchTextHeight={true} />
 								{:else if route_group.short_name}
 									<span class="font-bold mr-1">
-										{fixRouteName(
-											route_group.chateau_id,
-											route_group.short_name,
-											route_group.route_id
-										)}
+										{route_group.short_name}
 									</span>
 								{/if}
 
 								{#if route_group.long_name && !isSubway && !isRatp}
 									{#if route_group.long_name != route_group.short_name}
 										<span class="font-medium">
-											{fixRouteNameLong(
-												route_group.chateau_id,
-												route_group.long_name,
-												route_group.route_id
-											)}
+											{route_group.long_name}
 										</span>
 									{/if}
 								{/if}
@@ -939,7 +925,7 @@
 									class="material-symbols-outlined text-md align-middle -translate-y-0.5 select-none"
 									>chevron_right</span
 								>
-								{titleCase(fixHeadsignText(headsign, route_group.chateau_id, route_group.route_id))}
+								{headsign}
 								<!-- Stop Name Button - use stop_name from first trip -->
 								{#if trips.length > 0}
 									<span
@@ -959,7 +945,7 @@
 										<span class="material-symbols-outlined !text-sm align-middle select-none"
 											>distance</span
 										>
-										{fixStationName(trips[0].stop_name || trips[0].stop_id)}
+										{trips[0].stop_name}
 									</span>
 								{/if}
 							</p>

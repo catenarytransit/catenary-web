@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { _ } from 'svelte-i18n';
-	import { fixRouteName, fixRouteNameLong } from './agencyspecific';
 	import SbbLogo from './SbbLogo.svelte';
 	import { lightenColour } from './lightenDarkColour';
 	import {
@@ -197,32 +196,10 @@
 					{is_route_only}
 					{db_train_data}
 				/>
-				<!-- {#if is_db_fernverkehr}
-					<span class="font-bold mr-1 inline-block">{db_display_name || routeDef.short_name}</span>
-				{:else if isSubway && routeDef.short_name}
-					<MtaBullet route_short_name={routeDef.short_name} matchTextHeight={true} />
-				{:else if isRatp && routeDef.short_name}
-					<RatpBullet route_short_name={routeDef.short_name} matchTextHeight={true} />
-				{:else if routeDef.short_name && !showLongName}
-					<StationScreenRouteBadge routeDef={{ short_name: routeDef.short_name, color: routeDef.color, text_color: routeDef.text_color }} chateau={routeDef.chateau} />
-				{:else if routeDef.short_name}
-					{#if routeDef.chateau === 'schweiz' && (routeDef.short_name.startsWith('IR') || routeDef.short_name.startsWith('IC') || routeDef.short_name === 'EC')}
-						<span class="font-bold inline-flex items-center">
-							<SbbLogo text={routeDef.short_name} chateau={routeDef.chateau} />
-						</span>
-					{:else if (routeDef.chateau !== 'nationalrailuk' || routeDef.short_name.startsWith('LO-') || routeDef.short_name === 'XR-ELIZABETH') && routeDef.chateau !== 'metrolinktrains'}
-						<span
-							class="font-bold px-1.5 py-0.5 text-xs inline-block align-middle mr-1 {is_sbahn ? 'rounded-full' : 'rounded-sm'}"
-							style={`background: ${routeDef.color}; color: ${routeDef.text_color};`}
-						>
-							{fixRouteName(routeDef.chateau, routeDef.short_name, routeDef.route_id)}
-						</span>
-					{/if}
-				{/if} -->
 
 				{#if showLongName}
 					<span class={`${routeDef.short_name ? 'font-normal ml-1' : 'font-bold'}`}>
-						{fixRouteNameLong(routeDef.chateau, routeDef.long_name, routeDef.route_id)}
+						{routeDef.long_name}
 					</span>
 				{/if}
 			</span>

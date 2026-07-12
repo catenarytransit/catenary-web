@@ -10,7 +10,6 @@ import {
 	brightenForDarkModeKeepSat
 } from '../utils/colour';
 import { calculateGamma } from './colour/computeBrightness';
-import { fixHeadsignText, fixRouteName } from './agencyspecific';
 import { adjustGamma } from './colour/readjustGamma';
 import { occupancy_to_symbol } from './occupancy_to_symbol';
 import { _ } from 'svelte-i18n';
@@ -222,7 +221,7 @@ export function processVehicleFeature(
 			tripIdLabel: tripIdLabel,
 			bearing: vehicle_data?.position?.bearing,
 			has_bearing: vehicle_data?.position?.bearing != null,
-			maptag: (fixRouteName(chateau_id, maptag, routeId) || '')
+			maptag: maptag
 				.replace(' Branch', '')
 				.replace(' Line', '')
 				.replace('Counterclockwise', 'ACW')
@@ -234,7 +233,7 @@ export function processVehicleFeature(
 			contrastdarkmodebearing,
 			contrastlightmode: contrastlightmode,
 			routeId: routeId,
-			headsign: (fixHeadsignText(headsign, maptag) || '')
+			headsign: headsign
 				.replace('Counterclockwise', translate('anticlockwise_abbrievation'))
 				.replace('Clockwise', translate('clockwise_abbrievation')),
 			timestamp: vehicle_data.timestamp,
