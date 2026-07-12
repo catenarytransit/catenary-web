@@ -8,7 +8,7 @@
 	export let extra_classes: string = '';
 
 	$: is_sbahn =
-		['dbregioag', 'deutschland'].includes(chateau) &&
+		['vbb', 'deutschland'].includes(chateau) &&
 		(routeDef?.short_name || '').match(/^S\d+/) !== null;
 
 	$: rounded_class = is_sbahn ? 'rounded-full' : 'rounded-xs';
@@ -21,7 +21,8 @@
 			? routeDef?.long_name
 			: '';
 
-	$: isSbb = chateau === 'schweiz' && (text.startsWith('IR') || text.startsWith('IC') || text === 'EC');
+	$: isSbb =
+		chateau === 'schweiz' && (text.startsWith('IR') || text.startsWith('IC') || text === 'EC');
 </script>
 
 {#if text}

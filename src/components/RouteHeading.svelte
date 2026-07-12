@@ -139,18 +139,23 @@
 	$: isSubway = isSubwayRouteId(route_id) && chateau_id == MTA_CHATEAU_ID;
 	$: isRatp = chateau_id === IDFM_CHATEAU_ID && isRatpRoute(short_name);
 	$: is_sbahn =
-		['dbregioag', 'deutschland'].includes(chateau_id) &&
-		(short_name || '').match(/^S\d+/) !== null;
-	
+		['vbb', 'deutschland'].includes(chateau_id) && (short_name || '').match(/^S\d+/) !== null;
+
 	import db_train_lookup from '../../static/fernverkehr_2026_train_lookup.json';
 	$: is_db_fernverkehr =
 		chateau_id === 'deutschland' &&
 		((agency_id !== null && ['12681', '13557', '10918'].includes(agency_id.toString())) ||
-		 (agency_name !== null && (agency_name === 'DB Fernverkehr AG' || agency_name === 'DB Fernverkehr (Codesharing)')));
-	
+			(agency_name !== null &&
+				(agency_name === 'DB Fernverkehr AG' || agency_name === 'DB Fernverkehr (Codesharing)')));
+
 	$: effective_trip_short_name = trip_short_name || run_number;
-	$: trip_short_name_no_zeros = effective_trip_short_name ? effective_trip_short_name.replace(/^0+/, '') : null;
-	$: db_train_data = is_db_fernverkehr && trip_short_name_no_zeros ? (db_train_lookup as Record<string, any[]>)[trip_short_name_no_zeros] : null;
+	$: trip_short_name_no_zeros = effective_trip_short_name
+		? effective_trip_short_name.replace(/^0+/, '')
+		: null;
+	$: db_train_data =
+		is_db_fernverkehr && trip_short_name_no_zeros
+			? (db_train_lookup as Record<string, any[]>)[trip_short_name_no_zeros]
+			: null;
 	$: db_display_name = db_train_data ? db_train_data[0].display_name : effective_trip_short_name;
 
 	$: showLongName = !!(
@@ -194,7 +199,10 @@
 				{:else if isRatp && short_name}
 					<RatpBullet route_short_name={short_name} matchTextHeight={true} />
 				{:else if short_name && !showLongName}
-					<StationScreenRouteBadge routeDef={{ short_name: short_name, color: color, text_color: text_color }} chateau={chateau_id} />
+					<StationScreenRouteBadge
+						routeDef={{ short_name: short_name, color: color, text_color: text_color }}
+						chateau={chateau_id}
+					/>
 				{:else if short_name}
 					{#if chateau_id === 'schweiz' && (short_name.startsWith('IR') || short_name.startsWith('IC') || short_name === 'EC')}
 						<span class="font-bold inline-flex items-center">
@@ -202,7 +210,9 @@
 						</span>
 					{:else if (chateau_id !== 'nationalrailuk' || short_name.startsWith('LO-') || short_name === 'XR-ELIZABETH') && chateau_id !== 'metrolinktrains'}
 						<span
-							class="font-bold px-1.5 py-0.5 text-xs inline-block align-middle mr-1 {is_sbahn ? 'rounded-full' : 'rounded-sm'}"
+							class="font-bold px-1.5 py-0.5 text-xs inline-block align-middle mr-1 {is_sbahn
+								? 'rounded-full'
+								: 'rounded-sm'}"
 							style={`background: ${color}; color: ${text_color};`}
 						>
 							{fixRouteName(chateau_id, short_name, route_id)}
@@ -261,7 +271,10 @@
 				<span class="font-bold text-md px-1 py-0.5 mr-1 rounded-md w-min">{run_number}</span>
 			{/if}
 			{#if is_db_fernverkehr && short_name}
-				<span class="font-medium text-sm ml-1 text-gray-600 dark:text-gray-400 inline-block align-middle -translate-y-0.5">Linie {short_name}</span>
+				<span
+					class="font-medium text-sm ml-1 text-gray-600 dark:text-gray-400 inline-block align-middle -translate-y-0.5"
+					>Linie {short_name}</span
+				>
 			{/if}
 			{#if icon}
 				<span class="material-symbols-outlined text-xl align-middle -translate-y-0.5 ml-1"
