@@ -65,7 +65,7 @@
 	{#if swiss_style}
 		<td class="px-1 py-0.5 w-[40px] align-middle text-left">
 			{#if is_db_fernverkehr}
-				<span class="font-bold px-1 rounded bg-gray-200 dark:bg-gray-700 text-sm whitespace-nowrap">{db_display_name}</span>
+				<span class="font-bold text-sm whitespace-nowrap">{db_display_name}</span>
 			{:else if show_route_name && routeDef?.short_name}
 				<StationScreenRouteBadge
 					{routeDef}
@@ -149,7 +149,7 @@
 	{#if eurostyle && !swiss_style}
 		<td class="px-1 py-0.5 w-[40px] align-middle text-left">
 			{#if is_db_fernverkehr}
-				<span class="font-bold px-1 rounded bg-gray-200 dark:bg-gray-700 text-sm whitespace-nowrap">{db_display_name}</span>
+				<span class="font-bold text-sm whitespace-nowrap">{db_display_name}</span>
 			{:else if show_route_name && routeDef?.short_name}
 				<StationScreenRouteBadge
 					{routeDef}
@@ -176,7 +176,7 @@
 				class="flex flex-row text-xs text-gray-600 dark:text-gray-400 gap-2 items-center flex-wrap"
 			>
 				{#if is_db_fernverkehr && !((eurostyle || swiss_style) && routeDef?.short_name)}
-					<span class="font-bold px-1 rounded bg-gray-200 dark:bg-gray-700 text-xs whitespace-nowrap">{db_display_name}</span>
+					<span class="font-bold text-xs whitespace-nowrap">{db_display_name}</span>
 				{:else if show_route_name && !((eurostyle || swiss_style) && routeDef?.short_name)}
 					<StationScreenRouteBadge {routeDef} chateau={event.chateau} fallback_long_name={true} />
 				{/if}
