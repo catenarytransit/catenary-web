@@ -1157,34 +1157,11 @@
       }
     },
     {
-      "id": "level-street-area-lvl",
-      "type": "fill",
-      "metadata": {"general.floor": "level", "geops.filter": "level"},
-      "source": "openmaptiles",
-      "source-layer": "transportation",
-      "minzoom": 16,
-      "maxzoom": 24,
-      "filter": [
-        "all",
-        ["==", ["case", ["has", "level"], ["get", "level"], 0], 0],
-        ["match", ["get", "class"], ["path", "pier"], true, false],
-        ["==", ["geometry-type"], "Polygon"],
-        [
-          "match",
-          ["get", "subclass"],
-          ["escalator", "ramp", "steps"],
-          false,
-          true
-        ]
-      ],
-      "layout": {"visibility": "visible"},
-      "paint": {"fill-antialias": false, "fill-color": "rgba(247, 242, 237, 1)"}
-    },
-    {
       "id": "pedestrian_area_pattern-line",
       "type": "line",
       "source": "openmaptiles",
       "source-layer": "transportation",
+      "minzoom": 16,
       "filter": [
         "match",
         ["geometry-type"],
@@ -2213,6 +2190,30 @@
       ],
       "layout": {"visibility": "none"},
       "paint": {"fill-color": "rgba(255, 255, 255, 1)"}
+    },
+    {
+      "id": "level-street-area-lvl",
+      "type": "fill",
+      "metadata": {"general.floor": "level", "geops.filter": "level"},
+      "source": "openmaptiles",
+      "source-layer": "transportation",
+      "minzoom": 16,
+      "maxzoom": 24,
+      "filter": [
+        "all",
+        ["==", ["case", ["has", "level"], ["get", "level"], 0], 0],
+        ["match", ["get", "class"], ["path", "pier"], true, false],
+        ["==", ["geometry-type"], "Polygon"],
+        [
+          "match",
+          ["get", "subclass"],
+          ["escalator", "ramp", "steps"],
+          false,
+          true
+        ]
+      ],
+      "layout": {"visibility": "visible"},
+      "paint": {"fill-antialias": false, "fill-color": "rgba(247, 242, 237, 1)"}
     },
     {
       "id": "ped-area-line",
