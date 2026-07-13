@@ -259,7 +259,7 @@ export function startTrajectoryManager(map: Map) {
 						text_color: traj.text_color || '#ffffff',
 						trip_id: tripId,
 						start_time: null,
-						start_date: traj.start_date || '',
+						start_date: null,
 						crowd_symbol: '',
 						occupancy_status: '',
 						delay_label: '',
