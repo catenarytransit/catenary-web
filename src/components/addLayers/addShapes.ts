@@ -218,6 +218,8 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 		minzoom: 3
 	});
 
+	let default_grey = darkMode ? '#919191' : '#515152';
+
 	map.addLayer({
 		id: layerspercategory.intercityrail.shapes,
 		type: 'line',
@@ -247,7 +249,8 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 			//  ['!=', ['get', 'chateau'], "amtrak"],
 		],
 		paint: {
-			'line-color': ['concat', '#', ['get', 'color']],
+			'line-color': 
+			['case', ['==', ['get', 'color'], '0ea5e9'], default_grey, ['concat', '#', ['get', 'color']]],
 			'line-width': [
 				'interpolate',
 				['linear'],
@@ -509,7 +512,7 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 		paint: {
 			'text-color': ['concat', '#', ['get', 'text_color']],
 			//'text-emissive-strength': 1,
-			'text-halo-color': ['concat', '#', ['get', 'color']],
+			'text-halo-color': [['case', ['==', ['get', 'color'], '0ea5e9'], default_grey, ['concat', '#', ['get', 'color']]]],
 			'text-halo-width': 1,
 			'text-halo-blur': 1
 			//'text-opacity': ['interpolate', ['linear'], ['zoom'], 3, 0, 3.5, 0.8, 4, 1]
