@@ -512,7 +512,7 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 		paint: {
 			'text-color': ['concat', '#', ['get', 'text_color']],
 			//'text-emissive-strength': 1,
-			'text-halo-color': [['case', ['==', ['get', 'color'], '0ea5e9'], default_grey, ['concat', '#', ['get', 'color']]]],
+			'text-halo-color': ['case', ['==', ['get', 'color'], '0ea5e9'], default_grey, ['concat', '#', ['get', 'color']]],
 			'text-halo-width': 1,
 			'text-halo-blur': 1
 			//'text-opacity': ['interpolate', ['linear'], ['zoom'], 3, 0, 3.5, 0.8, 4, 1]
