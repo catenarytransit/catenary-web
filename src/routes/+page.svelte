@@ -2105,7 +2105,7 @@
 					<div class="mx-auto rounded-lg px-8 py-1 bg-sky-500 dark:bg-sky-400"></div>
 				</div>
 
-				{#if clock_skew !== null && Math.abs(clock_skew) > 2000 && !clock_skew_ignored}
+				<!-- {#if clock_skew !== null && Math.abs(clock_skew) > 2000 && !clock_skew_ignored}
 					<div
 						class="md:hidden mx-3 mt-1 mb-2 px-3 py-2 border rounded text-sm flex justify-between items-center z-10 shrink-0 {Math.abs(
 							clock_skew
@@ -2127,14 +2127,14 @@
 								: 'text-yellow-700 dark:text-yellow-300'}">{$_('clock_skew_ignore')}</button
 						>
 					</div>
-				{/if}
+				{/if} -->
 
 				<SidebarInternals {usunits} {latest_item_on_stack} {darkMode} />
 			</div>
 		{/if}
 	</div>
 
-	{#if clock_skew !== null && Math.abs(clock_skew) > 5000 && !clock_skew_ignored}
+	<!-- {#if clock_skew !== null && Math.abs(clock_skew) > 5000 && !clock_skew_ignored}
 		<div
 			class="hidden md:flex fixed top-4 left-[396px] right-20 px-4 py-2 border rounded shadow-md text-sm justify-between items-center z-40 {Math.abs(
 				clock_skew
@@ -2156,7 +2156,7 @@
 					: 'text-yellow-700 dark:text-yellow-300'}">{$_('clock_skew_ignore')}</button
 			>
 		</div>
-	{/if}
+	{/if} -->
 
 	<div
 		class="fixed top-2 left-3 right-3 sm:right-auto z-40"
