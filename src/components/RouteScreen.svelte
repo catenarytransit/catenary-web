@@ -115,6 +115,51 @@
 
 	let fetched_shapes: Record<string, any> = {};
 
+	let trips_to_trips_compressed: Record<string, any> = {};
+	let itinerary_to_direction_id: Record<string, string> = {};
+
+	function getStopName(stopRow: any) {
+		if (!route_data || !route_data.stops || !stopRow) return '';
+		const stopRefOriginal = route_data.stops[stopRow.stop_id];
+		if (!stopRefOriginal) return '';
+		const stopRefParentId = stopRefOriginal.parent_station;
+		const stopRefToUse = stopRefParentId
+			? route_data.stops[stopRefParentId]
+			: stopRefOriginal;
+		return stopRefToUse ? fixStationName(stopRefToUse.name) : '';
+	}
+
+	function getTripShortNameForDirection(directionparentid: string): string {
+		if (vehicle_positions) {
+			const vehicleIds = vehicles_under_direction_id_parent[directionparentid];
+			if (vehicleIds && vehicleIds.length > 0) {
+				for (const val of vehicleIds) {
+					const vp = vehicle_positions[val];
+					if (vp && vp.trip && vp.trip.trip_short_name) {
+						return vp.trip.trip_short_name;
+					}
+				}
+			}
+		}
+		if (trips_to_trips_compressed) {
+			for (const tripId in trips_to_trips_compressed) {
+				const trip = trips_to_trips_compressed[tripId];
+				if (trip && trip.trip_short_name) {
+					const itinId = trip.itinerary_pattern_id;
+					const directionId = itinerary_to_direction_id[itinId];
+					if (directionId) {
+						const directionParent = route_data.direction_patterns[directionId]?.direction_pattern?.direction_pattern_id_parents ||
+							route_data.direction_patterns[directionId]?.direction_pattern?.direction_pattern_id;
+						if (directionParent === directionparentid) {
+							return trip.trip_short_name;
+						}
+					}
+				}
+			}
+		}
+		return '';
+	}
+
 	function fix_route_url(x: string): string {
 		if (x.includes('foothilltransit.org') && !x.includes('www.foothilltransit.org')) {
 			return x.replace('foothilltransit.org', 'www.foothilltransit.org');
@@ -355,6 +400,14 @@
 
 					if (data.vehicle_positions) {
 						vehicle_positions = data.vehicle_positions;
+					}
+
+					if (data.trips_to_trips_compressed) {
+						trips_to_trips_compressed = data.trips_to_trips_compressed;
+					}
+
+					if (data.itinerary_to_direction_id) {
+						itinerary_to_direction_id = data.itinerary_to_direction_id;
 					}
 
 					route_rt_last_updated = data.last_updated_time_ms;
@@ -805,13 +858,24 @@
 			{#each sort_order_of_dir_parents_store as directionparentid, index}
 				{@const directionIdFirst = new_directions_from_parent_store[directionparentid][0]}
 				{@const directionReference = route_data.direction_patterns[directionIdFirst]}
+				{@const firstStopRow = directionReference.rows[0]}
+				{@const lastStopRow = directionReference.rows[directionReference.rows.length - 1]}
+				{@const firstStationName = getStopName(firstStopRow)}
+				{@const lastStationName = getStopName(lastStopRow)}
+				{@const headsign = directionReference.direction_pattern.headsign_or_destination || ''}
+				{@const isSame = lastStationName.trim().toLowerCase() === headsign.trim().toLowerCase()}
+				{@const tripShortName = getTripShortNameForDirection(directionparentid)}
 
 				<div
 					on:click={() => change_active_pattern(directionparentid)}
 					class={`border border-gray-500 py-1 px-1 text-sm  hover:bg-seashore flex rounded-md min-w-36  leading-tight ${directionparentid == activePattern ? 'bg-seashore' : 'bg-white dark:bg-gray-800'}`}
 				>
 					<p>
-						<span>{titleCase(directionReference.direction_pattern.headsign_or_destination)}</span>
+						{#if isSame}
+							<span>{firstStationName} → {lastStationName}</span>
+						{:else}
+							<span>{tripShortName ? tripShortName + ' ' : ''}{firstStationName} → {lastStationName}</span>
+						{/if}
 						<span class="text-xs"
 							>{' ('}{directionReference.rows.length}{' '}{$_('stops')}{' )'}</span
 						>
