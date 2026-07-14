@@ -34,9 +34,17 @@
 	$: show_route_name =
 		event.chateau !== 'nationalrailuk' || ['TW', 'ME', 'LO', 'XR', 'HX'].includes(agencyId);
 
-	$: is_db_fernverkehr = event.chateau === 'deutschland' && agencyId && ['12681', '13557', '10918'].includes(agencyId.toString());
-	$: trip_short_name_no_zeros = event.trip_short_name ? event.trip_short_name.replace(/^0+/, '') : null;
-	$: db_train_data = is_db_fernverkehr && trip_short_name_no_zeros ? (db_train_lookup as Record<string, any[]>)[trip_short_name_no_zeros] : null;
+	$: is_db_fernverkehr =
+		event.chateau === 'deutschland' &&
+		agencyId &&
+		['12681', '13557', '10918'].includes(agencyId.toString());
+	$: trip_short_name_no_zeros = event.trip_short_name
+		? event.trip_short_name.replace(/^0+/, '')
+		: null;
+	$: db_train_data =
+		is_db_fernverkehr && trip_short_name_no_zeros
+			? (db_train_lookup as Record<string, any[]>)[trip_short_name_no_zeros]
+			: null;
 	$: db_display_name = db_train_data ? db_train_data[0].display_name : event.trip_short_name;
 </script>
 
@@ -166,6 +174,9 @@
 		<div class="flex flex-col justify-center">
 			<div class="flex flex-row items-center gap-2 mb-0.5">
 				<div class="text-sm font-normal leading-none">
+					{#if event.final_station_name}
+						<span class="mr-1">{event.final_station_name}</span>
+					{/if}
 					{event.headsign}
 					{#if event.trip_short_name && !is_db_fernverkehr}
 						<span class="font-bold ml-1 text-xs">{event.trip_short_name}</span>
