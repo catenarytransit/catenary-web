@@ -106,8 +106,13 @@
 			{:else if shared_rt_time}
 				<!-- Vertical Mode: Scheduled -> Delay -> Realtime -->
 				{#if shared_rt_time != shared_scheduled_time}
-					<span class="text-gray-600 dark:text-gray-400 line-through text-xs">
+					<span class="text-gray-600 dark:text-gray-400 line-through">
 						<Clock {timezone} time_seconds={shared_scheduled_time} {show_seconds} />
+					</span>
+					<span
+						class={`text-seashore dark:text-seashoredark font-medium ${shared_rt_time < current_time / 1000 ? 'opacity-70' : ''}`}
+					>
+						<Clock {timezone} time_seconds={shared_rt_time} {show_seconds} />
 					</span>
 					{#if shared_scheduled_time}
 						<DelayDiff
@@ -116,11 +121,6 @@
 							{use_symbol_sign}
 						/>
 					{/if}
-					<span
-						class={`text-seashore dark:text-seashoredark font-medium ${shared_rt_time < current_time / 1000 ? 'opacity-70' : ''}`}
-					>
-						<Clock {timezone} time_seconds={shared_rt_time} {show_seconds} />
-					</span>
 				{:else}
 					<!-- On Time (Vertical) - Just show Clock -->
 					<span
