@@ -1,16 +1,144 @@
 <script lang="ts">
-	let departure_list: any[] = [];
+	type UnixTimestamp = number;
+	type ServiceDate = string;
 
-	// We will hold the parsed data here
-	let v3_long_distance: any[] = [];
-	let v3_local: any[] = [];
-	let v3_routes: Record<string, Record<string, any>> = {};
-	let v3_agencies: Record<string, Record<string, any>> = {};
-	let v3_stops: Record<string, Record<string, any>> = {};
+	interface NearbyDeparturesV3Query {
+		lat: number;
+		lon: number;
+		departure_time?: UnixTimestamp;
+		radius?: number;
+		limit_per_station?: number;
+		limit_per_headsign?: number;
+		skip_realtime?: boolean;
+		rt_timeout_ms?: number;
+	}
 
-	// This is the flattened list for main display
-	// Type: { type: 'station' | 'route_group', data: any, sortDistance: number }
-	let display_items: any[] = [];
+	interface StopOutputV3 {
+		gtfs_id: string;
+		name: string;
+		lat: number;
+		lon: number;
+		osm_station_id: number | null;
+		timezone: string;
+	}
+
+	interface NearbyDeparturesDebug {
+		total_time_ms: number;
+		db_connection_time_ms: number;
+		stops_fetch_time_ms: number;
+		etcd_connection_time_ms: number;
+		pipeline_processing_time_ms: number;
+	}
+
+	interface RouteInfoExport {
+		short_name: string | null;
+		long_name: string | null;
+		agency_name: string | null;
+		color: string | null;
+		text_color: string | null;
+		route_type: number;
+
+		/*
+		 * These are added or inspected by the frontend even though the Rust
+		 * RouteInfoExport currently does not explicitly serialize agency_id.
+		 */
+		agency_id?: string;
+	}
+
+	interface AgencyInfo {
+		agency_name: string | null;
+	}
+
+	interface LongDistanceDeparture {
+		scheduled_departure: UnixTimestamp | null;
+		realtime_departure: UnixTimestamp | null;
+		scheduled_arrival: UnixTimestamp | null;
+		realtime_arrival: UnixTimestamp | null;
+		service_date: ServiceDate;
+		headsign: string;
+		platform: string | null;
+		trip_id: string;
+		trip_short_name: string | null;
+		route_id: string;
+		stop_id: string;
+		agency_id: string;
+		cancelled: boolean;
+		delayed: boolean;
+		chateau_id: string;
+		last_stop: boolean;
+		final_station_name: string | null;
+	}
+
+	interface StationDepartureGroup {
+		station_name: string;
+		osm_station_id: number | null;
+		distance_m: number;
+		departures: LongDistanceDeparture[];
+		lat: number;
+		lon: number;
+		timezone: string;
+	}
+
+	interface LocalDeparture {
+		trip_id: string;
+		departure_schedule: UnixTimestamp | null;
+		departure_realtime: UnixTimestamp | null;
+		arrival_schedule: UnixTimestamp | null;
+		arrival_realtime: UnixTimestamp | null;
+		stop_id: string;
+		stop_name: string | null;
+		cancelled: boolean;
+		platform: string | null;
+		service_date: ServiceDate;
+		last_stop: boolean;
+	}
+
+	interface LocalDepartureRouteGroup {
+		chateau_id: string;
+		route_id: string;
+		color: string | null;
+		text_color: string | null;
+		short_name: string | null;
+		long_name: string | null;
+		route_type: number;
+		agency_name: string | null;
+		headsigns: Record<string, LocalDeparture[]>;
+		closest_distance: number;
+	}
+
+	interface NearbyDeparturesV3Response {
+		long_distance: StationDepartureGroup[];
+		local: LocalDepartureRouteGroup[];
+		routes: Record<string, Record<string, RouteInfoExport>>;
+		stops: Record<string, Record<string, StopOutputV3>>;
+		debug: NearbyDeparturesDebug;
+	}
+
+	interface StationDisplayItem {
+		type: 'station';
+		data: StationDepartureGroup;
+		sortDistance: number;
+	}
+
+	interface RouteGroupDisplayItem {
+		type: 'route_group';
+		data: LocalDepartureRouteGroup;
+		sortDistance: number;
+	}
+
+	type NearbyDisplayItem = StationDisplayItem | RouteGroupDisplayItem;
+
+	let departure_list: LongDistanceDeparture[] = [];
+
+	// Parsed nearby-departures v3 response data.
+	let v3_long_distance: StationDepartureGroup[] = [];
+	let v3_local: LocalDepartureRouteGroup[] = [];
+	let v3_routes: Record<string, Record<string, RouteInfoExport>> = {};
+	let v3_agencies: Record<string, Record<string, AgencyInfo>> = {};
+	let v3_stops: Record<string, Record<string, StopOutputV3>> = {};
+
+	// Flattened union used by the main display.
+	let display_items: NearbyDisplayItem[] = [];
 	export let usunits: boolean = false;
 	export let darkMode: boolean = true;
 
@@ -131,26 +259,37 @@
 	// Helper function to get effective departure time for v3 local departures
 	// Uses realtime_departure if available, otherwise uses arrival_realtime if it's
 	// greater than departure_schedule, otherwise falls back to departure_schedule
-	function getEffectiveStationRealtimeDeparture(departure: any): number | null {
-		if (departure.realtime_departure != null) {
+	function getEffectiveStationRealtimeDeparture(
+		departure: LongDistanceDeparture
+	): UnixTimestamp | null {
+		if (departure.realtime_departure !== null) {
 			return departure.realtime_departure;
 		}
+
 		if (
-			departure.realtime_arrival != null &&
+			departure.realtime_arrival !== null &&
+			departure.scheduled_departure !== null &&
 			departure.realtime_arrival > departure.scheduled_departure
 		) {
 			return departure.realtime_arrival;
 		}
+
 		return null;
 	}
 
-	function getEffectiveDepartureTime(trip: any): number | null {
-		if (trip.departure_realtime != null) {
+	function getEffectiveDepartureTime(trip: LocalDeparture): UnixTimestamp | null {
+		if (trip.departure_realtime !== null) {
 			return trip.departure_realtime;
 		}
-		if (trip.arrival_realtime != null && trip.arrival_realtime > trip.departure_schedule) {
+
+		if (
+			trip.arrival_realtime !== null &&
+			trip.departure_schedule !== null &&
+			trip.arrival_realtime > trip.departure_schedule
+		) {
 			return trip.arrival_realtime;
 		}
+
 		return trip.departure_schedule;
 	}
 
@@ -270,13 +409,13 @@
 		}));
 
 		// 3. Sorting Logic:
-		let final_list = [];
+		let final_list: NearbyDisplayItem[] = [];
 		wrapped_stations.sort((a, b) => a.sortDistance - b.sortDistance);
 
 		// Check if the closest station meets the 500m threshold for hoisting
 		const should_hoist = wrapped_stations.length > 0 && wrapped_stations[0].sortDistance < 500;
 
-		let mixed = [];
+		let mixed: NearbyDisplayItem[] = [];
 
 		if (should_hoist) {
 			// Hoist the closest station to the top
@@ -309,9 +448,12 @@
 		display_items = [...final_list, ...mixed];
 	}
 
-	function getName(item: any) {
-		if (item.type === 'station') return item.data.station_name;
-		return item.data.short_name || item.data.long_name || '';
+	function getName(item: NearbyDisplayItem): string {
+		if (item.type === 'station') {
+			return item.data.station_name;
+		}
+
+		return item.data.short_name ?? item.data.long_name ?? '';
 	}
 
 	let current_time: number = 0;
@@ -507,14 +649,16 @@
 
 			fetch(url, { signal: signal })
 				.then((response) => response.text())
-				.then((text) => jsonWebWorker.parse(text))
-				.then((data) => {
+				.then((text): Promise<NearbyDeparturesV3Response> => jsonWebWorker.parse(text))
+				.then((data: NearbyDeparturesV3Response) => {
 					v3_long_distance = data.long_distance || [];
 					v3_local = data.local || [];
 					loading = false;
 
-					let raw_routes = data.routes || {};
-					let raw_agencies = {};
+					const raw_routes: Record<string, Record<string, RouteInfoExport>> =
+						data.routes ?? {};
+
+					const raw_agencies: Record<string, Record<string, AgencyInfo>> = {};
 					for (let chateau in raw_routes) {
 						if (!raw_agencies[chateau]) raw_agencies[chateau] = {};
 						for (let route_id in raw_routes[chateau]) {
@@ -563,10 +707,10 @@
 		}
 	}
 
-	function sort_headsigns(headsigns: Record<string, any[]>) {
-		let entries = Object.entries(headsigns);
-		entries.sort((a, b) => a[0].localeCompare(b[0]));
-		return entries;
+	function sort_headsigns(
+		headsigns: Record<string, LocalDeparture[]>
+	): Array<[string, LocalDeparture[]]> {
+		return Object.entries(headsigns).sort(([a], [b]) => a.localeCompare(b));
 	}
 
 	function checkEurostyle(lat: number, lng: number) {
