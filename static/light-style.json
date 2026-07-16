@@ -2090,6 +2090,220 @@
       }
     },
     {
+      "id": "level-street-k-lvl-pedestrian",
+      "type": "line",
+      "metadata": {"general.floor": "level", "geops.filter": "level"},
+      "source": "openmaptiles",
+      "source-layer": "transportation",
+      "minzoom": 9,
+      "maxzoom": 24,
+      "filter": [
+        "all",
+        ["==", ["case", ["has", "level"], ["get", "level"], 0], 0],
+        [
+          "any",
+          [
+            "all",
+            ["match", ["get", "class"], ["path"], true, false],
+            ["==", ["zoom"], 15]
+          ],
+          [
+            "all",
+            ["match", ["get", "class"], ["path"], true, false],
+            [">=", ["zoom"], 16]
+          ]
+        ],
+        ["==", ["geometry-type"], "LineString"]
+      ],
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round",
+        "visibility": "visible"
+      },
+      "paint": {
+        "line-blur": 0.4,
+        "line-color": "rgba(169, 163, 163, 1)",
+        "line-gap-width": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          12,
+          [
+            "match",
+            ["get", "class"],
+            ["motorway", "trunk", "primary", "secondary", "tertiary"],
+            3,
+            2
+          ],
+          16,
+          [
+            "match",
+            ["get", "class"],
+            ["motorway", "trunk", "primary"],
+            10,
+            [
+              "match",
+              ["get", "class"],
+              ["secondary", "tertiary"],
+              8,
+              ["match", ["get", "class"], ["minor"], 4, 2]
+            ]
+          ],
+          18,
+          [
+            "match",
+            ["get", "class"],
+            ["motorway", "trunk", "primary"],
+            40,
+            [
+              "match",
+              ["get", "class"],
+              ["secondary", "tertiary"],
+              30,
+              ["match", ["get", "class"], ["minor"], 20, 6]
+            ]
+          ],
+          20,
+          [
+            "match",
+            ["get", "class"],
+            ["motorway", "trunk", "primary"],
+            100,
+            [
+              "match",
+              ["get", "class"],
+              ["secondary", "tertiary"],
+              80,
+              ["match", ["get", "class"], ["minor"], 50, 20]
+            ]
+          ]
+        ],
+        "line-offset": 0,
+        "line-opacity": 1,
+        "line-width": {"stops": [[14, 0.2], [15, 0.6]]}
+      }
+    },
+    {
+      "id": "level-street-lvl-pedestrian",
+      "type": "line",
+      "metadata": {"general.floor": "level", "geops.filter": "level"},
+      "source": "openmaptiles",
+      "source-layer": "transportation",
+      "minzoom": 9,
+      "maxzoom": 24,
+      "filter": [
+        "all",
+        ["==", ["case", ["has", "level"], ["get", "level"], 0], 0],
+        [
+          "any",
+          [
+            "all",
+            ["match", ["get", "class"], ["path"], true, false],
+            ["==", ["zoom"], 15]
+          ],
+          [
+            "all",
+            ["match", ["get", "class"], ["path"], true, false],
+            [">=", ["zoom"], 16]
+          ]
+        ],
+        ["==", ["geometry-type"], "LineString"]
+      ],
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round",
+        "visibility": "visible"
+      },
+      "paint": {
+        "line-blur": 1,
+        "line-color": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          11.9,
+          [
+            "match",
+            ["get", "class"],
+            ["path"],
+            "rgba(227, 208, 188, 1)",
+            ["motorway", "trunk"],
+            "rgba(237, 229, 212, 1)",
+            ["primary"],
+            "rgba(237, 229, 212, 1)",
+            "rgba(255, 255, 255, 1)"
+          ],
+          12,
+          [
+            "match",
+            ["get", "class"],
+            ["path"],
+            "rgba(227, 208, 188, 1)",
+            ["motorway", "trunk"],
+            "rgba(243, 234, 216, 1)",
+            ["primary"],
+            "rgba(255, 255, 255, 1)",
+            "rgba(255, 255, 255, 1)"
+          ]
+        ],
+        "line-opacity": 1,
+        "line-width": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          12,
+          [
+            "match",
+            ["get", "class"],
+            ["motorway", "trunk", "primary", "secondary", "tertiary"],
+            3,
+            2
+          ],
+          16,
+          [
+            "match",
+            ["get", "class"],
+            ["motorway", "trunk", "primary"],
+            10,
+            [
+              "match",
+              ["get", "class"],
+              ["secondary", "tertiary"],
+              8,
+              ["match", ["get", "class"], ["minor"], 4, 2]
+            ]
+          ],
+          18,
+          [
+            "match",
+            ["get", "class"],
+            ["motorway", "trunk", "primary"],
+            40,
+            [
+              "match",
+              ["get", "class"],
+              ["secondary", "tertiary"],
+              30,
+              ["match", ["get", "class"], ["minor"], 20, 6]
+            ]
+          ],
+          20,
+          [
+            "match",
+            ["get", "class"],
+            ["motorway", "trunk", "primary"],
+            100,
+            [
+              "match",
+              ["get", "class"],
+              ["secondary", "tertiary"],
+              80,
+              ["match", ["get", "class"], ["minor"], 50, 20]
+            ]
+          ]
+        ]
+      }
+    },
+    {
       "id": "road_major_rail_hatching",
       "type": "line",
       "source": "openmaptiles",
