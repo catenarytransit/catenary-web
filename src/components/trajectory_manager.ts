@@ -10,6 +10,7 @@ let interpolationInterval: any = null;
 let wsUnsubscribe: (() => void) | null = null;
 let activeTrajectoriesData: Record<string, { content: any[]; timestamp: number }> = {};
 let pendingSourceData: Record<string, any> = {};
+let sourceHasFeatures: Record<string, boolean> = {};
 
 // Calculate bearing in degrees from [lon1, lat1] to [lon2, lat2]
 function calculateBearing(lon1: number, lat1: number, lon2: number, lat2: number): number {
@@ -284,6 +285,13 @@ export function startTrajectoryManager(map: Map) {
 
 		// Update map GeoJSON sources
 		const updateSource = (sourceName: string, features: any[]) => {
+			const hasFeatures = features.length > 0;
+
+			// Skip repeated empty updates, but clear a source once after it had features.
+			if (!hasFeatures && sourceHasFeatures[sourceName] !== true) {
+				return;
+			}
+
 			const source = map.getSource(sourceName) as GeoJSONSource;
 			if (source) {
 				source.setData({
@@ -297,6 +305,8 @@ export function startTrajectoryManager(map: Map) {
 					features
 				};
 			}
+
+			sourceHasFeatures[sourceName] = hasFeatures;
 		};
 
 		updateSource('trajectory_buses', busesFeatures);
@@ -318,6 +328,7 @@ export function stopTrajectoryManager() {
 	activeTrajectoriesData = {};
 	lastTrajectorySubParams = '';
 	pendingSourceData = {};
+	sourceHasFeatures = {};
 }
 
 export function applyPendingSourceData(map: Map) {
