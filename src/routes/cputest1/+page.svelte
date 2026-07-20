@@ -4,7 +4,7 @@ import {onMount} from "svelte";
 
 
 
-function runCpuBenchmark(iterations = 12_000_000) {
+function runCpuBenchmark(iterations = 10_000_000) {
   return new Promise((resolve, reject) => {
     const workerSource = `
       self.onmessage = ({ data }) => {
