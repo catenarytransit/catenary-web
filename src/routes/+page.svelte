@@ -2093,7 +2093,7 @@
 			<div
 				id="catenary-sidebar"
 				style="height: {sidebar_height_output}; transform: translateX({translate_x_sidebar});"
-				class="z-20 rounded-t-2xl md:rounded-none fixed bottom-0 w-full sm:w-2/5 md:h-full md:w-[380px] lg:w-[480px] bg-white dark:bg-gray-900 bg-opacity-70 dark:bg-opacity-70 md:bg-opacity-80 md:dark:bg-opacity-70 backdrop-blur-xs md:backdrop-blur-sm md:fixed md:left-0 md:top-0 md:bottom-0 text-black dark:text-white flex flex-col select-text"
+				class="z-20 rounded-t-2xl md:rounded-none fixed bottom-0 w-full sm:w-2/5 md:h-full md:w-[380px] xl:w-[480px] bg-white dark:bg-gray-900 bg-opacity-70 dark:bg-opacity-70 md:bg-opacity-80 md:dark:bg-opacity-70 backdrop-blur-xs md:backdrop-blur-sm md:fixed md:left-0 md:top-0 md:bottom-0 text-black dark:text-white flex flex-col select-text"
 			>
 				<div
 					class="flex md:hidden py-2 flex-row"
