@@ -238,8 +238,6 @@ export function startTrajectoryManager(map: Map) {
 					type: 'Feature' as const,
 					id: `trajectory_${uniqueTripId}`,
 					properties: {
-						vehicleIdLabel: '',
-						speed: '',
 						color: rawColor,
 						chateau: traj.chateau_id || '',
 						route_type: routeType,
