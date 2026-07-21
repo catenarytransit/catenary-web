@@ -26,55 +26,108 @@
 		}
 	}
 
-	var languagelist = Object.values(alerts)
-		.map((alert: any) => {
-			let list: any[] = [];
+	function alertLanguageCode(language: string): string {
+		return language.replace(/-html$/, '').replaceAll('_', '-');
+	}
 
-			if (alert.header_text != null) {
-				list = list.concat(alert.header_text.translation.map((x: any) => x.language || 'unknown'));
-			}
+	function alertLanguageLabel(language: string): string {
+		return alertLanguageCode(language) || 'und';
+	}
 
-			if (alert.description_text != null) {
-				list = list.concat(
-					alert.description_text.translation.map((x: any) => x.language || 'unknown')
-				);
-			}
+	function defaultAlertLanguage(languages: string[], currentLocale: string): string {
+		const localeTag = currentLocale.replaceAll('_', '-');
+		const localeLanguage = localeTag.split('-')[0];
 
-			return list;
-		})
-		.flat()
-		.filter((x, i, a) => a.indexOf(x) == i);
-
-	let languagelistToUse = languagelist.includes('en-html')
-		? languagelist.filter((x) => x != 'en')
-		: languagelist;
-
-	$: userLanguagePrefix = locale_code.split('-')[0];
-	$: previewLanguageList = (() => {
-		if (!currentAlert) return [];
-		let languages: any[] = [];
-		if (currentAlert.header_text) {
-			languages = languages.concat(
-				currentAlert.header_text.translation.map((x: any) => x.language || 'unknown')
-			);
-		}
-		if (currentAlert.description_text) {
-			languages = languages.concat(
-				currentAlert.description_text.translation.map((x: any) => x.language || 'unknown')
-			);
-		}
-		languages = [...new Set(languages)];
-
-		if (languages.includes('en-html')) {
-			languages = languages.filter((x) => x != 'en');
-		}
-
-		const matches = languages.filter(
-			(lang) =>
-				lang === locale_code || lang === userLanguagePrefix || lang.startsWith(userLanguagePrefix)
+		return (
+			languages.find(
+				(language) => alertLanguageCode(language).toLowerCase() === localeTag.toLowerCase()
+			) ??
+			languages.find(
+				(language) =>
+					alertLanguageCode(language).split('-')[0].toLowerCase() ===
+					localeLanguage.toLowerCase()
+			) ??
+			languages[0]
 		);
-		return matches.length > 0 ? matches : languages;
+	}
+
+	function translationsForLanguage(text: any, language: string): any[] {
+		if (!text?.translation) return [];
+
+		const exact = text.translation.find(
+			(translation: any) => (translation.language || '') === language
+		);
+		const translation =
+			exact ??
+			text.translation.find(
+				(translation: any) =>
+					alertLanguageCode(translation.language || '').toLowerCase() ===
+					alertLanguageCode(language).toLowerCase()
+			);
+
+		return translation ? [translation] : [];
+	}
+
+	function toggleLanguage(language: string) {
+		if (selectedLanguages.has(language)) {
+			if (selectedLanguages.size === 1) return;
+
+			const next = new Set(selectedLanguages);
+			next.delete(language);
+			selectedLanguages = next;
+			return;
+		}
+
+		selectedLanguages = new Set([...selectedLanguages, language]);
+	}
+
+	let languagelist: string[] = [];
+	let languagelistToUse: string[] = [];
+	let selectedLanguages = new Set<string>();
+	let selectedLanguageSource = '';
+
+	$: languagelist = [
+		...new Set(
+			(Object.values(alerts) as any[]).flatMap((alert: any) => {
+				const translations = [
+					...(alert.header_text?.translation || []),
+					...(alert.description_text?.translation || []),
+					...(alert.url?.translation || [])
+				];
+
+				return translations.map((translation: any) => translation.language || '');
+			})
+		)
+	];
+
+	$: languagelistToUse = (() => {
+		if (languagelist.length === 0) return [''];
+
+		const basesToHide = new Set(
+			languagelist
+				.filter((language) => language.endsWith('-html'))
+				.map((language) => language.slice(0, -'-html'.length))
+		);
+
+		return languagelist.filter((language) => !basesToHide.has(language));
 	})();
+
+	$: {
+		const nextLanguageSource = JSON.stringify([locale_code, languagelistToUse]);
+		if (nextLanguageSource !== selectedLanguageSource) {
+			selectedLanguageSource = nextLanguageSource;
+			selectedLanguages = new Set([defaultAlertLanguage(languagelistToUse, locale_code)]);
+		}
+	}
+
+	$: previewLanguageList = currentAlert
+		? languagelistToUse.filter(
+				(language) =>
+					selectedLanguages.has(language) &&
+					(translationsForLanguage(currentAlert.header_text, language).length > 0 ||
+						translationsForLanguage(currentAlert.description_text, language).length > 0)
+			)
+		: [];
 
 	// Cycling logic for collapsed state
 	function startCycling() {
@@ -159,7 +212,7 @@
 						{#if currentAlert}
 							{#if currentAlert.header_text}
 								{#each previewLanguageList as language}
-									{#each currentAlert.header_text.translation.filter((x) => (x.language || 'unknown') == language) as each_header_translation_obj}
+									{#each translationsForLanguage(currentAlert.header_text, language) as each_header_translation_obj}
 										<p class="truncate">
 											<span class="font-bold">
 												{#each each_header_translation_obj.text.split(/(\[[A-Z0-9]+\])/g) as part, i}
@@ -180,7 +233,7 @@
 
 							{#if currentAlert.description_text}
 								{#each previewLanguageList as language}
-									{#each currentAlert.description_text.translation.filter((x) => (x.language || 'unknown') == language) as each_desc_translation_obj}
+									{#each translationsForLanguage(currentAlert.description_text, language) as each_desc_translation_obj}
 										<p class="truncate">
 											{#each each_desc_translation_obj.text.split(/(\[[A-Z0-9]+\])/g) as part, i}
 												{#if i % 2 === 1}
@@ -219,6 +272,22 @@
 		</div>
 
 		{#if expanded}
+			<div class="mt-2 flex flex-row gap-2 overflow-x-auto pb-1" role="group" aria-label="Alert languages">
+				{#each languagelistToUse as language}
+					<button
+						type="button"
+						class={`shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+							selectedLanguages.has(language)
+								? 'border-[#F99C24] bg-[#F99C24] text-black'
+								: 'border-gray-400 bg-transparent text-gray-700 dark:border-gray-500 dark:text-gray-200'
+						}`}
+						aria-pressed={selectedLanguages.has(language)}
+						on:click={() => toggleLanguage(language)}
+					>
+						{alertLanguageLabel(language)}
+					</button>
+				{/each}
+			</div>
 			<div class="py-0.5"></div>
 			{#each Object.values(alerts) as alert}
 				<div class="pt-1">
@@ -232,19 +301,21 @@
 					{/if}
 
 					{#if alert.url}
-						{#each alert.url.translation as url_translation}
-							<p class="text-sm">
-								<span>{url_translation.language != null ? url_translation.language : ''}: </span><a
-									href={url_translation.text}
-									class="hover:underline text-sky-500 dark:text-sky-300"
-									target="_blank">{url_translation.text}</a
-								>
-							</p>
+						{#each languagelistToUse.filter((language) => selectedLanguages.has(language)) as language}
+							{#each translationsForLanguage(alert.url, language) as url_translation}
+								<p class="text-sm">
+									<span>{url_translation.language != null ? url_translation.language : ''}: </span><a
+										href={url_translation.text}
+										class="hover:underline text-sky-500 dark:text-sky-300"
+										target="_blank">{url_translation.text}</a
+									>
+								</p>
+							{/each}
 						{/each}
 					{/if}
-					{#each languagelistToUse as language}
+					{#each languagelistToUse.filter((language) => selectedLanguages.has(language)) as language}
 						{#if alert.header_text != null}
-							{#each alert.header_text.translation.filter((x) => (x.language || 'unknown') == language) as each_header_translation_obj}
+							{#each translationsForLanguage(alert.header_text, language) as each_header_translation_obj}
 								<p class={`text-sm`}>
 									{#each each_header_translation_obj.text.split(/(\[[A-Z0-9]+\])/g) as part, i}
 										{#if i % 2 === 1}
@@ -258,7 +329,7 @@
 						{/if}
 
 						{#if alert.description_text != null}
-							{#each alert.description_text.translation.filter((x) => (x.language || 'unknown') == language) as description_alert}
+							{#each translationsForLanguage(alert.description_text, language) as description_alert}
 								<div class="leading-none">
 									{#each description_alert.text.split('\n') as each_desc_line}
 										<div class="text-xs pt-0.5">
