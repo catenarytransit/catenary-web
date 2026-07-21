@@ -2054,6 +2054,8 @@
 		<ConsentBanner />
 		<div id="map" class="fixed top-0 left-0 w-[100vw] h-[100vh]"></div>
 
+		<canvas class="fixed top-0 left-0 w-[100vw] h-[100vh]" style="position: absolute; left: 0px; transform-origin: left top 0px; transform: matrix(1, 0, 0, 1, 0, 0);" ></canvas>
+
 		{#key top_margin_collapser_sidebar}
 			<div
 				class="fixed hidden md:flex p-1 items-center rounded-r-md bg-white dark:bg-gray-900 text-black dark:text-white"
