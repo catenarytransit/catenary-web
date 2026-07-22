@@ -1522,16 +1522,10 @@
 											</div>
 										{/if}
 									</div>
-								</td>
 
-								<!-- Arrival Countdown -->
+									<!-- Arrival Countdown -->
 								{#if show_countdown_to_stop}
-									<td
-										class="align-top text-right whitespace-nowrap {i <= last_inactive_stop_idx
-											? 'opacity-70'
-											: ''}"
-									>
-										<div class="leading-none text-xs italic opacity-75 mt-0.5">
+										<div class="leading-none text-xs opacity-75 mt-0.5">
 											<TimeDiff
 												diff={(stoptime.rt_arrival_time ||
 													stoptime.scheduled_arrival_time_unix_seconds ||
@@ -1539,12 +1533,15 @@
 													current_time / 1000}
 												{show_seconds}
 												show_brackets={false}
-												use_ticks={false}
+												use_ticks={true}
+												space_between={false}
 												textclass={'text-xs slashed-zero tabular-nums'}
 											/>
 										</div>
-									</td>
 								{/if}
+								</td>
+
+								
 
 								<!-- Pearl Chain Column: Just the line -->
 								<td class="w-4 relative p-0 align-top">
@@ -1617,26 +1614,23 @@
 										</div>
 									{/if}
 								</div>
-							</td>
 
-							<!-- Countdown Column -->
+								<!-- Countdown Column -->
 							{#if show_countdown_to_stop}
-								<td
-									class="align-top text-right whitespace-nowrap {i <= last_inactive_stop_idx
-										? 'opacity-70'
-										: ''}"
-								>
-									<div class="leading-none text-xs italic opacity-75 mt-0.5">
+									<div class="leading-none text-xs  opacity-75 mt-0.5">
 										<TimeDiff
 											diff={mainDisplayTime - current_time / 1000}
 											{show_seconds}
 											show_brackets={false}
-											use_ticks={false}
+											space_between={false}
+											use_ticks={true}
 											textclass={'text-xs slashed-zero tabular-nums'}
 										/>
 									</div>
-								</td>
 							{/if}
+							</td>
+
+							
 
 							<!-- Pearl Chain Column -->
 							<td class="w-4 relative p-0 align-top">
