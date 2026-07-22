@@ -1516,6 +1516,7 @@
 					{#each stoptimes_cleaned_dataset as stoptime, i}
 						{@const connectionKey = stop_connections[stoptime.stop_id] ? stoptime.stop_id : null}
 						{@const isDoubleTime = shouldShowDoubleTime(stoptime)}
+						{@const isLastStop = i === stoptimes_cleaned_dataset.length - 1}
 
 						{#if isDoubleTime}
 							<!-- Arrival Row -->
@@ -1548,7 +1549,7 @@
 								>
 									<div class="flex flex-col items-end mt-0.5">
 										<div class="flex flex-row gap-2 justify-end">
-											<div class="font-bold leading-none text-sm">
+											<div class={`leading-none text-sm ${isLastStop ? 'font-bold' : 'font-normal'}`}>
 												<Clock
 													timezone={stoptime.timezone || trip_data.tz}
 													time_seconds={stoptime.rt_arrival_time ||
@@ -1698,19 +1699,17 @@
 								>
 									<!-- Top Line -->
 									{#if i > 0 || isDoubleTime}
-										{#if i < stoptimes_cleaned_dataset.length - 1}
-											<div
-												class="bg-gray-800 dark:bg-gray-300 w-0.5 absolute top-0 bottom-1/2 bg-current"
-												style={` opacity: ${i <= last_inactive_stop_idx - 1 ? '0.4' : '1'};`}
-											></div>
-										{/if}
+										<div
+											class="bg-gray-800 dark:bg-gray-300 w-0.5 absolute top-0 bottom-1/2 bg-current"
+											style={` opacity: ${i <= last_inactive_stop_idx - 1 ? '0.4' : '1'};`}
+										></div>
 									{/if}
 
 									<!-- Bottom Line -->
-									{#if i < stoptimes_cleaned_dataset.length - 1}
+									{#if !isLastStop}
 										<div
-											class="bg-gray-800 dark:bg-gray-300 w-0.5 absolute top-1/2 bottom-0 bg-current"
-											style={` opacity: ${i <= last_inactive_stop_idx - 1 ? '0.4' : '1'};`}
+											class="bg-gray-800 dark:bg-gray-300 w-0.5 absolute bottom-0 bg-current"
+											style={` top: ${i === 0 && !isDoubleTime ? '0.5rem' : '50%'}; opacity: ${i <= last_inactive_stop_idx - 1 ? '0.4' : '1'};`}
 										></div>
 									{/if}
 
