@@ -1513,7 +1513,7 @@
 										{#if stoptime.rt_arrival_diff}
 											<div class="leading-none">
 												<DelayDiff
-													alltextclass="text-xs"
+													alltextclass="text-xs font-normal"
 													use_symbol_sign={true}
 													use_ticks={true}
 													{show_seconds}
