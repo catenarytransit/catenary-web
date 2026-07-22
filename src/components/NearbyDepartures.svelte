@@ -294,10 +294,22 @@
 	}
 
 	let current_nearby_pick_state = get(nearby_pick_state_store);
+	let current_nearby_user_pick = get(nearby_user_picks_store);
 
 	nearby_pick_state_store.subscribe((x) => {
 		current_nearby_pick_state = x;
 	});
+
+	nearby_user_picks_store.subscribe((x) => {
+		current_nearby_user_pick = x;
+	});
+
+	$: if (current_nearby_pick_state == 1 && current_nearby_user_pick != null) {
+		syncNearbyDeparturesUrl(
+			current_nearby_user_pick.latitude,
+			current_nearby_user_pick.longitude
+		);
+	}
 
 	function filter_for_route_type(
 		route_type: number,
@@ -326,7 +338,14 @@
 		return nearby_departures_filter_local.other;
 	}
 
-	import { SingleTrip, StackInterface, StopStack, RouteStack } from './stackenum';
+	import {
+		SingleTrip,
+		StackInterface,
+		StopStack,
+		RouteStack,
+		clearNearbyDeparturesUrl,
+		syncNearbyDeparturesUrl
+	} from './stackenum';
 	import jsonwebworkerpkg from '@cheprasov/json-web-worker';
 	const { jsonWebWorker, parse, stringify } = jsonwebworkerpkg;
 	import { t } from 'svelte-i18n';
@@ -562,6 +581,7 @@
 
 	function my_location_press() {
 		nearby_pick_state_store.set(0);
+		clearNearbyDeparturesUrl();
 		getNearbyDepartures();
 	}
 
