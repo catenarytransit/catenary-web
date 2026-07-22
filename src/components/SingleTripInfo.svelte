@@ -376,46 +376,14 @@
 					}
 				});
 
-				// Propagate delay to stops without realtime data
-				let last_known_arrival_delay: number | null = null;
-				let last_known_departure_delay: number | null = null;
-
+				// Preserve same-stop chronology without inventing realtime data for later stops.
 				next_stoptimes_cleaned.forEach((stoptime: any) => {
-					// Track the last known delays from stops that have RT data
-					if (typeof stoptime.rt_arrival_diff === 'number') {
-						last_known_arrival_delay = stoptime.rt_arrival_diff;
-					}
-					if (typeof stoptime.rt_departure_diff === 'number') {
-						last_known_departure_delay = stoptime.rt_departure_diff;
-					}
-
-					// If this stop doesn't have RT data but we have a known delay, propagate it
-					if (stoptime.rt_arrival_time == null && last_known_arrival_delay != null) {
-						if (stoptime.scheduled_arrival_time_unix_seconds) {
-							stoptime.rt_arrival_time =
-								stoptime.scheduled_arrival_time_unix_seconds + last_known_arrival_delay;
-							stoptime.rt_arrival_diff = last_known_arrival_delay;
-							stoptime.strike_arrival = true;
-						}
-					}
-
-					if (stoptime.rt_departure_time == null && last_known_departure_delay != null) {
-						if (stoptime.scheduled_departure_time_unix_seconds) {
-							stoptime.rt_departure_time =
-								stoptime.scheduled_departure_time_unix_seconds + last_known_departure_delay;
-							stoptime.rt_departure_diff = last_known_departure_delay;
-							stoptime.strike_departure = true;
-						}
-					}
-
-					// Ensure departure is not before arrival after propagation
 					if (
 						typeof stoptime.rt_departure_time === 'number' &&
-						typeof stoptime.rt_arrival_time === 'number'
+						typeof stoptime.rt_arrival_time === 'number' &&
+						stoptime.rt_departure_time < stoptime.rt_arrival_time
 					) {
-						if (stoptime.rt_departure_time < stoptime.rt_arrival_time) {
-							stoptime.rt_departure_time = stoptime.rt_arrival_time;
-						}
+						stoptime.rt_departure_time = stoptime.rt_arrival_time;
 					}
 				});
 
@@ -918,46 +886,14 @@
 					index = index + 1;
 				});
 
-				// Propagate delay to stops without realtime data
-				let last_known_arrival_delay: number | null = null;
-				let last_known_departure_delay: number | null = null;
-
+				// Preserve same-stop chronology without inventing realtime data for later stops.
 				stoptimes_cleaned.forEach((stoptime: any) => {
-					// Track the last known delays from stops that have RT data
-					if (typeof stoptime.rt_arrival_diff === 'number') {
-						last_known_arrival_delay = stoptime.rt_arrival_diff;
-					}
-					if (typeof stoptime.rt_departure_diff === 'number') {
-						last_known_departure_delay = stoptime.rt_departure_diff;
-					}
-
-					// If this stop doesn't have RT data but we have a known delay, propagate it
-					if (stoptime.rt_arrival_time == null && last_known_arrival_delay != null) {
-						if (stoptime.scheduled_arrival_time_unix_seconds) {
-							stoptime.rt_arrival_time =
-								stoptime.scheduled_arrival_time_unix_seconds + last_known_arrival_delay;
-							stoptime.rt_arrival_diff = last_known_arrival_delay;
-							stoptime.strike_arrival = true;
-						}
-					}
-
-					if (stoptime.rt_departure_time == null && last_known_departure_delay != null) {
-						if (stoptime.scheduled_departure_time_unix_seconds) {
-							stoptime.rt_departure_time =
-								stoptime.scheduled_departure_time_unix_seconds + last_known_departure_delay;
-							stoptime.rt_departure_diff = last_known_departure_delay;
-							stoptime.strike_departure = true;
-						}
-					}
-
-					// Ensure departure is not before arrival after propagation
 					if (
 						typeof stoptime.rt_departure_time === 'number' &&
-						typeof stoptime.rt_arrival_time === 'number'
+						typeof stoptime.rt_arrival_time === 'number' &&
+						stoptime.rt_departure_time < stoptime.rt_arrival_time
 					) {
-						if (stoptime.rt_departure_time < stoptime.rt_arrival_time) {
-							stoptime.rt_departure_time = stoptime.rt_arrival_time;
-						}
+						stoptime.rt_departure_time = stoptime.rt_arrival_time;
 					}
 				});
 
@@ -1517,6 +1453,19 @@
 						{@const connectionKey = stop_connections[stoptime.stop_id] ? stoptime.stop_id : null}
 						{@const isDoubleTime = shouldShowDoubleTime(stoptime)}
 						{@const isLastStop = i === stoptimes_cleaned_dataset.length - 1}
+						{@const mainRealtimeTime =
+							stoptime.rt_departure_time ?? (!isDoubleTime ? stoptime.rt_arrival_time : null)}
+						{@const mainDisplayTime =
+							mainRealtimeTime ??
+							stoptime.scheduled_departure_time_unix_seconds ??
+							stoptime.scheduled_arrival_time_unix_seconds ??
+							stoptime.interpolated_stoptime_unix_seconds}
+						{@const mainRealtimeDiff =
+							typeof stoptime.rt_departure_time === 'number'
+								? stoptime.rt_departure_diff
+								: !isDoubleTime && typeof stoptime.rt_arrival_time === 'number'
+									? stoptime.rt_arrival_diff
+									: null}
 
 						{#if isDoubleTime}
 							<!-- Arrival Row -->
@@ -1649,23 +1598,21 @@
 										<div class="font-bold leading-none text-sm">
 											<Clock
 												timezone={stoptime.timezone || trip_data.tz}
-												time_seconds={stoptime.rt_departure_time ||
-													stoptime.scheduled_departure_time_unix_seconds ||
-													stoptime.interpolated_stoptime_unix_seconds}
+												time_seconds={mainDisplayTime}
 												{show_seconds}
 											/>
 										</div>
 									</div>
 
 									<!-- Departure Delay -->
-									{#if stoptime.rt_departure_diff}
+									{#if typeof mainRealtimeDiff === 'number'}
 										<div class="leading-none">
 											<DelayDiff
 												alltextclass="text-xs"
 												use_symbol_sign={true}
 													use_ticks={true}
 												{show_seconds}
-												diff={stoptime.rt_departure_diff}
+												diff={mainRealtimeDiff}
 											/>
 										</div>
 									{/if}
@@ -1681,10 +1628,7 @@
 								>
 									<div class="leading-none text-xs italic opacity-75 mt-0.5">
 										<TimeDiff
-											diff={(stoptime.rt_departure_time ||
-												stoptime.scheduled_departure_time_unix_seconds ||
-												stoptime.interpolated_stoptime_unix_seconds) -
-												current_time / 1000}
+											diff={mainDisplayTime - current_time / 1000}
 											{show_seconds}
 											show_brackets={false}
 											use_ticks={false}
