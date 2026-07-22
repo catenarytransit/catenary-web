@@ -115,7 +115,7 @@
 			}
 		}
 
-		if (l.startsWith('fr') && use_ticks == true) {
+		if (use_ticks == true) {
 			return '"';
 		}
 

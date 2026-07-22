@@ -1566,6 +1566,7 @@
 												<DelayDiff
 													alltextclass="text-xs"
 													use_symbol_sign={true}
+													use_ticks={true}
 													{show_seconds}
 													diff={stoptime.rt_arrival_diff}
 												/>
@@ -1656,12 +1657,13 @@
 										</div>
 									</div>
 
-									<!-- Arrival Delay -->
+									<!-- Departure Delay -->
 									{#if stoptime.rt_departure_diff}
 										<div class="leading-none">
 											<DelayDiff
 												alltextclass="text-xs"
 												use_symbol_sign={true}
+													use_ticks={true}
 												{show_seconds}
 												diff={stoptime.rt_departure_diff}
 											/>

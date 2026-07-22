@@ -66,9 +66,7 @@
 		}
 
 		if (use_ticks) {
-			if (l.startsWith('fr')) {
 				return "'";
-			}
 		}
 
 		if (show_seconds) {
@@ -96,9 +94,9 @@
 		}
 
 		if (use_ticks) {
-			if (l.startsWith('fr')) {
+			
 				return '"';
-			}
+			
 		}
 
 		return 's';
@@ -150,7 +148,10 @@
 	</span>
 
 	{#if diff != 0}
-		{#if h > 0}
+	{#if use_symbol_sign == false}
+		<span>{' '}</span>
+	{/if}
+	{#if h > 0}
 			<span class="{numbertextclass} {alltextclass}">{h}</span>
 			<span class="text-xs {alltextclass}  {unitsclass}">{locale_hour_marking(this_locale)}</span>
 		{/if}{#if h > 0 || m > 0 || (!show_seconds && m >= 0 && diff != 0)}

@@ -81,6 +81,7 @@
 							{show_seconds}
 							textclass={'text-[0px] leading-tight'}
 							alltextclass={'leading-tight'}
+							use_ticks={true}
 						/>
 					{/if}
 				{/if}

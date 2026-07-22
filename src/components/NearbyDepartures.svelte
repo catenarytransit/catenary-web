@@ -1168,7 +1168,7 @@
 													<br />
 													<DelayDiff
 														diff={getEffectiveDepartureTime(trip) - trip.departure_schedule}
-														use_symbol_sign={should_show_symbol_sign_nearby}
+														use_symbol_sign={true}
 														unitsclass="font-normal text-xs"
 													/>
 												{/if}
