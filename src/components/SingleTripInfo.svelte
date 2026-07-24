@@ -1314,7 +1314,7 @@
 				</div>
 			{/if}
 
-			{#if trip_data.consist}
+			{#if trip_data.consist || trip_data.sbb_formation}
 				<div class="px-3 my-2">
 					<div class="flex p-1 bg-gray-200 dark:bg-gray-800 rounded-[30px] w-full">
 						<button
@@ -1341,9 +1341,10 @@
 				</div>
 			{/if}
 
-			{#if coach_sequence_screen_shown && trip_data.consist}
+			{#if coach_sequence_screen_shown && (trip_data.consist || trip_data.sbb_formation)}
 				<CoachSequencePage
 					coach_sequence={trip_data.consist}
+					sbb_formation={trip_data.sbb_formation}
 					close_coach_page={() => {
 						coach_sequence_screen_shown = false;
 					}}

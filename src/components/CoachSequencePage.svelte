@@ -1,6 +1,14 @@
 <script lang="ts">
 	import { _ } from 'svelte-i18n';
+	import type {
+		SbbFormation,
+		SbbFormationData,
+		SbbFormationVehicle,
+		SbbFormationVehicleAtScheduledStop,
+		SbbStopPoint
+	} from './sbbFormationTypes';
 	export let coach_sequence: any;
+	export let sbb_formation: SbbFormationData | null = null;
 	export let close_coach_page: () => void;
 
 	// Icons mapping for amenities and design
@@ -86,6 +94,494 @@
 		presentClasses = presentClasses;
 		presentOccupancies = presentOccupancies;
 	}
+
+	const SBB_VEHICLE_GAP = 12;
+
+	type SbbStationOption = {
+		key: string;
+		name: string;
+		uic: number | null;
+		track: string | null;
+		stopTime: { arrivalTime?: string | null; departureTime?: string | null } | null;
+		destination: string | null;
+		formationShortString: string | null;
+	};
+
+	type SbbVehicleView = {
+		vehicle: SbbFormationVehicle;
+		stationData: SbbFormationVehicleAtScheduledStop | null;
+		width: number;
+		start: number;
+		end: number;
+	};
+
+	type SbbSectorSegment = {
+		label: string;
+		left: number;
+		width: number;
+	};
+
+	type SbbAmenity = {
+		key: string;
+		icon: string;
+		label: string;
+		shortLabel: string;
+	};
+
+	const sbbAmenityCatalog: Record<
+		string,
+		{ icon: string; translationKey: string; defaultText: string; shortLabel: string }
+	> = {
+		wheelchair: {
+			icon: '/icons/sbb/wheelchair-space.svg',
+			translationKey: 'cs_wheelchair_space',
+			defaultText: 'Wheelchair space',
+			shortLabel: '♿'
+		},
+		wheelchair_toilet: {
+			icon: '/icons/sbb/wheelchair-toilet.svg',
+			translationKey: 'cs_wheelchair_toilet',
+			defaultText: 'Wheelchair space with wheelchair-accessible toilet',
+			shortLabel: '♿ WC'
+		},
+		bicycle: {
+			icon: '/icons/sbb/bicycle.svg',
+			translationKey: 'cs_bike_space',
+			defaultText: 'Bicycle space',
+			shortLabel: 'Bike'
+		},
+		business_zone: {
+			icon: '/icons/sbb/business-zone.svg',
+			translationKey: 'cs_business_zone',
+			defaultText: 'Business zone in 1st class',
+			shortLabel: 'Business'
+		},
+		family_zone: {
+			icon: '/icons/sbb/family-zone.svg',
+			translationKey: 'cs_family_zone',
+			defaultText: 'Family coach with play area',
+			shortLabel: 'Family'
+		},
+		stroller: {
+			icon: '/icons/sbb/stroller.svg',
+			translationKey: 'cs_stroller_space',
+			defaultText: 'Stroller space',
+			shortLabel: 'Stroller'
+		},
+		restaurant: {
+			icon: '/icons/sbb/restaurant.svg',
+			translationKey: 'cs_dining_car',
+			defaultText: 'Restaurant / Catering',
+			shortLabel: 'Restaurant'
+		},
+		low_floor: {
+			icon: '/icons/sbb/low-floor.svg',
+			translationKey: 'cs_low_floor',
+			defaultText: 'Low-floor access',
+			shortLabel: 'NF'
+		},
+		air_condition: {
+			icon: '/icons/sbb/air-conditioning.svg',
+			translationKey: 'cs_air_condition',
+			defaultText: 'Air conditioning',
+			shortLabel: 'A/C'
+		},
+		sleeping: {
+			icon: '/icons/sbb/sleeping-car.svg',
+			translationKey: 'cs_sleeping_car',
+			defaultText: 'Sleeping car',
+			shortLabel: 'Bed'
+		},
+		emergency_call: {
+			icon: '/icons/sbb/emergency-call.svg',
+			translationKey: 'cs_emergency_call',
+			defaultText: 'Emergency call system',
+			shortLabel: 'SOS'
+		},
+		closed: {
+			icon: '/icons/sbb/closed.svg',
+			translationKey: 'cs_closed_coach',
+			defaultText: 'Coach closed',
+			shortLabel: 'Closed'
+		}
+	};
+
+	function stopPointMatches(a: SbbStopPoint | null | undefined, b: SbbStopPoint | null | undefined) {
+		if (!a || !b) return false;
+		if (a.uic != null && b.uic != null) return a.uic === b.uic;
+		return Boolean(a.name && b.name && a.name === b.name);
+	}
+
+	function makeSbbStationKey(
+		stopPoint: SbbStopPoint,
+		stopTime: { arrivalTime?: string | null; departureTime?: string | null } | null | undefined,
+		fallbackIndex: number
+	) {
+		const stopKey = stopPoint.uic ?? stopPoint.name ?? fallbackIndex;
+		const timeKey = stopTime?.departureTime ?? stopTime?.arrivalTime ?? fallbackIndex;
+		return `${stopKey}|${timeKey}`;
+	}
+
+	function getSbbStations(data: SbbFormationData | null): SbbStationOption[] {
+		if (!data) return [];
+
+		const stations: SbbStationOption[] = [];
+		const seen = new Set<string>();
+
+		(data.formationsAtScheduledStops ?? []).forEach((entry, index) => {
+			const scheduledStop = entry.scheduledStop;
+			const stopPoint = scheduledStop?.stopPoint;
+			if (!stopPoint?.name) return;
+
+			const hasVehicleData = (data.formations ?? []).some((formation) =>
+				(formation.formationVehicles ?? []).some((vehicle) =>
+					(vehicle.formationVehicleAtScheduledStops ?? []).some((vehicleStop) =>
+						stopPointMatches(vehicleStop.stopPoint, stopPoint)
+					)
+				)
+			);
+			if (!hasVehicleData) return;
+
+			const key = makeSbbStationKey(stopPoint, scheduledStop?.stopTime, index);
+			if (seen.has(key)) return;
+			seen.add(key);
+
+			stations.push({
+				key,
+				name: stopPoint.name,
+				uic: stopPoint.uic ?? null,
+				track: scheduledStop?.track ?? null,
+				stopTime: scheduledStop?.stopTime ?? null,
+				destination:
+					entry.formationShort?.vehicleGoals?.[0]?.destinationStopPoint?.name ?? null,
+				formationShortString: entry.formationShort?.formationShortString ?? null
+			});
+		});
+
+		if (stations.length > 0) return stations;
+
+		const fallbackVehicle = data.formations
+			?.flatMap((formation) => formation.formationVehicles ?? [])
+			.find((vehicle) => (vehicle.formationVehicleAtScheduledStops?.length ?? 0) > 0);
+
+		(fallbackVehicle?.formationVehicleAtScheduledStops ?? []).forEach((entry, index) => {
+			if (!entry.stopPoint?.name) return;
+			const key = makeSbbStationKey(entry.stopPoint, entry.stopTime, index);
+			if (seen.has(key)) return;
+			seen.add(key);
+			stations.push({
+				key,
+				name: entry.stopPoint.name,
+				uic: entry.stopPoint.uic ?? null,
+				track: entry.track ?? null,
+				stopTime: entry.stopTime ?? null,
+				destination: null,
+				formationShortString: null
+			});
+		});
+
+		return stations;
+	}
+
+	function stationAsStopPoint(station: SbbStationOption | null): SbbStopPoint | null {
+		if (!station) return null;
+		return { name: station.name, uic: station.uic };
+	}
+
+	function findSbbVehicleStop(
+		vehicle: SbbFormationVehicle,
+		station: SbbStationOption | null
+	): SbbFormationVehicleAtScheduledStop | null {
+		if (!station) return null;
+		const stationPoint = stationAsStopPoint(station);
+		const matches = (vehicle.formationVehicleAtScheduledStops ?? []).filter((entry) =>
+			stopPointMatches(entry.stopPoint, stationPoint)
+		);
+		if (matches.length <= 1) return matches[0] ?? null;
+
+		return (
+			matches.find(
+				(entry) =>
+					entry.stopTime?.departureTime === station.stopTime?.departureTime &&
+					entry.stopTime?.arrivalTime === station.stopTime?.arrivalTime
+			) ?? matches[0]
+		);
+	}
+
+	function getFormationEndpoints(formation: SbbFormation) {
+		const properties = (formation.formationVehicles ?? []).find(
+			(vehicle) => vehicle.vehicleProperties?.fromStop || vehicle.vehicleProperties?.toStop
+		)?.vehicleProperties;
+		return {
+			fromStop: properties?.fromStop ?? null,
+			toStop: properties?.toStop ?? null
+		};
+	}
+
+	function findStationIndex(stations: SbbStationOption[], stopPoint: SbbStopPoint | null | undefined) {
+		return stations.findIndex((station) =>
+			stopPointMatches(stationAsStopPoint(station), stopPoint)
+		);
+	}
+
+	function selectSbbFormation(
+		data: SbbFormationData | null,
+		station: SbbStationOption | null,
+		stations: SbbStationOption[]
+	): SbbFormation | null {
+		if (!data || !station) return null;
+		const selectedIndex = stations.findIndex((candidate) => candidate.key === station.key);
+		let bestFormation: SbbFormation | null = null;
+		let bestScore = Number.NEGATIVE_INFINITY;
+
+		for (const formation of data.formations ?? []) {
+			const vehicles = formation.formationVehicles ?? [];
+			if (!vehicles.some((vehicle) => findSbbVehicleStop(vehicle, station))) continue;
+
+			const { fromStop, toStop } = getFormationEndpoints(formation);
+			const fromIndex = findStationIndex(stations, fromStop);
+			const toIndex = findStationIndex(stations, toStop);
+			const low = Math.min(fromIndex, toIndex);
+			const high = Math.max(fromIndex, toIndex);
+			const inRange = fromIndex >= 0 && toIndex >= 0 && selectedIndex >= low && selectedIndex <= high;
+
+			let score = inRange ? 1000 : 0;
+			if (stopPointMatches(fromStop, stationAsStopPoint(station))) score += 100;
+			if (stopPointMatches(toStop, stationAsStopPoint(station))) score += 10;
+			if (inRange) score -= high - low;
+
+			if (score > bestScore) {
+				bestScore = score;
+				bestFormation = formation;
+			}
+		}
+
+		return bestFormation ?? data.formations?.[0] ?? null;
+	}
+
+	function clamp(value: number, min: number, max: number) {
+		return Math.max(min, Math.min(max, value));
+	}
+
+	function buildSbbVehicleViews(
+		formation: SbbFormation | null,
+		station: SbbStationOption | null
+	): SbbVehicleView[] {
+		if (!formation || !station) return [];
+		const vehicles = [...(formation.formationVehicles ?? [])].sort(
+			(a, b) => (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER)
+		);
+		let cursor = 0;
+
+		return vehicles.map((vehicle, index) => {
+			const width = clamp((vehicle.vehicleProperties?.length ?? 24) * 3, 58, 94);
+			const view = {
+				vehicle,
+				stationData: findSbbVehicleStop(vehicle, station),
+				width,
+				start: cursor,
+				end: cursor + width
+			};
+			cursor = view.end + (index < vehicles.length - 1 ? SBB_VEHICLE_GAP : 0);
+			return view;
+		});
+	}
+
+	function parseSectors(sectors: string | null | undefined) {
+		return (sectors ?? '')
+			.split(',')
+			.map((sector) => sector.trim())
+			.filter(Boolean);
+	}
+
+	function buildSbbSectorSegments(
+		vehicles: SbbVehicleView[],
+		totalWidth: number
+	): SbbSectorSegment[] {
+		const sectorCenters = new Map<string, number[]>();
+
+		for (const view of vehicles) {
+			const center = (view.start + view.end) / 2;
+			for (const sector of parseSectors(view.stationData?.sectors)) {
+				const centers = sectorCenters.get(sector) ?? [];
+				centers.push(center);
+				sectorCenters.set(sector, centers);
+			}
+		}
+
+		const ordered = Array.from(sectorCenters.entries())
+			.map(([label, centers]) => ({
+				label,
+				center: centers.reduce((sum, value) => sum + value, 0) / centers.length
+			}))
+			.sort((a, b) => a.center - b.center);
+
+		return ordered.map((sector, index) => {
+			const previousCenter = ordered[index - 1]?.center;
+			const nextCenter = ordered[index + 1]?.center;
+			const left = index === 0 ? 0 : (previousCenter + sector.center) / 2;
+			const right = index === ordered.length - 1 ? totalWidth : (sector.center + nextCenter) / 2;
+			return { label: sector.label, left, width: Math.max(0, right - left) };
+		});
+	}
+
+	function getSbbVehicleClass(vehicle: SbbFormationVehicle) {
+		const firstClass = vehicle.vehicleProperties?.number1class ?? 0;
+		const secondClass = vehicle.vehicleProperties?.number2class ?? 0;
+		if (firstClass > 0 && secondClass > 0) return '1 / 2';
+		if (firstClass > 0) return '1';
+		if (secondClass > 0) return '2';
+		return '';
+	}
+
+	function getSbbVehicleLabel(vehicle: SbbFormationVehicle) {
+		if (vehicle.number != null && vehicle.number > 0) return String(vehicle.number);
+		return '';
+	}
+
+	function getSbbFormationShortAmenityKeys(
+		station: SbbStationOption | null,
+		vehicle: SbbFormationVehicle
+	) {
+		const keys = new Set<string>();
+		const short = station?.formationShortString;
+		if (!short || vehicle.number == null) return keys;
+
+		const vehicleNumber = String(vehicle.number).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+		const classAndFeatures = short.match(
+			new RegExp(`:${vehicleNumber}(?:#([^,@)\\]]+))?`)
+		);
+		const featureCodes = new Set(
+			(classAndFeatures?.[1] ?? '')
+				.split(';')
+				.map((code) => code.trim().toUpperCase())
+				.filter(Boolean)
+		);
+
+		if (featureCodes.has('NF')) keys.add('low_floor');
+		if (featureCodes.has('BZ')) keys.add('business_zone');
+		if (new RegExp(`%W[12]:${vehicleNumber}(?:#|[,)\\]])`).test(short)) keys.add('restaurant');
+
+		return keys;
+	}
+
+	function getSbbVehicleAmenityKeys(
+		vehicle: SbbFormationVehicle,
+		station: SbbStationOption | null = null
+	) {
+		const keys = getSbbFormationShortAmenityKeys(station, vehicle);
+		const properties = vehicle.vehicleProperties;
+		const accessibility = properties?.accessibilityProperties;
+		const pictos = properties?.pictoProperties;
+
+		if (
+			accessibility?.disabledCompartment ||
+			(accessibility?.numberWheelchairSpaces ?? 0) > 0 ||
+			(accessibility?.numberWheelchairSpaces1class ?? 0) > 0 ||
+			(accessibility?.numberWheelchairSpaces2class ?? 0) > 0 ||
+			pictos?.wheelchairPicto
+		) {
+			keys.add('wheelchair');
+		}
+		if (accessibility?.wheelchairToilet) keys.add('wheelchair_toilet');
+		if (properties?.bikePlatform || (properties?.numberBikeHooks ?? 0) > 0 || pictos?.bikePicto) {
+			keys.add('bicycle');
+		}
+		if (pictos?.businessZonePicto) keys.add('business_zone');
+		if (pictos?.familyZonePicto || /fam/i.test(vehicle.vehicleIdentifier?.typeCodeName ?? '')) {
+			keys.add('family_zone');
+		}
+		if (pictos?.strollerPicto) keys.add('stroller');
+		if (
+			(properties?.trolleyStatus && properties.trolleyStatus !== 'Normal') ||
+			(properties?.numberRestaurantSpace ?? 0) > 0 ||
+			accessibility?.wheelchairAccessibleRestaurant
+		) {
+			keys.add('restaurant');
+		}
+		if (properties?.lowFloorTrolley) keys.add('low_floor');
+		if (properties?.climated) keys.add('air_condition');
+		if ((properties?.numberBeds ?? 0) > 0) keys.add('sleeping');
+		if (properties?.emergencyCallSystem) keys.add('emergency_call');
+		if (properties?.closed) keys.add('closed');
+
+		return Array.from(keys);
+	}
+
+	function getSbbAmenity(key: string): SbbAmenity | null {
+		const definition = sbbAmenityCatalog[key];
+		if (!definition) return null;
+		return {
+			key,
+			icon: definition.icon,
+			label: $_(definition.translationKey, { default: definition.defaultText }),
+			shortLabel: definition.shortLabel
+		};
+	}
+
+	function getSbbVehicleAmenities(
+		vehicle: SbbFormationVehicle,
+		station: SbbStationOption | null
+	) {
+		return getSbbVehicleAmenityKeys(vehicle, station)
+			.map(getSbbAmenity)
+			.filter((amenity): amenity is SbbAmenity => amenity !== null);
+	}
+
+	function collectSbbLegendItems(
+		vehicles: SbbVehicleView[],
+		station: SbbStationOption | null
+	) {
+		const keys = new Set<string>();
+		vehicles.forEach((view) =>
+			getSbbVehicleAmenityKeys(view.vehicle, station).forEach((key) => keys.add(key))
+		);
+		return Array.from(keys)
+			.map(getSbbAmenity)
+			.filter((amenity): amenity is SbbAmenity => amenity !== null);
+	}
+
+	function collectSbbClasses(vehicles: SbbVehicleView[]) {
+		const classes = new Set<string>();
+		for (const view of vehicles) {
+			const properties = view.vehicle.vehicleProperties;
+			if ((properties?.number1class ?? 0) > 0) classes.add('1');
+			if ((properties?.number2class ?? 0) > 0) classes.add('2');
+		}
+		return classes;
+	}
+
+	let selectedSbbStationKey = '';
+	let sbbStations: SbbStationOption[] = [];
+	let selectedSbbStation: SbbStationOption | null = null;
+	let activeSbbFormation: SbbFormation | null = null;
+	let sbbVehicleViews: SbbVehicleView[] = [];
+	let sbbTrainWidth = 0;
+	let sbbSectorSegments: SbbSectorSegment[] = [];
+	let sbbLegendItems: SbbAmenity[] = [];
+	let sbbClasses = new Set<string>();
+	let sbbDirection = '';
+
+	$: sbbStations = getSbbStations(sbb_formation);
+	$: if (
+		sbbStations.length > 0 &&
+		!sbbStations.some((station) => station.key === selectedSbbStationKey)
+	) {
+		selectedSbbStationKey = sbbStations[0].key;
+	}
+	$: selectedSbbStation =
+		sbbStations.find((station) => station.key === selectedSbbStationKey) ?? null;
+	$: activeSbbFormation = selectSbbFormation(sbb_formation, selectedSbbStation, sbbStations);
+	$: sbbVehicleViews = buildSbbVehicleViews(activeSbbFormation, selectedSbbStation);
+	$: sbbTrainWidth = sbbVehicleViews[sbbVehicleViews.length - 1]?.end ?? 0;
+	$: sbbSectorSegments = buildSbbSectorSegments(sbbVehicleViews, sbbTrainWidth);
+	$: sbbLegendItems = collectSbbLegendItems(sbbVehicleViews, selectedSbbStation);
+	$: sbbClasses = collectSbbClasses(sbbVehicleViews);
+	$: sbbDirection =
+		selectedSbbStation?.destination ??
+		(sbbStations[sbbStations.length - 1]?.key !== selectedSbbStationKey
+			? sbbStations[sbbStations.length - 1]?.name ?? ''
+			: '');
 </script>
 
 <!-- Add FontAwesome to the head -->
@@ -98,7 +594,183 @@
 
 <div class="flex flex-col text-current w-full h-full pb-8">
 	<div class="flex-1 mt-4">
-		{#if coach_sequence && coach_sequence.groups && coach_sequence.groups.length > 0}
+		{#if sbb_formation && (sbb_formation.formations?.length ?? 0) > 0}
+			<section class="w-full">
+				<h2 class="mb-4 px-4 text-lg font-bold">
+					{$_('cs_train_formation', { default: 'Train formation' })}
+				</h2>
+				{#if sbbStations.length > 0}
+					<div
+						class="hide-scrollbar flex w-full gap-2 overflow-x-auto px-4 pb-4"
+						role="tablist"
+						aria-label={$_('cs_station_formation', { default: 'Formation at station' })}
+					>
+						{#each sbbStations as station}
+							<button
+								type="button"
+								role="tab"
+								aria-selected={station.key === selectedSbbStationKey}
+								class="shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition-colors {station.key ===
+								selectedSbbStationKey
+									? 'border-gray-500 bg-white text-black shadow-sm dark:border-gray-400 dark:bg-gray-700 dark:text-white'
+									: 'border-transparent bg-gray-200 text-gray-600 hover:border-gray-400 dark:bg-gray-800 dark:text-gray-300'}"
+								on:click={() => {
+									selectedSbbStationKey = station.key;
+								}}
+							>
+								{station.name}
+							</button>
+						{/each}
+					</div>
+				{/if}
+
+				{#if selectedSbbStation && sbbVehicleViews.length > 0}
+					<div
+						class="w-full border-y border-gray-200 bg-gray-50 py-4 dark:border-gray-800 dark:bg-[#1a1c1e]"
+					>
+						<div class="mb-4 flex items-center gap-2 px-4 text-sm text-gray-700 dark:text-gray-300">
+							<span aria-hidden="true">‹</span>
+							<span>
+								{$_('cs_direction_of_travel', { default: 'Direction of travel' })}
+								{sbbDirection}
+							</span>
+							{#if selectedSbbStation.track}
+								<span class="ml-auto whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
+									{$_('platform', { default: 'Platform' })} {selectedSbbStation.track}
+								</span>
+							{/if}
+						</div>
+
+						<div class="hide-scrollbar w-full overflow-x-auto px-4 pb-2">
+							<div class="min-w-max" style={`width: ${sbbTrainWidth}px`}>
+								<div class="relative mb-2 h-7 w-full">
+									{#each sbbSectorSegments as sector}
+										<div
+											class="absolute top-0 flex h-7 items-center gap-1 text-xs text-gray-600 dark:text-gray-300"
+											style={`left: ${sector.left}px; width: ${sector.width}px`}
+										>
+											<span class="h-px min-w-2 flex-1 bg-gray-400 dark:bg-gray-600"></span>
+											<span class="whitespace-nowrap">
+												{$_('cs_sector', { default: 'Sector' })} {sector.label}
+											</span>
+											<span class="h-px min-w-2 flex-1 bg-gray-400 dark:bg-gray-600"></span>
+										</div>
+									{/each}
+								</div>
+
+								<div class="flex items-start">
+									{#each sbbVehicleViews as view, i}
+										{@const vehicleClass = getSbbVehicleClass(view.vehicle)}
+										{@const amenities = getSbbVehicleAmenities(view.vehicle, selectedSbbStation)}
+										<div
+											class="flex shrink-0 flex-col items-center"
+											style={`width: ${view.width}px`}
+											title={view.vehicle.vehicleIdentifier?.evn ??
+												view.vehicle.vehicleIdentifier?.typeCodeName ??
+												''}
+										>
+											<span class="mb-1 h-4 text-xs font-medium">
+												{getSbbVehicleLabel(view.vehicle)}
+											</span>
+											<div
+												class="relative flex h-10 w-full items-center justify-center border-[1.5px] border-current font-bold {i ===
+												0
+													? 'train-nose-line'
+													: i === sbbVehicleViews.length - 1
+														? 'train-tail-line'
+														: 'rounded-lg'}"
+											>
+												{#if vehicleClass}
+													<span class="text-sm">{vehicleClass}</span>
+												{:else}
+													<span class="max-w-full truncate px-1 text-[9px] font-semibold">
+														{view.vehicle.vehicleIdentifier?.typeCodeName ?? ''}
+													</span>
+												{/if}
+												{#if view.vehicle.vehicleProperties?.closed}
+													<img
+														src="/icons/sbb/closed.svg"
+														alt={$_('cs_closed_coach', { default: 'Coach closed' })}
+														class="absolute right-1 top-1 h-4 w-4"
+													/>
+												{/if}
+											</div>
+											<div class="mt-2 flex min-h-5 max-w-full items-center justify-center gap-1">
+												{#each amenities as amenity}
+													<img
+														src={amenity.icon}
+														alt={amenity.shortLabel}
+														title={amenity.label}
+														class="h-4 w-4 object-contain dark:invert"
+													/>
+												{/each}
+											</div>
+										</div>
+										{#if i < sbbVehicleViews.length - 1}
+											<div
+												class="mt-[35px] flex h-4 shrink-0 items-center justify-center"
+												style={`width: ${SBB_VEHICLE_GAP}px`}
+											>
+												{#if sbbVehicleViews[i + 1].stationData?.accessToPreviousVehicle === false}
+													<img
+														src="/icons/sbb/no-passage.svg"
+														alt={$_('cs_no_passage', { default: 'No passage between coaches' })}
+														class="h-4 w-4 max-w-none"
+													/>
+												{:else}
+													<span class="h-[2px] w-full bg-current"></span>
+												{/if}
+											</div>
+										{/if}
+									{/each}
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="px-4 mt-6">
+						<h3 class="text-base font-bold mb-4">{$_('cs_legend', { default: 'Legend' })}</h3>
+						<div class="space-y-3 text-sm">
+							{#if sbbClasses.has('1')}
+								<div class="flex items-center gap-3">
+									<span
+										class="w-5 rounded-sm border border-current py-[2px] text-center text-xs font-bold leading-none"
+										>1</span
+									>
+									<span>{getLegendText('class_1')}</span>
+								</div>
+							{/if}
+							{#if sbbClasses.has('2')}
+								<div class="flex items-center gap-3">
+									<span
+										class="w-5 rounded-sm border border-current py-[2px] text-center text-xs font-bold leading-none"
+										>2</span
+									>
+									<span>{getLegendText('class_2')}</span>
+								</div>
+							{/if}
+							{#each sbbLegendItems as amenity}
+								<div class="flex items-center gap-3">
+									<img
+										src={amenity.icon}
+										alt={amenity.shortLabel}
+										class="h-5 w-5 object-contain dark:invert"
+									/>
+									<span>{amenity.label}</span>
+								</div>
+							{/each}
+						</div>
+						<div class="mt-6 text-xs text-gray-500">
+							{$_('cs_disclaimer', { default: 'All information without guarantee.' })}
+						</div>
+					</div>
+				{:else}
+					<div class="p-8 text-center text-gray-500">
+						{$_('cs_no_data', { default: 'No train formation data available.' })}
+					</div>
+				{/if}
+			</section>
+		{:else if coach_sequence && coach_sequence.groups && coach_sequence.groups.length > 0}
 			{@const group = coach_sequence.groups[0]}
 
 			<!-- Horizontal Carriages Scroller Section -->
