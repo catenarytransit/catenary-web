@@ -133,13 +133,13 @@
 		{ icon: string; translationKey: string; defaultText: string; shortLabel: string }
 	> = {
 		wheelchair: {
-			icon: '/icons/sbb/wheelchair-space.svg',
+			icon: '/icons/sbb/wheelchair.svg',
 			translationKey: 'cs_wheelchair_space',
 			defaultText: 'Wheelchair space',
 			shortLabel: '♿'
 		},
 		wheelchair_toilet: {
-			icon: '/icons/sbb/wheelchair-toilet.svg',
+			icon: '/icons/sbb/wheelchair.svg',
 			translationKey: 'cs_wheelchair_toilet',
 			defaultText: 'Wheelchair space with wheelchair-accessible toilet',
 			shortLabel: '♿ WC'
@@ -151,7 +151,7 @@
 			shortLabel: 'Bike'
 		},
 		business_zone: {
-			icon: '/icons/sbb/business-zone.svg',
+			icon: '/icons/sbb/laptop.svg',
 			translationKey: 'cs_business_zone',
 			defaultText: 'Business zone in 1st class',
 			shortLabel: 'Business'
@@ -175,17 +175,17 @@
 			shortLabel: 'Restaurant'
 		},
 		low_floor: {
-			icon: '/icons/sbb/low-floor.svg',
+			icon: '/icons/sbb/niederflureinstieg.svg',
 			translationKey: 'cs_low_floor',
 			defaultText: 'Low-floor access',
 			shortLabel: 'NF'
 		},
-		air_condition: {
-			icon: '/icons/sbb/air-conditioning.svg',
+		/*air_condition: {
+			icon: '/icons/air-conditioner.svg',
 			translationKey: 'cs_air_condition',
 			defaultText: 'Air conditioning',
 			shortLabel: 'A/C'
-		},
+		},*/
 		sleeping: {
 			icon: '/icons/sbb/sleeping-car.svg',
 			translationKey: 'cs_sleeping_car',
@@ -647,7 +647,7 @@
 									{#each sbbSectorSegments as sector}
 										<div
 											class="absolute top-0 flex h-7 items-center gap-1 text-xs text-gray-600 dark:text-gray-300"
-											style={`left: ${sector.left}px; width: ${sector.width}px`}
+											style={`left: ${sector.left}px; width: ${sector.width - 4}px; padding-left: 2px; padding-right: 2px;`}
 										>
 											<span class="h-px min-w-2 flex-1 bg-gray-400 dark:bg-gray-600"></span>
 											<span class="whitespace-nowrap">
@@ -673,17 +673,12 @@
 												{getSbbVehicleLabel(view.vehicle)}
 											</span>
 											<div
-												class="relative flex h-10 w-full items-center justify-center border-[1.5px] border-current font-bold {i ===
-												0
-													? 'train-nose-line'
-													: i === sbbVehicleViews.length - 1
-														? 'train-tail-line'
-														: 'rounded-lg'}"
+												class="relative flex h-10 w-full items-center rounded-xl border-[1.5px] border-current px-3 font-bold"
 											>
 												{#if vehicleClass}
-													<span class="text-sm">{vehicleClass}</span>
+													<span class="ml-auto text-sm">{vehicleClass}</span>
 												{:else}
-													<span class="max-w-full truncate px-1 text-[9px] font-semibold">
+													<span class="mx-auto max-w-full truncate px-1 text-[9px] font-semibold">
 														{view.vehicle.vehicleIdentifier?.typeCodeName ?? ''}
 													</span>
 												{/if}
@@ -691,7 +686,7 @@
 													<img
 														src="/icons/sbb/closed.svg"
 														alt={$_('cs_closed_coach', { default: 'Coach closed' })}
-														class="absolute right-1 top-1 h-4 w-4"
+														class="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2"
 													/>
 												{/if}
 											</div>
@@ -712,13 +707,13 @@
 												style={`width: ${SBB_VEHICLE_GAP}px`}
 											>
 												{#if sbbVehicleViews[i + 1].stationData?.accessToPreviousVehicle === false}
-													<img
-														src="/icons/sbb/no-passage.svg"
-														alt={$_('cs_no_passage', { default: 'No passage between coaches' })}
-														class="h-4 w-4 max-w-none"
-													/>
-												{:else}
-													<span class="h-[2px] w-full bg-current"></span>
+													<span
+														class="no-passage-icon"
+														role="img"
+														aria-label={$_('cs_no_passage', {
+															default: 'No passage between coaches'
+														})}
+													></span>
 												{/if}
 											</div>
 										{/if}
@@ -902,6 +897,28 @@
 	.hide-scrollbar {
 		-ms-overflow-style: none;
 		scrollbar-width: none;
+	}
+
+	.no-passage-icon {
+		position: relative;
+		display: inline-block;
+		width: 16px;
+		height: 16px;
+		flex: 0 0 16px;
+		border-radius: 9999px;
+		background: rgb(198, 0, 24);
+	}
+
+	.no-passage-icon::after {
+		position: absolute;
+		top: 50%;
+		left: 4px;
+		right: 4px;
+		height: 2px;
+		border-radius: 9999px;
+		background: white;
+		content: '';
+		transform: translateY(-50%);
 	}
 
 	.train-nose-line {
