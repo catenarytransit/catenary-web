@@ -95,7 +95,8 @@
 		presentOccupancies = presentOccupancies;
 	}
 
-	const SBB_VEHICLE_GAP = 12;
+	const SBB_VEHICLE_GAP = 6;
+	const SBB_NO_PASSAGE_GAP = 22;
 
 	type SbbStationOption = {
 		key: string;
@@ -113,12 +114,14 @@
 		width: number;
 		start: number;
 		end: number;
+		gapAfter: number;
 	};
 
 	type SbbSectorSegment = {
 		label: string;
 		left: number;
 		width: number;
+		compact: boolean;
 	};
 
 	type SbbAmenity = {
@@ -371,18 +374,26 @@
 		const vehicles = [...(formation.formationVehicles ?? [])].sort(
 			(a, b) => (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER)
 		);
+		const stationData = vehicles.map((vehicle) => findSbbVehicleStop(vehicle, station));
 		let cursor = 0;
 
 		return vehicles.map((vehicle, index) => {
 			const width = clamp((vehicle.vehicleProperties?.length ?? 24) * 3, 58, 94);
+			const hasNextVehicle = index < vehicles.length - 1;
+			const gapAfter = hasNextVehicle
+				? stationData[index + 1]?.accessToPreviousVehicle === false
+					? SBB_NO_PASSAGE_GAP
+					: SBB_VEHICLE_GAP
+				: 0;
 			const view = {
 				vehicle,
-				stationData: findSbbVehicleStop(vehicle, station),
+				stationData: stationData[index],
 				width,
 				start: cursor,
-				end: cursor + width
+				end: cursor + width,
+				gapAfter
 			};
-			cursor = view.end + (index < vehicles.length - 1 ? SBB_VEHICLE_GAP : 0);
+			cursor = view.end + gapAfter;
 			return view;
 		});
 	}
@@ -398,30 +409,37 @@
 		vehicles: SbbVehicleView[],
 		totalWidth: number
 	): SbbSectorSegment[] {
-		const sectorCenters = new Map<string, number[]>();
+		const sectorRanges = new Map<string, { start: number; end: number }>();
 
 		for (const view of vehicles) {
-			const center = (view.start + view.end) / 2;
-			for (const sector of parseSectors(view.stationData?.sectors)) {
-				const centers = sectorCenters.get(sector) ?? [];
-				centers.push(center);
-				sectorCenters.set(sector, centers);
-			}
+			const sectors = parseSectors(view.stationData?.sectors);
+			if (sectors.length === 0) continue;
+
+			sectors.forEach((sector, index) => {
+				const start = view.start + (view.width * index) / sectors.length;
+				const end = view.start + (view.width * (index + 1)) / sectors.length;
+				const current = sectorRanges.get(sector);
+				sectorRanges.set(sector, {
+					start: Math.min(current?.start ?? start, start),
+					end: Math.max(current?.end ?? end, end)
+				});
+			});
 		}
 
-		const ordered = Array.from(sectorCenters.entries())
-			.map(([label, centers]) => ({
-				label,
-				center: centers.reduce((sum, value) => sum + value, 0) / centers.length
-			}))
-			.sort((a, b) => a.center - b.center);
+		const ordered = Array.from(sectorRanges.entries())
+			.map(([label, range]) => ({ label, ...range }))
+			.sort((a, b) => a.start - b.start || a.end - b.end);
 
 		return ordered.map((sector, index) => {
-			const previousCenter = ordered[index - 1]?.center;
-			const nextCenter = ordered[index + 1]?.center;
-			const left = index === 0 ? 0 : (previousCenter + sector.center) / 2;
-			const right = index === ordered.length - 1 ? totalWidth : (sector.center + nextCenter) / 2;
-			return { label: sector.label, left, width: Math.max(0, right - left) };
+			const previous = ordered[index - 1];
+			const next = ordered[index + 1];
+			const left = index === 0 ? 0 : clamp((previous.end + sector.start) / 2, 0, totalWidth);
+			const right =
+				index === ordered.length - 1
+					? totalWidth
+					: clamp((sector.end + next.start) / 2, left, totalWidth);
+			const width = Math.max(0, right - left);
+			return { label: sector.label, left, width, compact: width < 104 };
 		});
 	}
 
@@ -434,9 +452,16 @@
 		return '';
 	}
 
-	function getSbbVehicleLabel(vehicle: SbbFormationVehicle) {
+	function getSbbVehicleLabel(vehicle: SbbFormationVehicle, fallbackIndex: number) {
 		if (vehicle.number != null && vehicle.number > 0) return String(vehicle.number);
-		return '';
+		if (vehicle.position != null && vehicle.position > 0) return String(vehicle.position);
+		return String(fallbackIndex + 1);
+	}
+
+	function getSbbVehicleTypeCode(vehicle: SbbFormationVehicle) {
+		const identifier = vehicle.vehicleIdentifier;
+		if (identifier?.typeCode != null) return String(identifier.typeCode);
+		return identifier?.typeCodeName?.trim() ?? '';
 	}
 
 	function getSbbFormationShortAmenityKeys(
@@ -561,6 +586,7 @@
 	let sbbLegendItems: SbbAmenity[] = [];
 	let sbbClasses = new Set<string>();
 	let sbbDirection = '';
+	let showSbbVehicleNumber = false;
 
 	$: sbbStations = getSbbStations(sbb_formation);
 	$: if (
@@ -628,7 +654,7 @@
 					<div
 						class="w-full border-y border-gray-200 bg-gray-50 py-4 dark:border-gray-800 dark:bg-[#1a1c1e]"
 					>
-						<div class="mb-4 flex items-center gap-2 px-4 text-sm text-gray-700 dark:text-gray-300">
+						<div class="mb-3 flex items-center gap-2 px-4 text-sm text-gray-700 dark:text-gray-300">
 							<span aria-hidden="true">‹</span>
 							<span>
 								{$_('cs_direction_of_travel', { default: 'Direction of travel' })}
@@ -641,19 +667,78 @@
 							{/if}
 						</div>
 
+						<div
+							class="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 px-4 text-xs text-gray-600 dark:text-gray-400"
+						>
+							<div class="flex flex-1 flex-wrap gap-x-4 gap-y-1">
+								{#if activeSbbFormation?.metaInformation?.length != null}
+									<span>
+										<span class="font-medium text-gray-700 dark:text-gray-300">
+											{$_('cs_length', { default: 'Length' })}:
+										</span>
+										{activeSbbFormation.metaInformation.length} m
+									</span>
+								{/if}
+								{#if activeSbbFormation?.metaInformation?.numberVehicles != null}
+									<span>
+										<span class="font-medium text-gray-700 dark:text-gray-300">
+											{$_('cs_vehicles', { default: 'Vehicles' })}:
+										</span>
+										{activeSbbFormation.metaInformation.numberVehicles}
+									</span>
+								{/if}
+								{#if activeSbbFormation?.metaInformation?.numberSeats != null}
+									<span>
+										<span class="font-medium text-gray-700 dark:text-gray-300">
+											{$_('cs_seats', { default: 'Seats' })}:
+										</span>
+										{activeSbbFormation.metaInformation.numberSeats}
+									</span>
+								{/if}
+								{#if activeSbbFormation?.metaInformation?.numberAxis != null}
+									<span>
+										<span class="font-medium text-gray-700 dark:text-gray-300">
+											{$_('cs_axis', { default: 'Axis' })}:
+										</span>
+										{activeSbbFormation.metaInformation.numberAxis}
+									</span>
+								{/if}
+							</div>
+							<label class="ml-auto flex cursor-pointer items-center gap-2 whitespace-nowrap">
+								<span>{$_('cs_show_vehicle_number', { default: 'Show vehicle number' })}</span>
+								<input class="sr-only" type="checkbox" bind:checked={showSbbVehicleNumber} />
+								<span
+									aria-hidden="true"
+									class="relative h-5 w-9 shrink-0 rounded-full transition-colors {showSbbVehicleNumber
+										? 'bg-blue-600'
+										: 'bg-gray-300 dark:bg-gray-600'}"
+								>
+									<span
+										class="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform {showSbbVehicleNumber
+											? 'translate-x-[18px]'
+											: 'translate-x-0.5'}"
+									></span>
+								</span>
+							</label>
+						</div>
+
 						<div class="hide-scrollbar w-full overflow-x-auto px-4 pb-2">
 							<div class="min-w-max" style={`width: ${sbbTrainWidth}px`}>
 								<div class="relative mb-2 h-7 w-full">
 									{#each sbbSectorSegments as sector}
 										<div
-											class="absolute top-0 flex h-7 items-center gap-1 text-xs text-gray-600 dark:text-gray-300"
-											style={`left: ${sector.left}px; width: ${sector.width - 4}px; padding-left: 2px; padding-right: 2px;`}
+											class="absolute top-0 flex h-7 items-center gap-1 overflow-hidden px-0.5 text-xs text-gray-600 dark:text-gray-300"
+											style={`left: ${sector.left}px; width: ${sector.width}px;`}
 										>
-											<span class="h-px min-w-2 flex-1 bg-gray-400 dark:bg-gray-600"></span>
-											<span class="whitespace-nowrap">
-												{$_('cs_sector', { default: 'Sector' })} {sector.label}
+											<span class="h-px min-w-1 flex-1 bg-gray-400 dark:bg-gray-600"></span>
+											<span class="shrink-0 whitespace-nowrap">
+												{#if sector.compact}
+													{$_('cs_sector_short', { default: 'Sec.' })} {sector.label}
+												{:else}
+													{$_('cs_sector', { default: 'Sector' })} {sector.label}
+												{/if}
 											</span>
-											<span class="h-px min-w-2 flex-1 bg-gray-400 dark:bg-gray-600"></span>
+											<span class="h-px min-w-1 flex-1 bg-gray-400 dark:bg-gray-600"></span>
 										</div>
 									{/each}
 								</div>
@@ -662,25 +747,23 @@
 									{#each sbbVehicleViews as view, i}
 										{@const vehicleClass = getSbbVehicleClass(view.vehicle)}
 										{@const amenities = getSbbVehicleAmenities(view.vehicle, selectedSbbStation)}
+										{@const typeCode = getSbbVehicleTypeCode(view.vehicle)}
+										{@const vehicleNumber = view.vehicle.vehicleIdentifier?.vehicleNumber}
 										<div
 											class="flex shrink-0 flex-col items-center"
 											style={`width: ${view.width}px`}
 											title={view.vehicle.vehicleIdentifier?.evn ??
 												view.vehicle.vehicleIdentifier?.typeCodeName ??
-												''}
+												typeCode}
 										>
 											<span class="mb-1 h-4 text-xs font-medium">
-												{getSbbVehicleLabel(view.vehicle)}
+												{getSbbVehicleLabel(view.vehicle, i)}
 											</span>
 											<div
 												class="relative flex h-10 w-full items-center rounded-xl border-[1.5px] border-current px-3 font-bold"
 											>
 												{#if vehicleClass}
 													<span class="ml-auto text-sm">{vehicleClass}</span>
-												{:else}
-													<span class="mx-auto max-w-full truncate px-1 text-[9px] font-semibold">
-														{view.vehicle.vehicleIdentifier?.typeCodeName ?? ''}
-													</span>
 												{/if}
 												{#if view.vehicle.vehicleProperties?.closed}
 													<img
@@ -700,11 +783,28 @@
 													/>
 												{/each}
 											</div>
+											<div class="mt-1 min-h-4 max-w-full px-1 text-center text-[10px] leading-4 text-gray-500 dark:text-gray-400">
+												{#if typeCode}
+													<span
+														class="block max-w-full truncate"
+														title={view.vehicle.vehicleIdentifier?.typeCodeName ?? typeCode}
+														>{typeCode}</span
+													>
+												{/if}
+											</div>
+											{#if showSbbVehicleNumber}
+												<div
+													class="min-h-4 max-w-full truncate px-1 text-center text-[10px] leading-4 text-gray-500 dark:text-gray-400"
+													title={vehicleNumber ?? ''}
+												>
+													{vehicleNumber ?? '—'}
+												</div>
+											{/if}
 										</div>
-										{#if i < sbbVehicleViews.length - 1}
+										{#if view.gapAfter > 0}
 											<div
-												class="mt-[35px] flex h-4 shrink-0 items-center justify-center"
-												style={`width: ${SBB_VEHICLE_GAP}px`}
+												class="mt-8 flex h-4 shrink-0 items-center justify-center"
+												style={`width: ${view.gapAfter}px`}
 											>
 												{#if sbbVehicleViews[i + 1].stationData?.accessToPreviousVehicle === false}
 													<span
