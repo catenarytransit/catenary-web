@@ -3,6 +3,11 @@ import type { Map, GeoJSONSource } from 'maplibre-gl';
 import { spruce_trajectory_data, subscribeTrajectories, unsubscribeTrajectories } from '../spruce_websocket';
 import { determineDarkModeToBool } from './determineDarkModeToBool';
 import { getContrastColours } from './processVehicleFeature';
+import {
+	clearTrajectoryOverlayData,
+	isTrajectoryOverlayActive,
+	setTrajectoryOverlayData
+} from './trajectory_overlay';
 
 let lastTrajectorySubTime = 0;
 let lastTrajectorySubParams = '';
@@ -108,6 +113,7 @@ export function fetch_trajectories(layersettings: Record<string, any>, map: Map)
 			unsubscribeTrajectories();
 			lastTrajectorySubParams = '';
 		}
+		clearTrajectoryOverlayData();
 		return;
 	}
 
@@ -138,8 +144,13 @@ export function startTrajectoryManager(map: Map) {
 		console.log('[DEBUGTrajectories] Received spruce_trajectory_data msg:', Object.keys(data).length, 'chateaus');
 		if (data) {
 			activeTrajectoriesData = data;
+			setTrajectoryOverlayData(data);
 		}
 	});
+
+	// Keep the existing MapLibre GeoJSON path as a fallback for browsers that
+	// cannot create a worker-owned OffscreenCanvas WebGL2 context.
+	if (isTrajectoryOverlayActive()) return;
 
 	// Run interpolation update loop every 0.5 second (500ms)
 	interpolationInterval = setInterval(() => {
@@ -325,6 +336,7 @@ export function stopTrajectoryManager() {
 		wsUnsubscribe();
 		wsUnsubscribe = null;
 	}
+	clearTrajectoryOverlayData();
 	activeTrajectoriesData = {};
 	lastTrajectorySubParams = '';
 	pendingSourceData = {};
