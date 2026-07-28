@@ -114,7 +114,8 @@
 	let start_of_move_sidebar_height: number | null = null;
 	let last_sidebar_release: number | null = null;
 	let current_locale: string = 'default';
-	let last_sidebar_interval_id: number | null = null;
+	let last_sidebar_animation_frame_id: number | null = null;
+	const sidebar_animation_duration_ms = 250;
 	let previous_click_on_sidebar_dragger: number | null = null;
 	let previous_y_velocity_sidebar: number | null = null;
 	let layersettingsBox = false;
@@ -1008,10 +1009,23 @@
 		}
 	}
 
-	function mousemovesidebar(e: TouchEvent | MouseEvent) {
-		if (last_sidebar_interval_id) {
-			clearInterval(last_sidebar_interval_id);
+	function cancel_sidebar_animation() {
+		if (last_sidebar_animation_frame_id !== null) {
+			cancelAnimationFrame(last_sidebar_animation_frame_id);
+			last_sidebar_animation_frame_id = null;
 		}
+	}
+
+	function ease_out_cubic(progress: number) {
+		return 1 - Math.pow(1 - progress, 3);
+	}
+
+	function interpolate(start: number, end: number, progress: number) {
+		return start + (end - start) * progress;
+	}
+
+	function mousemovesidebar(e: TouchEvent | MouseEvent) {
+		cancel_sidebar_animation();
 		//	console.log('sidebar mouse move' ,e)
 		//console.log('mousemovesidebar', Date.now(), e);
 
@@ -1114,96 +1128,100 @@
 		let sidebar = document.getElementById('catenary-sidebar');
 
 		if (sidebar) {
-			last_sidebar_release = performance.now();
+			const animation_start = performance.now();
+			last_sidebar_release = animation_start;
 
-			let sidebar_width = sidebar.offsetWidth || 0;
+			const is_mobile = window.innerWidth < 768;
+			const viewport_height = window.innerHeight;
+			const sidebar_width = sidebar.offsetWidth || 0;
 
-			if (last_sidebar_interval_id != null) {
-				clearInterval(last_sidebar_interval_id);
-			}
-
+			cancel_sidebar_animation();
 			recompute_map_padding();
 
-			last_sidebar_interval_id = setInterval(() => {
-				if (window.innerWidth < 768) {
-					if (sidebarOpen == 'full') {
-						if (translate_y_searchbar > -50) {
-							translate_y_searchbar += -3;
-						}
+			if (is_mobile) {
+				const start_height = Math.min(
+					viewport_height,
+					Math.max(dragger, sidebar_height_number)
+				);
+				const target_height =
+					sidebarOpen == 'full'
+						? viewport_height - dragger
+						: sidebarOpen == 'none'
+							? dragger
+							: 0.55 * viewport_height;
+				const start_searchbar_y = translate_y_searchbar;
+				const target_searchbar_y = sidebarOpen == 'full' ? -50 : 0;
+
+				translate_x_sidebar_number = 0;
+				translate_x_sidebar = '0px';
+
+				const animate_mobile_sidebar = (timestamp: number) => {
+					const progress = Math.min(
+						(timestamp - animation_start) / sidebar_animation_duration_ms,
+						1
+					);
+					const eased_progress = ease_out_cubic(progress);
+
+					sidebar_height_number = interpolate(start_height, target_height, eased_progress);
+					sidebar_height_output = `${sidebar_height_number}px`;
+					translate_y_searchbar = interpolate(
+						start_searchbar_y,
+						target_searchbar_y,
+						eased_progress
+					);
+
+					if (progress < 1) {
+						last_sidebar_animation_frame_id = requestAnimationFrame(animate_mobile_sidebar);
 					} else {
-						if (translate_y_searchbar < 0) {
-							translate_y_searchbar += 3;
-						}
+						sidebar_height_number = target_height;
+						sidebar_height_output = `${target_height}px`;
+						translate_y_searchbar = target_searchbar_y;
+						last_sidebar_animation_frame_id = null;
 					}
+				};
 
-					translate_x_sidebar_number = 0;
-					translate_x_sidebar = '0px';
-					let target = 0.55 * window.innerHeight;
+				last_sidebar_animation_frame_id = requestAnimationFrame(animate_mobile_sidebar);
+			} else {
+				const start_sidebar_x = translate_x_sidebar_number;
+				const target_sidebar_x = sidebarOpen == 'none' ? -sidebar_width : 0;
+				const start_collapser_left = collapser_left_offset_number;
+				const target_collapser_left = sidebarOpen == 'none' ? 0 : sidebar_width;
 
-					if (sidebarOpen == 'full') {
-						target = window.innerHeight - dragger;
+				translate_y_searchbar = 0;
+
+				const animate_desktop_sidebar = (timestamp: number) => {
+					const progress = Math.min(
+						(timestamp - animation_start) / sidebar_animation_duration_ms,
+						1
+					);
+					const eased_progress = ease_out_cubic(progress);
+
+					translate_x_sidebar_number = interpolate(
+						start_sidebar_x,
+						target_sidebar_x,
+						eased_progress
+					);
+					translate_x_sidebar = `${translate_x_sidebar_number}px`;
+					collapser_left_offset_number = interpolate(
+						start_collapser_left,
+						target_collapser_left,
+						eased_progress
+					);
+					collapser_left_offset = `${collapser_left_offset_number}px`;
+
+					if (progress < 1) {
+						last_sidebar_animation_frame_id = requestAnimationFrame(animate_desktop_sidebar);
 					} else {
-						if (sidebarOpen == 'none') {
-							target = dragger;
-						}
+						translate_x_sidebar_number = target_sidebar_x;
+						translate_x_sidebar = `${target_sidebar_x}px`;
+						collapser_left_offset_number = target_collapser_left;
+						collapser_left_offset = `${target_collapser_left}px`;
+						last_sidebar_animation_frame_id = null;
 					}
+				};
 
-					if (sidebar_height_number > innerHeight) {
-						sidebar_height_number = innerHeight;
-					}
-
-					if (sidebar_height_number < dragger) {
-						sidebar_height_number = dragger;
-					}
-
-					if (sidebar_height_number < target) {
-						sidebar_height_number += 0.15 * (target - sidebar_height_number);
-						sidebar_height_output = sidebar_height_number + 'px';
-					} else {
-						if (sidebar_height_number > target) {
-							sidebar_height_number -= 0.15 * (sidebar_height_number - target);
-							sidebar_height_output = sidebar_height_number + 'px';
-						} else {
-							clearInterval(last_sidebar_interval_id);
-						}
-					}
-				} else {
-					translate_y_searchbar = 0;
-
-					if (sidebarOpen == 'full') {
-						if (translate_x_sidebar_number < -0.001) {
-							translate_x_sidebar_number += 0.1 * Math.abs(translate_x_sidebar_number);
-							translate_x_sidebar = `${translate_x_sidebar_number}px`;
-
-							collapser_left_offset_number = sidebar_width - Math.abs(translate_x_sidebar_number);
-							collapser_left_offset = `${collapser_left_offset_number}px`;
-						} else {
-							clearInterval(last_sidebar_interval_id);
-							translate_x_sidebar_number = 0;
-							translate_x_sidebar = '0px';
-							collapser_left_offset_number = sidebar_width;
-							collapser_left_offset = `${collapser_left_offset_number}px`;
-						}
-					}
-
-					if (sidebarOpen == 'none') {
-						if (translate_x_sidebar_number > 0 - sidebar_width) {
-							translate_x_sidebar_number -= 0.1 * Math.abs(sidebar_width);
-
-							translate_x_sidebar = `${translate_x_sidebar_number}px`;
-
-							collapser_left_offset_number -= 0.1 * Math.abs(sidebar_width);
-							collapser_left_offset = `${collapser_left_offset_number}px`;
-						} else {
-							clearInterval(last_sidebar_interval_id);
-							translate_x_sidebar_number = -sidebar_width;
-							translate_x_sidebar = `${translate_x_sidebar_number}px`;
-							collapser_left_offset_number = 0;
-							collapser_left_offset = '0px';
-						}
-					}
-				}
-			}, 0.5);
+				last_sidebar_animation_frame_id = requestAnimationFrame(animate_desktop_sidebar);
+			}
 		}
 	}
 

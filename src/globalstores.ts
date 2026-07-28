@@ -6,7 +6,8 @@ import {
 	VehicleMapSelector,
 	RouteStack,
 	StopStack,
-	RouteMapSelector
+	RouteMapSelector,
+	syncStackUrl
 } from './components/stackenum';
 
 export const consentGiven = writable<boolean | null>(null);
@@ -14,7 +15,22 @@ export const consentGiven = writable<boolean | null>(null);
 import { writable } from 'svelte/store';
 import type { Writable } from 'svelte/store';
 
-export const data_stack_store: Writable<StackInterface[]> = writable([]);
+const data_stack_writable = writable<StackInterface[]>([]);
+
+export const data_stack_store: Writable<StackInterface[]> = {
+	subscribe: data_stack_writable.subscribe,
+	set(value) {
+		data_stack_writable.set(value);
+		syncStackUrl(value);
+	},
+	update(updater) {
+		data_stack_writable.update((value) => {
+			const nextValue = updater(value);
+			syncStackUrl(nextValue);
+			return nextValue;
+		});
+	}
+};
 export const on_sidebar_trigger_store = writable(0);
 export const clock_skew_store = writable<number | null>(null);
 

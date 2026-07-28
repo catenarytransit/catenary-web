@@ -40,7 +40,7 @@ export default defineConfig({
 	},
 	build: {
 		sourcemap: true,
-		minify: false
+		minify: 'esbuild'
 	},
 	preview: {
 		allowedHosts: ['maps.catenarymaps.org']

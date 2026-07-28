@@ -832,6 +832,7 @@
 					gtfs_desc={route_data.gtfs_desc}
 					text_color={route_data.text_color}
 					pin_route_setting_shown={true}
+					show_route_dropdown={true}
 				/>
 			{:catch error}
 				<p class="p-4 text-red-500">Error loading component: {error.message}</p>

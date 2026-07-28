@@ -24,7 +24,7 @@ const config = {
 	},
 	build: {
 		sourcemap: true,
-		minify: false
+		minify: 'esbuild'
 	},
 	define: {
 		_COMMIT_ID: JSON.stringify(execSync('git rev-parse HEAD').toString().trim()),
