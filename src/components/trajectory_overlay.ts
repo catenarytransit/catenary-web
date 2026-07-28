@@ -1,17 +1,73 @@
 import type { CustomLayerInterface, CustomRenderMethodInput, Map } from 'maplibre-gl';
 
 const PROJECTION_BRIDGE_LAYER_ID = 'trajectory-overlay-projection-bridge';
+const PROJECTION_SEND_INTERVAL_MS = 1000 / 30;
+
+type OverlayState = 'idle' | 'starting' | 'ready' | 'failed';
+type TrajectoryData = Record<string, { content: any[]; timestamp: number }>;
 
 let overlayWorker: Worker | null = null;
 let overlayCanvas: HTMLCanvasElement | null = null;
 let activeMap: Map | null = null;
+let overlayState: OverlayState = 'idle';
 let lastShaderVariant = '';
+let lastProjectionSentAt = 0;
+let lastProjectionWidth = 0;
+let lastProjectionHeight = 0;
+let latestTrajectoryData: TrajectoryData = {};
+let sentTrajectoryVersions = new Map<string, string>();
 let removeVisibilityListener: (() => void) | null = null;
 let removeStyleListener: (() => void) | null = null;
 let removeMapListener: (() => void) | null = null;
+let removeCameraListener: (() => void) | null = null;
 
 function copyMatrix(matrix: ArrayLike<number>): number[] {
 	return Array.from(matrix);
+}
+
+function trajectoryVersion(value: { content?: any[]; timestamp?: number } | undefined) {
+	return `${value?.timestamp ?? 'none'}:${value?.content?.length ?? 0}`;
+}
+
+function flushTrajectoryData() {
+	if (!overlayWorker || overlayState !== 'ready') return;
+
+	const updates: TrajectoryData = {};
+	const currentChateaus = new Set(Object.keys(latestTrajectoryData));
+	const removals: string[] = [];
+
+	for (const [chateau, value] of Object.entries(latestTrajectoryData)) {
+		const version = trajectoryVersion(value);
+		if (sentTrajectoryVersions.get(chateau) === version) continue;
+
+		updates[chateau] = value;
+		sentTrajectoryVersions.set(chateau, version);
+	}
+
+	for (const chateau of sentTrajectoryVersions.keys()) {
+		if (currentChateaus.has(chateau)) continue;
+		removals.push(chateau);
+		sentTrajectoryVersions.delete(chateau);
+	}
+
+	if (Object.keys(updates).length === 0 && removals.length === 0) return;
+
+	overlayWorker.postMessage({
+		type: 'trajectory-patch',
+		updates,
+		removals
+	});
+}
+
+function markOverlayFailed(message: string, details?: unknown) {
+	if (overlayState === 'failed') return;
+
+	overlayState = 'failed';
+	console.error(`[trajectory overlay] ${message}`, details ?? '');
+	overlayWorker?.terminate();
+	overlayWorker = null;
+	overlayCanvas?.remove();
+	overlayCanvas = null;
 }
 
 function createProjectionBridge(map: Map): CustomLayerInterface {
@@ -20,21 +76,36 @@ function createProjectionBridge(map: Map): CustomLayerInterface {
 		type: 'custom',
 		renderingMode: '2d',
 		render(_gl, args: CustomRenderMethodInput) {
-			if (!overlayWorker) return;
+			if (!overlayWorker || overlayState === 'failed') return;
 
+			const now = performance.now();
+			const mapCanvas = map.getCanvas();
 			const shaderVariant = args.shaderData.variantName;
-			const shaderData =
-				shaderVariant !== lastShaderVariant
-					? {
-							variantName: shaderVariant,
-							vertexShaderPrelude: args.shaderData.vertexShaderPrelude,
-							define: args.shaderData.define
-						}
-					: undefined;
+			const shaderChanged = shaderVariant !== lastShaderVariant;
+			const dimensionsChanged =
+				mapCanvas.width !== lastProjectionWidth || mapCanvas.height !== lastProjectionHeight;
+
+			if (
+				!shaderChanged &&
+				!dimensionsChanged &&
+				now - lastProjectionSentAt < PROJECTION_SEND_INTERVAL_MS
+			) {
+				return;
+			}
+
+			const shaderData = shaderChanged
+				? {
+						variantName: shaderVariant,
+						vertexShaderPrelude: args.shaderData.vertexShaderPrelude,
+						define: args.shaderData.define
+					}
+				: undefined;
 
 			lastShaderVariant = shaderVariant;
+			lastProjectionSentAt = now;
+			lastProjectionWidth = mapCanvas.width;
+			lastProjectionHeight = mapCanvas.height;
 
-			const mapCanvas = map.getCanvas();
 			overlayWorker.postMessage({
 				type: 'projection',
 				shaderVariant,
@@ -49,7 +120,8 @@ function createProjectionBridge(map: Map): CustomLayerInterface {
 				width: mapCanvas.width,
 				height: mapCanvas.height,
 				pixelRatio: map.getPixelRatio(),
-				zoom: map.getZoom()
+				zoom: map.getZoom(),
+				moving: map.isMoving()
 			});
 		}
 	};
@@ -58,6 +130,7 @@ function createProjectionBridge(map: Map): CustomLayerInterface {
 function addProjectionBridge(map: Map) {
 	if (!map.isStyleLoaded() || map.getLayer(PROJECTION_BRIDGE_LAYER_ID)) return;
 	map.addLayer(createProjectionBridge(map));
+	console.info('[trajectory overlay] projection bridge attached');
 }
 
 export function setupTrajectoryOverlay(map: Map) {
@@ -67,15 +140,21 @@ export function setupTrajectoryOverlay(map: Map) {
 		typeof Worker === 'undefined' ||
 		typeof OffscreenCanvas === 'undefined' ||
 		typeof HTMLCanvasElement === 'undefined' ||
-		!HTMLCanvasElement.prototype.transferControlToOffscreen ||
-		!new OffscreenCanvas(1, 1).getContext('webgl2')
+		!HTMLCanvasElement.prototype.transferControlToOffscreen
 	) {
-		console.warn('[trajectory overlay] OffscreenCanvas workers are unavailable');
+		overlayState = 'failed';
+		console.warn('[trajectory overlay] OffscreenCanvas workers are unavailable; using MapLibre fallback');
 		return false;
 	}
 
 	activeMap = map;
+	overlayState = 'starting';
 	lastShaderVariant = '';
+	lastProjectionSentAt = 0;
+	lastProjectionWidth = 0;
+	lastProjectionHeight = 0;
+	sentTrajectoryVersions.clear();
+	console.info('[trajectory overlay] starting worker');
 
 	const canvas = document.createElement('canvas');
 	canvas.className = 'trajectory-overlay-canvas';
@@ -94,6 +173,38 @@ export function setupTrajectoryOverlay(map: Map) {
 		type: 'module'
 	});
 	overlayWorker = worker;
+
+	worker.onmessage = (event: MessageEvent) => {
+		const message = event.data;
+
+		switch (message?.type) {
+			case 'ready':
+				overlayState = 'ready';
+				console.info('[trajectory overlay] worker ready', message.details);
+				flushTrajectoryData();
+				map.triggerRepaint();
+				break;
+			case 'shader-ready':
+				console.info('[trajectory overlay] shader ready', message.variantName);
+				break;
+			case 'dataset':
+				console.info('[trajectory overlay] dataset prepared', message.details);
+				break;
+			case 'stats':
+				console.debug('[trajectory overlay] stats', message.details);
+				break;
+			case 'error':
+				markOverlayFailed(message.message || 'worker error', message.details);
+				break;
+		}
+	};
+
+	worker.onerror = (event) => {
+		markOverlayFailed('worker failed to load or execute', event.message);
+	};
+	worker.onmessageerror = (event) => {
+		markOverlayFailed('worker message could not be decoded', event.data);
+	};
 
 	worker.postMessage(
 		{
@@ -121,6 +232,14 @@ export function setupTrajectoryOverlay(map: Map) {
 		map.off('load', onStyleLoad);
 	};
 
+	const requestFinalProjection = () => map.triggerRepaint();
+	map.on('moveend', requestFinalProjection);
+	map.on('resize', requestFinalProjection);
+	removeCameraListener = () => {
+		map.off('moveend', requestFinalProjection);
+		map.off('resize', requestFinalProjection);
+	};
+
 	const onMapRemove = () => destroyTrajectoryOverlay();
 	map.on('remove', onMapRemove);
 	removeMapListener = () => map.off('remove', onMapRemove);
@@ -131,18 +250,17 @@ export function setupTrajectoryOverlay(map: Map) {
 }
 
 export function isTrajectoryOverlayActive() {
-	return overlayWorker !== null;
+	return overlayState === 'ready' && overlayWorker !== null;
 }
 
-export function setTrajectoryOverlayData(data: Record<string, { content: any[]; timestamp: number }>) {
-	overlayWorker?.postMessage({
-		type: 'trajectories',
-		data
-	});
+export function setTrajectoryOverlayData(data: TrajectoryData) {
+	latestTrajectoryData = data || {};
+	flushTrajectoryData();
 }
 
 export function clearTrajectoryOverlayData() {
-	overlayWorker?.postMessage({ type: 'trajectories', data: {} });
+	latestTrajectoryData = {};
+	flushTrajectoryData();
 }
 
 export function destroyTrajectoryOverlay() {
@@ -150,6 +268,8 @@ export function destroyTrajectoryOverlay() {
 	removeVisibilityListener = null;
 	removeStyleListener?.();
 	removeStyleListener = null;
+	removeCameraListener?.();
+	removeCameraListener = null;
 	removeMapListener?.();
 	removeMapListener = null;
 
@@ -168,5 +288,11 @@ export function destroyTrajectoryOverlay() {
 	overlayCanvas?.remove();
 	overlayCanvas = null;
 	activeMap = null;
+	overlayState = 'idle';
 	lastShaderVariant = '';
+	lastProjectionSentAt = 0;
+	lastProjectionWidth = 0;
+	lastProjectionHeight = 0;
+	latestTrajectoryData = {};
+	sentTrajectoryVersions.clear();
 }

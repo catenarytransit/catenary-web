@@ -24,6 +24,7 @@ type PreparedTrajectory = {
 	arrival: number;
 	color: [number, number, number, number];
 	routeType: number;
+	segmentIndex: number;
 };
 
 type ProgramState = {
@@ -40,11 +41,15 @@ type ProgramState = {
 
 const FLOATS_PER_POINT = 7;
 const MAX_MERCATOR_LATITUDE = 85.0511287798066;
+const TARGET_FRAME_INTERVAL_MS = 1000 / 30;
+const STATS_INTERVAL_MS = 5000;
 
 let canvas: OffscreenCanvas | null = null;
 let gl: WebGL2RenderingContext | null = null;
 let pointBuffer: WebGLBuffer | null = null;
+let gpuBufferCapacityFloats = 0;
 let preparedTrajectories: PreparedTrajectory[] = [];
+let preparedByChateau = new Map<string, PreparedTrajectory[]>();
 let projectionData: ProjectionData | null = null;
 let currentShaderVariant = '';
 let currentZoom = 0;
@@ -52,6 +57,11 @@ let pixelRatio = 1;
 let visible = true;
 let pointData = new Float32Array(0);
 let programs = new Map<string, ProgramState>();
+let lastFrameAt = 0;
+let lastStatsAt = performance.now();
+let statsFrameCount = 0;
+let statsDrawTime = 0;
+let statsLastPointCount = 0;
 
 function mercatorXFromLng(lng: number) {
 	return (lng + 180) / 360;
@@ -205,39 +215,49 @@ function prepareTrajectory(rawTrajectory: any): PreparedTrajectory | null {
 		departure,
 		arrival,
 		color: parseColor(rawTrajectory.color),
-		routeType: resolveRouteType(rawTrajectory)
+		routeType: resolveRouteType(rawTrajectory),
+		segmentIndex: 1
 	};
 }
 
-function prepareTrajectories(data: Record<string, { content?: any[] }>) {
-	const nextTrajectories: PreparedTrajectory[] = [];
+function applyTrajectoryPatch(
+	updates: Record<string, { content?: any[] }>,
+	removals: string[]
+) {
+	const startedAt = performance.now();
+	let preparedCoordinateCount = 0;
 
-	for (const chateauData of Object.values(data || {})) {
-		if (!Array.isArray(chateauData?.content)) continue;
-
-		for (const wrapper of chateauData.content) {
-			const prepared = prepareTrajectory(wrapper?.content);
-			if (prepared) nextTrajectories.push(prepared);
-		}
+	for (const chateau of removals || []) {
+		preparedByChateau.delete(chateau);
 	}
 
-	preparedTrajectories = nextTrajectories;
-}
+	for (const [chateau, chateauData] of Object.entries(updates || {})) {
+		const nextTrajectories: PreparedTrajectory[] = [];
 
-function findSegment(cumulativeLengths: Float64Array, targetLength: number) {
-	let low = 1;
-	let high = cumulativeLengths.length - 1;
-
-	while (low < high) {
-		const middle = (low + high) >>> 1;
-		if (cumulativeLengths[middle] < targetLength) {
-			low = middle + 1;
-		} else {
-			high = middle;
+		if (Array.isArray(chateauData?.content)) {
+			for (const wrapper of chateauData.content) {
+				const prepared = prepareTrajectory(wrapper?.content);
+				if (!prepared) continue;
+				preparedCoordinateCount += prepared.mercatorCoordinates.length / 2;
+				nextTrajectories.push(prepared);
+			}
 		}
+
+		preparedByChateau.set(chateau, nextTrajectories);
 	}
 
-	return low;
+	preparedTrajectories = Array.from(preparedByChateau.values()).flat();
+
+	self.postMessage({
+		type: 'dataset',
+		details: {
+			updatedChateaus: Object.keys(updates || {}).length,
+			removedChateaus: removals?.length || 0,
+			trajectoryCount: preparedTrajectories.length,
+			preparedCoordinateCount,
+			prepareMs: Number((performance.now() - startedAt).toFixed(2))
+		}
+	});
 }
 
 function ensurePointCapacity(pointCount: number) {
@@ -268,7 +288,22 @@ function fillPointData(now: number) {
 			x = trajectory.mercatorCoordinates[0];
 			y = trajectory.mercatorCoordinates[1];
 		} else {
-			const endIndex = findSegment(trajectory.cumulativeLengths, targetLength);
+			let endIndex = Math.min(
+				Math.max(1, trajectory.segmentIndex),
+				trajectory.cumulativeLengths.length - 1
+			);
+
+			while (
+				endIndex < trajectory.cumulativeLengths.length - 1 &&
+				trajectory.cumulativeLengths[endIndex] < targetLength
+			) {
+				endIndex += 1;
+			}
+			while (endIndex > 1 && trajectory.cumulativeLengths[endIndex - 1] > targetLength) {
+				endIndex -= 1;
+			}
+			trajectory.segmentIndex = endIndex;
+
 			const startIndex = Math.max(0, endIndex - 1);
 			const startLength = trajectory.cumulativeLengths[startIndex];
 			const endLength = trajectory.cumulativeLengths[endIndex];
@@ -304,7 +339,12 @@ function compileShader(type: number, source: string) {
 	gl.shaderSource(shader, source);
 	gl.compileShader(shader);
 	if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-		console.error('[trajectory overlay] shader compilation failed', gl.getShaderInfoLog(shader));
+		const details = gl.getShaderInfoLog(shader) || 'unknown shader error';
+		self.postMessage({
+			type: 'error',
+			message: 'shader compilation failed',
+			details
+		});
 		gl.deleteShader(shader);
 		return null;
 	}
@@ -361,7 +401,12 @@ void main() {
 	gl.deleteShader(fragmentShader);
 
 	if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-		console.error('[trajectory overlay] program link failed', gl.getProgramInfoLog(program));
+		const details = gl.getProgramInfoLog(program) || 'unknown program link error';
+		self.postMessage({
+			type: 'error',
+			message: 'program link failed',
+			details
+		});
 		gl.deleteProgram(program);
 		return null;
 	}
@@ -413,47 +458,77 @@ function draw() {
 	const program = programs.get(currentShaderVariant);
 	if (!program) return;
 
+	const drawStartedAt = performance.now();
 	const pointCount = fillPointData(Date.now());
 	gl.viewport(0, 0, canvas.width, canvas.height);
 	gl.clearColor(0, 0, 0, 0);
 	gl.clear(gl.COLOR_BUFFER_BIT);
-	if (pointCount === 0) return;
 
-	gl.useProgram(program.program);
-	setProjectionUniforms(program);
-	gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-	gl.bufferData(
-		gl.ARRAY_BUFFER,
-		pointData.subarray(0, pointCount * FLOATS_PER_POINT),
-		gl.DYNAMIC_DRAW
-	);
+	if (pointCount > 0) {
+		gl.useProgram(program.program);
+		setProjectionUniforms(program);
+		gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
 
-	const stride = FLOATS_PER_POINT * Float32Array.BYTES_PER_ELEMENT;
-	gl.enableVertexAttribArray(program.positionLocation);
-	gl.vertexAttribPointer(program.positionLocation, 2, gl.FLOAT, false, stride, 0);
-	gl.enableVertexAttribArray(program.colorLocation);
-	gl.vertexAttribPointer(
-		program.colorLocation,
-		4,
-		gl.FLOAT,
-		false,
-		stride,
-		2 * Float32Array.BYTES_PER_ELEMENT
-	);
-	gl.enableVertexAttribArray(program.sizeLocation);
-	gl.vertexAttribPointer(
-		program.sizeLocation,
-		1,
-		gl.FLOAT,
-		false,
-		stride,
-		6 * Float32Array.BYTES_PER_ELEMENT
-	);
+		const requiredFloats = pointCount * FLOATS_PER_POINT;
+		if (requiredFloats > gpuBufferCapacityFloats) {
+			gpuBufferCapacityFloats = Math.max(requiredFloats, gpuBufferCapacityFloats * 2, 2048);
+			gl.bufferData(
+				gl.ARRAY_BUFFER,
+				gpuBufferCapacityFloats * Float32Array.BYTES_PER_ELEMENT,
+				gl.DYNAMIC_DRAW
+			);
+		}
+		gl.bufferSubData(gl.ARRAY_BUFFER, 0, pointData.subarray(0, requiredFloats));
 
-	gl.disable(gl.DEPTH_TEST);
-	gl.enable(gl.BLEND);
-	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-	gl.drawArrays(gl.POINTS, 0, pointCount);
+		const stride = FLOATS_PER_POINT * Float32Array.BYTES_PER_ELEMENT;
+		gl.enableVertexAttribArray(program.positionLocation);
+		gl.vertexAttribPointer(program.positionLocation, 2, gl.FLOAT, false, stride, 0);
+		gl.enableVertexAttribArray(program.colorLocation);
+		gl.vertexAttribPointer(
+			program.colorLocation,
+			4,
+			gl.FLOAT,
+			false,
+			stride,
+			2 * Float32Array.BYTES_PER_ELEMENT
+		);
+		gl.enableVertexAttribArray(program.sizeLocation);
+		gl.vertexAttribPointer(
+			program.sizeLocation,
+			1,
+			gl.FLOAT,
+			false,
+			stride,
+			6 * Float32Array.BYTES_PER_ELEMENT
+		);
+
+		gl.disable(gl.DEPTH_TEST);
+		gl.enable(gl.BLEND);
+		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+		gl.drawArrays(gl.POINTS, 0, pointCount);
+	}
+
+	statsFrameCount += 1;
+	statsDrawTime += performance.now() - drawStartedAt;
+	statsLastPointCount = pointCount;
+
+	const now = performance.now();
+	if (now - lastStatsAt >= STATS_INTERVAL_MS) {
+		self.postMessage({
+			type: 'stats',
+			details: {
+				fps: Number((statsFrameCount / ((now - lastStatsAt) / 1000)).toFixed(1)),
+				averageDrawMs: Number((statsDrawTime / Math.max(1, statsFrameCount)).toFixed(2)),
+				visiblePoints: statsLastPointCount,
+				trajectoryCount: preparedTrajectories.length,
+				shaderVariant: currentShaderVariant,
+				canvas: `${canvas.width}x${canvas.height}`
+			}
+		});
+		lastStatsAt = now;
+		statsFrameCount = 0;
+		statsDrawTime = 0;
+	}
 }
 
 function scheduleNextFrame() {
@@ -468,8 +543,11 @@ function scheduleNextFrame() {
 	}
 }
 
-function renderLoop(_timestamp: number) {
-	draw();
+function renderLoop(timestamp: number) {
+	if (timestamp - lastFrameAt >= TARGET_FRAME_INTERVAL_MS) {
+		lastFrameAt = timestamp;
+		draw();
+	}
 	scheduleNextFrame();
 }
 
@@ -485,16 +563,35 @@ self.onmessage = (event: MessageEvent) => {
 				antialias: false,
 				depth: false,
 				desynchronized: true,
-				powerPreference: 'high-performance',
-				premultipliedAlpha: false
+				powerPreference: 'high-performance'
 			}) as WebGL2RenderingContext | null;
 
 			if (!gl) {
-				console.error('[trajectory overlay] WebGL2 is unavailable in the worker');
+				self.postMessage({
+					type: 'error',
+					message: 'WebGL2 is unavailable in the worker'
+				});
 				return;
 			}
 
 			pointBuffer = gl.createBuffer();
+			if (!pointBuffer) {
+				self.postMessage({
+					type: 'error',
+					message: 'failed to allocate the trajectory point buffer'
+				});
+				return;
+			}
+
+			self.postMessage({
+				type: 'ready',
+				details: {
+					renderer: gl.getParameter(gl.RENDERER),
+					vendor: gl.getParameter(gl.VENDOR),
+					maxPointSize: gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)?.[1],
+					targetFps: 30
+				}
+			});
 			scheduleNextFrame();
 			break;
 		}
@@ -508,11 +605,18 @@ self.onmessage = (event: MessageEvent) => {
 			currentZoom = message.zoom || 0;
 			projectionData = message.projectionData;
 			currentShaderVariant = message.shaderVariant;
-			getProgram(message.shaderData);
+			const alreadyHadProgram = programs.has(currentShaderVariant);
+			const program = getProgram(message.shaderData);
+			if (program && !alreadyHadProgram) {
+				self.postMessage({
+					type: 'shader-ready',
+					variantName: currentShaderVariant
+				});
+			}
 			break;
 		}
-		case 'trajectories':
-			prepareTrajectories(message.data || {});
+		case 'trajectory-patch':
+			applyTrajectoryPatch(message.updates || {}, message.removals || []);
 			break;
 		case 'visibility':
 			visible = message.visible !== false;
