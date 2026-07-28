@@ -372,6 +372,112 @@
 
 	let mapglobal: maplibregl.Map | null = null;
 
+	const eiffelTowerCoordinates: maplibregl.LngLatLike = [2.2945, 48.858222];
+	let projectionCanvas: HTMLCanvasElement;
+	let stopProjectionCanvasSync: (() => void) | null = null;
+
+	function setupProjectionCanvasSync(map: maplibregl.Map, canvas: HTMLCanvasElement) {
+		const context = canvas.getContext('2d', {
+			alpha: true,
+			desynchronized: true
+		});
+
+		if (!context) {
+			console.warn('[projection canvas] 2D canvas context is unavailable');
+			return () => {};
+		}
+
+		let disposed = false;
+		let drawQueued = false;
+		let lastLogAt = performance.now();
+		let samples = 0;
+		let projectionTimeTotal = 0;
+		let drawTimeTotal = 0;
+		let queueDelayTotal = 0;
+
+		function resizeCanvasToDisplaySize() {
+			const pixelRatio = window.devicePixelRatio || 1;
+			const width = Math.max(1, Math.round(canvas.clientWidth * pixelRatio));
+			const height = Math.max(1, Math.round(canvas.clientHeight * pixelRatio));
+
+			if (canvas.width !== width || canvas.height !== height) {
+				canvas.width = width;
+				canvas.height = height;
+			}
+
+			context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+		}
+
+		async function drawProjectionCanvas(scheduledAt: number) {
+			// Yield to a microtask so consecutive MapLibre render events are coalesced,
+			// while still drawing before the browser normally paints the frame.
+			await Promise.resolve();
+			drawQueued = false;
+
+			if (disposed) return;
+
+			const drawStartedAt = performance.now();
+			resizeCanvasToDisplaySize();
+
+			const projectionStartedAt = performance.now();
+			const projectedPoint = map.project(eiffelTowerCoordinates);
+			const projectionFinishedAt = performance.now();
+
+			context.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+
+			if (Number.isFinite(projectedPoint.x) && Number.isFinite(projectedPoint.y)) {
+				context.beginPath();
+				context.arc(projectedPoint.x, projectedPoint.y, 7, 0, Math.PI * 2);
+				context.fillStyle = '#ef4444';
+				context.fill();
+				context.lineWidth = 3;
+				context.strokeStyle = '#ffffff';
+				context.stroke();
+			}
+
+			const drawFinishedAt = performance.now();
+			samples += 1;
+			projectionTimeTotal += projectionFinishedAt - projectionStartedAt;
+			drawTimeTotal += drawFinishedAt - drawStartedAt;
+			queueDelayTotal += drawStartedAt - scheduledAt;
+
+			if (drawFinishedAt - lastLogAt >= 1000) {
+				console.debug('[projection canvas] Eiffel Tower dot timing', {
+					averageProjectionMs: (projectionTimeTotal / samples).toFixed(3),
+					averageDrawMs: (drawTimeTotal / samples).toFixed(3),
+					averageQueueDelayMs: (queueDelayTotal / samples).toFixed(3),
+					samples
+				});
+
+				lastLogAt = drawFinishedAt;
+				samples = 0;
+				projectionTimeTotal = 0;
+				drawTimeTotal = 0;
+				queueDelayTotal = 0;
+			}
+		}
+
+		function scheduleProjectionCanvasDraw() {
+			if (disposed || drawQueued) return;
+
+			drawQueued = true;
+			void drawProjectionCanvas(performance.now());
+		}
+
+		map.on('render', scheduleProjectionCanvasDraw);
+		map.on('resize', scheduleProjectionCanvasDraw);
+		window.addEventListener('resize', scheduleProjectionCanvasDraw);
+		scheduleProjectionCanvasDraw();
+
+		return () => {
+			disposed = true;
+			map.off('render', scheduleProjectionCanvasDraw);
+			map.off('resize', scheduleProjectionCanvasDraw);
+			window.removeEventListener('resize', scheduleProjectionCanvasDraw);
+			context.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+		};
+	}
+
 	current_orm_layer_type_store.subscribe((value) => {
 		current_orm_layer_type = value;
 
@@ -1527,6 +1633,8 @@
 		});
 
 		mapglobal = map;
+		stopProjectionCanvasSync?.();
+		stopProjectionCanvasSync = setupProjectionCanvasSync(map, projectionCanvas);
 
 		function remove_listener() {
 			media.removeEventListener('change', updatePixelRatio);
@@ -2072,7 +2180,11 @@
 		<ConsentBanner />
 		<div id="map" class="fixed top-0 left-0 w-[100vw] h-[100vh]"></div>
 
-		<canvas class="fixed top-0 left-0 w-[100vw] h-[100vh]" style="position: absolute; left: 0px; transform-origin: left top 0px; transform: matrix(1, 0, 0, 1, 0, 0);" ></canvas>
+		<canvas
+			bind:this={projectionCanvas}
+			class="pointer-events-none fixed inset-0 h-[100vh] w-[100vw]"
+			aria-hidden="true"
+		></canvas>
 
 		{#key top_margin_collapser_sidebar}
 			<div
