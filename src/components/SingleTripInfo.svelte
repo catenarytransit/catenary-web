@@ -98,6 +98,7 @@
 	import StopTimeNumber from './StopTimeNumber.svelte';
 	import Clock from './Clock.svelte';
 	import VehicleInfo from './vehicle_info.svelte';
+	import { VehicleHistoryStack } from './stackenum';
 	import ConsolidatedRouteList from './ConsolidatedRouteList.svelte';
 	import CoachSequencePage from './CoachSequencePage.svelte';
 
@@ -107,6 +108,27 @@
 		} else {
 			return vehicle_id;
 		}
+	}
+
+	function open_vehicle_history() {
+		const vehicle_label =
+			trip_selected.vehicle_id || trip_data?.vehicle?.label || trip_data?.vehicle?.id || null;
+
+		if (!vehicle_label) return;
+
+		data_stack_store.update((stack) => {
+			stack.push(
+				new StackInterface(
+					new VehicleHistoryStack(
+						trip_selected.chateau_id,
+						vehicle_label,
+						trip_data?.route_id || trip_selected.route_id
+					)
+				)
+			);
+
+			return stack;
+		});
 	}
 
 	let show_seconds = get(show_seconds_store);
@@ -1416,6 +1438,17 @@
 						label={trip_selected.vehicle_id || trip_data.vehicle?.label || trip_data.vehicle?.id}
 						route_id={trip_data.route_id}
 					/>
+
+					{#if trip_selected.vehicle_id || trip_data.vehicle?.label || trip_data.vehicle?.id}
+						<button
+							type="button"
+							on:click={open_vehicle_history}
+							class="mt-2 inline-flex items-center gap-1 rounded-lg border border-slate-300 px-2 py-1 text-sm font-semibold hover:bg-blue-100 dark:border-slate-700 dark:hover:bg-slate-700"
+						>
+							<span class="material-symbols-outlined text-base leading-none">history</span>
+							{$_('vehicle_history', { default: 'Vehicle history' })}
+						</button>
+					{/if}
 				</div>
 
 				{#if all_exact_stoptimes == true}

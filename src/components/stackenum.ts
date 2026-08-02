@@ -8,6 +8,7 @@ export class StackInterface {
 		| MapSelectionScreen
 		| SettingsStack
 		| BlockStack
+		| VehicleHistoryStack
 		| OsmItemStack
 		| OsmStationStack;
 
@@ -21,6 +22,7 @@ export class StackInterface {
 			| MapSelectionScreen
 			| SettingsStack
 			| BlockStack
+			| VehicleHistoryStack
 			| OsmItemStack
 			| OsmStationStack
 	) {
@@ -67,6 +69,18 @@ export class BlockStack {
 		this.chateau_id = chateau_id;
 		this.block_id = block_id;
 		this.service_date = service_date;
+	}
+}
+
+export class VehicleHistoryStack {
+	public chateau_id: string;
+	public vehicle_id: string;
+	public route_id: string | null;
+
+	constructor(chateau_id: string, vehicle_id: string, route_id: string | null) {
+		this.chateau_id = chateau_id;
+		this.vehicle_id = vehicle_id;
+		this.route_id = route_id;
 	}
 }
 
@@ -376,6 +390,15 @@ function stackDataToPageQuery(data: StackInterface['data']): Record<string, Page
 			chateau: data.chateau_id,
 			block: data.block_id,
 			service_date: data.service_date
+		};
+	}
+
+	if (data instanceof VehicleHistoryStack) {
+		return {
+			page: 'vehicle_history',
+			chateau: data.chateau_id,
+			vehicle: data.vehicle_id,
+			route: data.route_id
 		};
 	}
 

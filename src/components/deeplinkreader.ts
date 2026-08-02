@@ -5,7 +5,8 @@ import {
 	RouteStack,
 	SingleTrip,
 	StackInterface,
-	StopStack
+	StopStack,
+	VehicleHistoryStack
 } from '../components/stackenum';
 
 import {
@@ -128,6 +129,17 @@ export function deep_link_url_reader() {
 
 		if (chateau && blockId && serviceDate) {
 			nextStack = new StackInterface(new BlockStack(chateau, blockId, serviceDate));
+		}
+	}
+
+	if (page === 'vehicle_history') {
+		const chateau = getFirstParam(urlParams, 'chateau');
+		const vehicleId = getFirstParam(urlParams, 'vehicle');
+
+		if (chateau && vehicleId) {
+			nextStack = new StackInterface(
+				new VehicleHistoryStack(chateau, vehicleId, getFirstParam(urlParams, 'route', 'route_id'))
+			);
 		}
 	}
 
