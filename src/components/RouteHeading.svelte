@@ -9,7 +9,7 @@
 		has_schedule_pdf,
 		schedule_pdf_needs_hydration
 	} from './pdf_schedules';
-	import { onMount } from 'svelte';
+	import { createEventDispatcher, onMount } from 'svelte';
 	import {
 		data_stack_store,
 		// ... other imports
@@ -28,6 +28,8 @@
 	import StationScreenRouteBadge from './StationScreenRouteBadge.svelte';
 	import RatpBullet from './ratpbullet.svelte';
 
+	const dispatch = createEventDispatcher<{ vehicle: void }>();
+
 	export let color: string;
 	export let text_color: string;
 
@@ -38,6 +40,7 @@
 	export let run_number: string | null = null;
 	export let icon: string | null = null;
 	export let vehicle: string | null = null;
+	export let vehicle_history_clickable: boolean = false;
 
 	export let route_id: string;
 	export let chateau_id: string;
@@ -344,20 +347,41 @@
 			{/if}
 		</span>
 		{#if vehicle && vehicle != run_number}
-			<span class="text-sm align-middle ml-2 text-gray-600 dark:text-gray-400 inline-block">
-				<span class="material-symbols-outlined !text-sm align-middle -translate-y-[0.03rem]"
-					>{#if route_type == 0}
-						tram
-					{:else if route_type == 1}
-						subway
-					{:else if route_type == 2}
-						train
-					{:else}
-						directions_bus
-					{/if}</span
+			{#if vehicle_history_clickable}
+				<button
+					type="button"
+					on:click={() => dispatch('vehicle')}
+					class="ml-2 inline-block bg-transparent p-0 text-sm align-middle text-gray-600 underline decoration-sky-500/80 hover:decoration-sky-500 dark:text-gray-400"
 				>
-				{vehicle}
-			</span>
+					<span class="material-symbols-outlined !text-sm align-middle -translate-y-[0.03rem]"
+						>{#if route_type == 0}
+							tram
+						{:else if route_type == 1}
+							subway
+						{:else if route_type == 2}
+							train
+						{:else}
+							directions_bus
+						{/if}</span
+					>
+					{vehicle}
+				</button>
+			{:else}
+				<span class="text-sm align-middle ml-2 text-gray-600 dark:text-gray-400 inline-block">
+					<span class="material-symbols-outlined !text-sm align-middle -translate-y-[0.03rem]"
+						>{#if route_type == 0}
+							tram
+						{:else if route_type == 1}
+							subway
+						{:else if route_type == 2}
+							train
+						{:else}
+							directions_bus
+						{/if}</span
+					>
+					{vehicle}
+				</span>
+			{/if}
 		{/if}
 	</h2>
 

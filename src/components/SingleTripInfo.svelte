@@ -1136,6 +1136,8 @@
 					trip_selected.chateau_id,
 					trip_data.vehicle?.label || trip_data.vehicle?.id || trip_selected.vehicle_id
 				)}
+				vehicle_history_clickable={true}
+				on:vehicle={open_vehicle_history}
 				arrow={true}
 				text={fixHeadsignText(
 					trip_data.trip_headsign,
@@ -1438,17 +1440,6 @@
 						label={trip_selected.vehicle_id || trip_data.vehicle?.label || trip_data.vehicle?.id}
 						route_id={trip_data.route_id}
 					/>
-
-					{#if trip_selected.vehicle_id || trip_data.vehicle?.label || trip_data.vehicle?.id}
-						<button
-							type="button"
-							on:click={open_vehicle_history}
-							class="mt-2 inline-flex items-center gap-1 rounded-lg border border-slate-300 px-2 py-1 text-sm font-semibold hover:bg-blue-100 dark:border-slate-700 dark:hover:bg-slate-700"
-						>
-							<span class="material-symbols-outlined text-base leading-none">history</span>
-							{$_('vehicle_history', { default: 'Vehicle history' })}
-						</button>
-					{/if}
 				</div>
 
 				{#if all_exact_stoptimes == true}

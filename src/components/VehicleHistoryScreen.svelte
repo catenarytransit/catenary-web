@@ -2,8 +2,10 @@
 	import { locale, _ } from 'svelte-i18n';
 	import HomeButton from './SidebarParts/home_button.svelte';
 	import { data_stack_store } from '../globalstores';
-	import { SingleTrip, StackInterface } from './stackenum';
+	import { BlockStack, SingleTrip, StackInterface } from './stackenum';
 	import { timezone_to_locale } from './timezone_to_locale';
+	import VehicleInfo from './vehicle_info.svelte';
+	import Clock from './Clock.svelte';
 
 	export let chateau: string;
 	export let vehicle: string;
@@ -31,6 +33,7 @@
 		trip_history: VehicleHistoryRow[];
 		routes: Record<string, RouteInfo>;
 		agency_timezone: string;
+		agency_name?: string | null;
 	};
 
 	let history_data: VehicleHistoryResponse | null = null;
@@ -39,11 +42,37 @@
 	let error: string | null = null;
 	let last_lookup_key = '';
 	let request_sequence = 0;
+	let sort_descending = true;
 
-	function group_history(rows: VehicleHistoryRow[]): Record<string, VehicleHistoryRow[]> {
+	function group_history(
+		rows: VehicleHistoryRow[],
+		descending: boolean
+	): Record<string, VehicleHistoryRow[]> {
 		const grouped: Record<string, VehicleHistoryRow[]> = {};
+		const sorted_rows = [...rows].sort((left, right) => {
+			const date_comparison = left.operation_date.localeCompare(right.operation_date);
+			if (date_comparison !== 0) {
+				return descending ? -date_comparison : date_comparison;
+			}
 
-		for (const row of rows) {
+			const left_has_time =
+				left.unix_start_time != null && Number.isSafeInteger(left.unix_start_time);
+			const right_has_time =
+				right.unix_start_time != null && Number.isSafeInteger(right.unix_start_time);
+
+			if (left_has_time !== right_has_time) return left_has_time ? -1 : 1;
+
+			if (left_has_time && right_has_time) {
+				const time_comparison = left.unix_start_time! - right.unix_start_time!;
+				if (time_comparison !== 0) {
+					return descending ? -time_comparison : time_comparison;
+				}
+			}
+
+			return left.trip_id.localeCompare(right.trip_id);
+		});
+
+		for (const row of sorted_rows) {
 			if (!grouped[row.operation_date]) grouped[row.operation_date] = [];
 			grouped[row.operation_date].push(row);
 		}
@@ -59,22 +88,6 @@
 
 	function route_name(route: RouteInfo | undefined, fallback: string): string {
 		return route?.short_name || route?.long_name || fallback;
-	}
-
-	function display_start_time(
-		unix_start_time: number | null,
-		selected_locale: string | null | undefined
-	): string {
-		if (unix_start_time == null || !Number.isSafeInteger(unix_start_time)) return '—';
-
-		return new Intl.DateTimeFormat(
-			timezone_to_locale(selected_locale || 'en', history_data?.agency_timezone || 'UTC'),
-			{
-				hour: 'numeric',
-				minute: '2-digit',
-				timeZone: history_data?.agency_timezone || 'UTC'
-			}
-		).format(new Date(unix_start_time * 1000));
 	}
 
 	function local_noon_unix_seconds(operation_date: string, timezone: string): number | null {
@@ -179,12 +192,21 @@
 		});
 	}
 
+	function open_block(row: VehicleHistoryRow) {
+		if (!row.block_id) return;
+
+		data_stack_store.update((stack) => {
+			stack.push(new StackInterface(new BlockStack(chateau, row.block_id!, row.operation_date)));
+
+			return stack;
+		});
+	}
+
 	async function load_history() {
 		const request_id = ++request_sequence;
 		loading = true;
 		error = null;
 		history_data = null;
-		grouped_history = {};
 
 		const params = new URLSearchParams({
 			vehicle,
@@ -205,7 +227,8 @@
 					history_data = {
 						trip_history: [],
 						routes: {},
-						agency_timezone: 'UTC'
+						agency_timezone: 'UTC',
+						agency_name: null
 					};
 					return;
 				}
@@ -214,7 +237,6 @@
 			}
 
 			history_data = payload as VehicleHistoryResponse;
-			grouped_history = group_history(history_data.trip_history || []);
 		} catch (request_error) {
 			if (request_id !== request_sequence) return;
 			error = request_error instanceof Error ? request_error.message : String(request_error);
@@ -230,18 +252,43 @@
 			void load_history();
 		}
 	}
+
+	$: grouped_history = group_history(history_data?.trip_history || [], sort_descending);
 </script>
 
 <HomeButton />
 
 <div class="catenary-scroll grow overflow-y-auto px-3 pb-4">
 	<div class="mb-3">
-		<p class="text-lg font-semibold">
-			{$_('vehicle_history', { default: 'Vehicle history' })}
-		</p>
+		<div class="flex items-start justify-between gap-3">
+			<p class="text-lg font-semibold">
+				{$_('vehicle_history', { default: 'Vehicle history' })}
+			</p>
+			<button
+				type="button"
+				on:click={() => (sort_descending = !sort_descending)}
+				class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gray-300 text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800 dark:focus:ring-gray-500 dark:focus:ring-offset-gray-950"
+				aria-label={sort_descending
+					? $_('sort_oldest_first', { default: 'Show oldest first' })
+					: $_('sort_newest_first', { default: 'Show newest first' })}
+				title={sort_descending
+					? $_('sort_oldest_first', { default: 'Show oldest first' })
+					: $_('sort_newest_first', { default: 'Show newest first' })}
+			>
+				<span class="material-symbols-outlined" aria-hidden="true">
+					{sort_descending ? 'hourglass_arrow_down' : 'hourglass_arrow_up'}
+				</span>
+			</button>
+		</div>
+		{#if history_data?.agency_name}
+			<p class="text-sm font-semibold">{history_data.agency_name}</p>
+		{/if}
 		<p class="text-sm text-gray-600 dark:text-gray-400">
 			{$_('vehicle', { default: 'Vehicle' })}: <span class="font-semibold">{vehicle}</span>
 		</p>
+		<div class="mt-2">
+			<VehicleInfo label={vehicle} {chateau} {route_id} />
+		</div>
 	</div>
 
 	{#if loading}
@@ -273,7 +320,7 @@
 				</p>
 
 				<div
-					class="grid grid-cols-[4.5rem_minmax(3.5rem,auto)_minmax(0,1fr)_minmax(2rem,auto)] gap-x-2 px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-500"
+					class="grid grid-cols-[4.5rem_minmax(3.5rem,auto)_minmax(0,1fr)_minmax(2rem,auto)] gap-x-2 px-2 pb-1 text-xs font-semibold text-gray-500"
 				>
 					<span>{$_('time', { default: 'Time' })}</span>
 					<span>{$_('route', { default: 'Route' })}</span>
@@ -281,14 +328,21 @@
 					<span class="text-right">{$_('block', { default: 'Block' })}</span>
 				</div>
 
-				<div class="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
+				<div class="overflow-hidden rounded-lg border-y border-gray-300 dark:border-gray-700">
 					{#each trips as trip}
 						{@const route = history_data?.routes?.[trip.route_id]}
 						<div
-							class="grid grid-cols-[4.5rem_minmax(3.5rem,auto)_minmax(0,1fr)_minmax(2rem,auto)] items-center gap-x-2 border-b border-slate-200 px-2 py-2 text-sm last:border-b-0 dark:border-slate-700"
+							class="grid grid-cols-[4.5rem_minmax(3.5rem,auto)_minmax(0,1fr)_minmax(2rem,auto)] items-center gap-x-2 border-b border-gray-300 px-2 py-2 text-sm last:border-b-0 dark:border-gray-700"
 						>
 							<span class="font-semibold tabular-nums">
-								{display_start_time(trip.unix_start_time, $locale)}
+								{#if trip.unix_start_time != null && Number.isSafeInteger(trip.unix_start_time)}
+									<Clock
+										timezone={history_data?.agency_timezone || 'UTC'}
+										time_seconds={trip.unix_start_time}
+									/>
+								{:else}
+									—
+								{/if}
 							</span>
 
 							<span
@@ -311,9 +365,18 @@
 								{trip.direction_headsign || trip.trip_short_name || trip.trip_id}
 							</button>
 
-							<span class="truncate text-right font-mono text-xs" title={trip.block_id || ''}>
-								{trip.block_id || '—'}
-							</span>
+							{#if trip.block_id}
+								<button
+									type="button"
+									on:click={() => open_block(trip)}
+									class="truncate text-right font-mono text-xs underline hover:text-gray-600 dark:hover:text-gray-300"
+									title={trip.block_id}
+								>
+									{trip.block_id}
+								</button>
+							{:else}
+								<span class="text-right font-mono text-xs">—</span>
+							{/if}
 						</div>
 					{/each}
 				</div>
