@@ -24,6 +24,7 @@ import { makeGpsLayer } from './makeGpsLayer';
 import { makeContextLayerDataset, makeContextLayerDots } from './addLayers/contextLayer';
 import { start_location_watch, update_geolocation_source } from '../user_location_lib';
 import { startTrajectoryManager, stopTrajectoryManager, fetch_trajectories, applyPendingSourceData } from './trajectory_manager';
+import { destroyTrajectoryOverlay, setupTrajectoryOverlay } from './trajectory_overlay';
 import { setup_click_handler } from '../components/mapClickHandler';
 import { initSpruceWebSocket, spruce_map_data } from '../spruce_websocket';
 import { initRamondaWebSocket } from '../ramonda_websocket';
@@ -77,6 +78,7 @@ export async function setup_load_map(
 	// Start WebSocket and trajectory manager early, before the style / map load event
 	initSpruceWebSocket();
 	initRamondaWebSocket();
+	setupTrajectoryOverlay(map);
 	startTrajectoryManager(map);
 	fetch_trajectories(layersettings, map);
 
@@ -249,6 +251,7 @@ export async function setup_load_map(
 
 	map.on('remove', () => {
 		clearInterval(updateInterval);
+		destroyTrajectoryOverlay();
 		stopTrajectoryManager();
 		RASTER_SOURCES.forEach(({ id }) => map.removeSource(id));
 		SHAPES.forEach(({ id }) => map.removeSource(id));

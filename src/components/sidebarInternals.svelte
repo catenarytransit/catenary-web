@@ -15,7 +15,8 @@
 		StopMapSelector,
 		OsmItemStack,
 		OsmStationStack,
-		BlockStack
+		BlockStack,
+		VehicleHistoryStack
 	} from '../components/stackenum';
 	import HomeButton from './SidebarParts/home_button.svelte';
 	import BackButton from './SidebarParts/back_button.svelte';
@@ -78,6 +79,17 @@
 				chateau={latest_item_on_stack.data.chateau_id}
 				block_id={latest_item_on_stack.data.block_id}
 				service_date={latest_item_on_stack.data.service_date}
+			/>
+		{:catch error}
+			<p class="p-4 text-red-500">Error loading component: {error.message}</p>
+		{/await}
+	{/if}
+	{#if latest_item_on_stack.data instanceof VehicleHistoryStack}
+		{#await import('./VehicleHistoryScreen.svelte') then { default: VehicleHistoryScreen }}
+			<VehicleHistoryScreen
+				chateau={latest_item_on_stack.data.chateau_id}
+				vehicle={latest_item_on_stack.data.vehicle_id}
+				route_id={latest_item_on_stack.data.route_id}
 			/>
 		{:catch error}
 			<p class="p-4 text-red-500">Error loading component: {error.message}</p>

@@ -98,6 +98,7 @@
 	import StopTimeNumber from './StopTimeNumber.svelte';
 	import Clock from './Clock.svelte';
 	import VehicleInfo from './vehicle_info.svelte';
+	import { VehicleHistoryStack } from './stackenum';
 	import ConsolidatedRouteList from './ConsolidatedRouteList.svelte';
 	import CoachSequencePage from './CoachSequencePage.svelte';
 
@@ -107,6 +108,27 @@
 		} else {
 			return vehicle_id;
 		}
+	}
+
+	function open_vehicle_history() {
+		const vehicle_label =
+			trip_selected.vehicle_id || trip_data?.vehicle?.label || trip_data?.vehicle?.id || null;
+
+		if (!vehicle_label) return;
+
+		data_stack_store.update((stack) => {
+			stack.push(
+				new StackInterface(
+					new VehicleHistoryStack(
+						trip_selected.chateau_id,
+						vehicle_label,
+						trip_data?.route_id || trip_selected.route_id
+					)
+				)
+			);
+
+			return stack;
+		});
 	}
 
 	let show_seconds = get(show_seconds_store);
@@ -1114,6 +1136,8 @@
 					trip_selected.chateau_id,
 					trip_data.vehicle?.label || trip_data.vehicle?.id || trip_selected.vehicle_id
 				)}
+				vehicle_history_clickable={true}
+				on:vehicle={open_vehicle_history}
 				arrow={true}
 				text={fixHeadsignText(
 					trip_data.trip_headsign,
