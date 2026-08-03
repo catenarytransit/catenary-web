@@ -85,6 +85,7 @@
 	import { getOptimalPixelRatio } from '../components/maplibre_starter';
 	import ConsentBanner from '../components/ConsentBanner.svelte';
 	import AndroidDownloadPopup from '../components/AndroidDownloadPopup.svelte';
+	import DonationPopup from '../components/DonationPopup.svelte';
 	import { startSantaTracking } from '../components/santa_tracker';
 	const enabledlayerstyle =
 		'text-black dark:text-white bg-blue-200 dark:bg-gray-700 border border-blue-800 dark:border-blue-200 text-sm md:text-sm';
@@ -133,9 +134,11 @@
 	let collapser_left_offset: string = '380px';
 	let top_margin_collapser_sidebar: string = '0px';
 	let showAndroidDownloadPopup = false;
+	let showDonationPopup = false;
 	let isAndroid: boolean = false;
 	let isChrome: boolean = false;
 	const androidPopupDismissUntilStorage = 'androidPopupDismissedUntil';
+	const donationPopupDismissUntilStorage = 'serverDonationPopupDismissedUntil';
 	const oneDayInMs = 24 * 60 * 60 * 1000;
 
 	function hasActiveAndroidPopupDismissal() {
@@ -162,6 +165,24 @@
 		}
 
 		return false;
+	}
+
+	function hasActiveDonationPopupDismissal() {
+		const now = Date.now();
+		const dismissedUntilRaw = localStorage.getItem(donationPopupDismissUntilStorage);
+		const dismissedUntil = dismissedUntilRaw ? Number(dismissedUntilRaw) : NaN;
+
+		if (!Number.isNaN(dismissedUntil) && dismissedUntil > now) {
+			return true;
+		}
+
+		if (dismissedUntilRaw) localStorage.removeItem(donationPopupDismissUntilStorage);
+		return false;
+	}
+
+	function dismissDonationPopup() {
+		showDonationPopup = false;
+		localStorage.setItem(donationPopupDismissUntilStorage, String(Date.now() + oneDayInMs));
 	}
 
 	let autocomplete_focus_state_local = get(autocomplete_focus_state);
@@ -1993,6 +2014,11 @@
 					});
 			}
 
+			const donationPreview =
+				urlParams.get('donation_preview') === 'true' ||
+				urlParams.get('ios_donation_preview') === 'true';
+			showDonationPopup = donationPreview || !hasActiveDonationPopupDismissal();
+
 			// A simple boolean check for Android
 			isAndroid = /android/i.test(navigator.userAgent);
 			isChrome = /chrome/i.test(navigator.userAgent);
@@ -2147,7 +2173,13 @@
 					</div>
 				{/if} -->
 
-				<SidebarInternals {usunits} {latest_item_on_stack} {darkMode} />
+				<SidebarInternals
+					{usunits}
+					{latest_item_on_stack}
+					{darkMode}
+					{showDonationPopup}
+					{dismissDonationPopup}
+				/>
 			</div>
 		{/if}
 	</div>
@@ -2183,6 +2215,20 @@
 	>
 		<SearchBar />
 	</div>
+
+	{#if showDonationPopup && latest_item_on_stack == null && !autocomplete_focus_state_local}
+		<div
+			class="fixed top-12 left-3 right-16 z-30 sm:right-auto sm:w-2/5 md:hidden"
+			style="transform: translateY({translate_y_searchbar}px);"
+		>
+			<DonationPopup
+				title="Help keep Catenary Maps running"
+				message="Our aging server is reaching its limits. Your support helps us replace it and add the computing power needed to release trip planning and navigation."
+				compact
+				on:dismiss={dismissDonationPopup}
+			/>
+		</div>
+	{/if}
 
 	{#if autocomplete_focus_state_local == true}
 		<div

@@ -45,11 +45,14 @@
 	import { locales_options, locales_options_lookup } from '../i18n';
 	import { MTA_CHATEAU_ID, isSubwayRouteId } from '../utils/mta_subway_utils';
 	import MtaBullet from './mtabullet.svelte';
+	import DonationPopup from './DonationPopup.svelte';
 
 	import VehicleInfo from './vehicle_info.svelte';
 	export let latest_item_on_stack: StackInterface | null;
 	export let darkMode: boolean;
 	export let usunits: boolean;
+	export let showDonationPopup = false;
+	export let dismissDonationPopup: () => void = () => {};
 
 	let stops_preview_data = null;
 
@@ -200,6 +203,16 @@
 	</div>-->
 	<div class="py-1 flex flex-col h-full">
 		<div class="flex flex-col h-full select-text">
+			{#if showDonationPopup}
+				<div class="mx-3 mb-2 hidden md:block">
+					<DonationPopup
+						title="Help keep Catenary Maps running"
+						message="Our aging server is reaching its limits. Your support helps us replace it and add the computing power needed to release trip planning and navigation."
+						on:dismiss={dismissDonationPopup}
+					/>
+				</div>
+			{/if}
+
 			<NearbyDepartures
 				{usunits}
 				{darkMode}
