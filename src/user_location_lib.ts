@@ -1,46 +1,46 @@
-import { addGeoRadius, setUserCircles } from './components/userradius';
-import { show_my_location_store, geolocation_store, map_pointer_store, usunits_store } from './globalstores';
-export const permission_to_geolocate = 'permission_to_geolocate';
 import { get } from 'svelte/store';
-import { createGeoJSONCircle, componentToHex } from './geoMathsAssist';
-
-import { writable } from 'svelte/store';
+import { createGeoJSONCircle } from './geoMathsAssist';
+import { setUserCircles } from './components/userradius';
 import { saveLocationToLocalStorage } from './components/previously_known_location';
-import { browser } from '$app/environment';
+import {
+	geolocation_store,
+	map_pointer_store,
+	show_my_location_store,
+	usunits_store
+} from './globalstores';
 
-let geolocation: GeolocationPosition | null;
-let last_processed_state: string = '';
+export const permission_to_geolocate = 'permission_to_geolocate';
 
+let last_processed_state = '';
 
-if (browser) {
-	geolocation_store.subscribe((g) => {
-		geolocation = g;
-	});
-}
-
-export function start_location_watch() {
-	if (typeof navigator != 'undefined') {
-		if (typeof window != 'undefined') {
-			function success(pos: GeolocationPosition) {
-				geolocation_store.set(pos);
-
-				update_geolocation_source();
-			}
-
-			setInterval(() => {
-				update_geolocation_source();
-			}, 1000);
-
-			const options = {
-				enableHighAccuracy: false,
-				timeout: 5000,
-				// 30 seconds
-				maximumAge: Infinity
-			};
-
-			const id = navigator.geolocation.watchPosition(success, () => {}, options);
-		}
+export function start_location_watch(): (() => void) | undefined {
+	if (
+		typeof navigator === 'undefined' ||
+		typeof window === 'undefined' ||
+		!('geolocation' in navigator)
+	) {
+		return undefined;
 	}
+
+	last_processed_state = '';
+
+	const success = (position: GeolocationPosition) => {
+		geolocation_store.set(position);
+		update_geolocation_source();
+	};
+
+	const refreshInterval = window.setInterval(update_geolocation_source, 1000);
+	const watchId = navigator.geolocation.watchPosition(success, () => {}, {
+		enableHighAccuracy: false,
+		timeout: 5000,
+		maximumAge: Infinity
+	});
+
+	return () => {
+		last_processed_state = '';
+		window.clearInterval(refreshInterval);
+		navigator.geolocation.clearWatch(watchId);
+	};
 }
 
 export function has_permission_to_geolocate(): boolean {
@@ -65,6 +65,8 @@ export function update_geolocation_source() {
 	const map = get(map_pointer_store);
 
 	if (map != null) {
+		const geolocation = get(geolocation_store);
+
 		if (geolocation?.coords) {
 			saveLocationToLocalStorage({
 				time: Date.now(),

@@ -1,4 +1,4 @@
-import type { SearchResultItem } from './search_data';
+import type { SearchResultItem } from './searchData';
 
 const HISTORY_KEY = 'station_search_history';
 const MAX_HISTORY_ITEMS = 100;
