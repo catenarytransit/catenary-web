@@ -2233,7 +2233,7 @@
 	{#if autocomplete_focus_state_local == true}
 		<div
 			id="desktop_autocomplete_box"
-			class="hidden md:fixed md:block z-40 top-12 left-3 w-[350px] bg-gray-100 dark:bg-gray-900 rounded-sm border border-gray-500"
+			class="hidden md:fixed md:block z-40 top-12 left-3 w-[350px] xl:w-[456px] bg-gray-100 dark:bg-gray-900 rounded-sm border border-gray-500"
 		>
 			<SearchAutocompleteList length={10} />
 		</div>
