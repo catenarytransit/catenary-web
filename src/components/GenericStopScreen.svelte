@@ -78,7 +78,7 @@
 	export let stationLon: number | null = null;
 	export let stationTimezone: string | null = null;
 
-	import { recordStationVisit } from './search/station_history';
+	import { recordStationVisit } from '$lib/features/search/public';
 
 	let eurostyle_geojson: any = null;
 	let is_inside_eurostyle: boolean = false;

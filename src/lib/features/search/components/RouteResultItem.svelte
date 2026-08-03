@@ -5,8 +5,6 @@
 	export let onClick: () => void;
 	export let chateau: string;
 	export let route_id: string;
-
-	console.log('route info ', routeInfo);
 </script>
 
 <button

@@ -1,13 +1,13 @@
 <script lang="ts">
-	import MtaBullet from '../mtabullet.svelte';
-	import SbbLogo from '../SbbLogo.svelte';
+	import MtaBullet from '$components/mtabullet.svelte';
+	import SbbLogo from '$components/SbbLogo.svelte';
 	import {
 		isSubwayRouteId,
 		getMtaSubwayClass,
 		getMtaSymbolShortName,
 		isExpress,
 		MTA_CHATEAU_ID
-	} from '../../utils/mta_subway_utils';
+	} from '$root/utils/mta_subway_utils';
 
 	export let route: any; // TODO: Define a proper interface for RouteInfo
 
