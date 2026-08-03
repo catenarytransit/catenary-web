@@ -32,7 +32,7 @@
 	<aside
 		id="catenary-sidebar"
 		style={`height: ${$state.height}; transform: translateX(${$state.translateX});`}
-		class="fixed bottom-0 left-0 z-20 flex w-full flex-col rounded-t-2xl bg-white/70 text-black backdrop-blur-xs sm:w-2/5 md:top-0 md:bottom-0 md:h-full md:w-[380px] md:rounded-none md:bg-white/80 md:backdrop-blur-sm xl:w-[480px] dark:bg-gray-900/70 dark:text-white md:dark:bg-gray-900/70"
+		class="fixed bottom-0 left-0 z-20 flex w-full flex-col rounded-t-2xl bg-white text-black sm:w-2/5 md:top-0 md:bottom-0 md:h-full md:w-[380px] md:rounded-none xl:w-[480px] dark:bg-gray-900 dark:text-white"
 		aria-label="Trip and map information"
 	>
 		<div
