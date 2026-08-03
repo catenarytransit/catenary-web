@@ -6,6 +6,7 @@
 	import { timezone_to_locale } from './timezone_to_locale';
 	import VehicleInfo from './vehicle_info.svelte';
 	import Clock from './Clock.svelte';
+	import DonationPopup from './DonationPopup.svelte';
 
 	export let chateau: string;
 	export let vehicle: string;
@@ -288,6 +289,14 @@
 		</p>
 		<div class="mt-2">
 			<VehicleInfo label={vehicle} {chateau} {route_id} />
+		</div>
+		<div class="mt-3">
+			<DonationPopup
+				title="Help us store richer bus history"
+				message="Support detailed delay and performance records, and keep them available for longer."
+				compact
+				dismissible={false}
+			/>
 		</div>
 	</div>
 
