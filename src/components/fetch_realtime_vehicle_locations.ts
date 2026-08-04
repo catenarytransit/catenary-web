@@ -1,99 +1,93 @@
-import type { Writable } from 'svelte/store';
 import { updateMap } from '../spruce_websocket';
+import type {
+	BoundsInputPerLevel,
+	BoundsInputV3,
+	RealtimeCategory,
+	SubscribeMapV2Params
+} from '$lib/types/backend/spruce';
+
+export interface RealtimeLayerSettings {
+	bus: { visible: boolean };
+	intercityrail: { visible: boolean };
+	localrail: { visible: boolean };
+	other: { visible: boolean };
+}
+
+export interface TileBoundaries {
+	north: number;
+	south: number;
+	east: number;
+	west: number;
+}
 
 export function fetch_realtime_vehicle_locations(
-	layersettings: Record<string, any>,
+	layersettings: RealtimeLayerSettings,
 	map: maplibregl.Map
-) {
-	const categories_to_request: string[] = [];
+): BoundsInputV3 {
+	const categories_to_request: RealtimeCategory[] = [];
+	const shortest_screen_width = Math.min(window.screen.width, window.screen.height);
+	const bus_threshold = shortest_screen_width < 768 ? 7.5 : 6.5;
+	const zoom = Math.round(map.getZoom());
 
-	let shortest_screen_width = Math.min(window.screen.width, window.screen.height);
-
-	let bus_threshold = shortest_screen_width < 768 ? 7.5 : 6.5;
-
-	let zoom = Math.round(map.getZoom());
-
-	if (layersettings.bus.visible) {
-		if (zoom >= bus_threshold) {
-			categories_to_request.push('bus');
-		}
+	if (layersettings.bus.visible && zoom >= bus_threshold) {
+		categories_to_request.push('bus');
 	}
 
-	if (zoom >= 3) {
-		if (layersettings.intercityrail.visible) {
-			categories_to_request.push('rail');
-		}
+	if (layersettings.intercityrail.visible && zoom >= 3) {
+		categories_to_request.push('rail');
 	}
 
-	if (zoom >= 4) {
-		if (layersettings.localrail.visible) {
-			categories_to_request.push('metro');
-		}
+	if (layersettings.localrail.visible && zoom >= 4) {
+		categories_to_request.push('metro');
 	}
 
-	if (zoom >= 3) {
-		if (layersettings.other.visible) {
-			categories_to_request.push('other');
-		}
+	if (layersettings.other.visible && zoom >= 3) {
+		categories_to_request.push('other');
 	}
 
 	const bounds = bounds_input_calculate(map);
-
-	let params = {
+	const params: SubscribeMapV2Params = {
 		categories: categories_to_request,
 		bounds_input: bounds
 	};
 
-	// Send simplified MapViewportUpdate
 	updateMap(params);
-
 	return bounds;
 }
 
-export function bounds_input_calculate(map: maplibregl.Map) {
-	const levels = [5, 7, 8, 12];
-	const bounds_input: Record<string, any> = {};
+function bounds_for_zoom(map: maplibregl.Map, zoom: number): BoundsInputPerLevel {
+	const boundaries = get_tile_boundaries(map, zoom);
+	const maxTiles = Math.pow(2, zoom) - 1;
+	const padding = map.getZoom() > 13 ? 0 : map.getZoom() > 12 ? 1 : 2;
 
-	for (const zoom of levels) {
-		const boundaries = get_tile_boundaries(map, zoom);
-		const maxTiles = Math.pow(2, zoom) - 1; // Maximum tile index for this zoom level
-
-		let padding = 2;
-
-		if (map.getZoom() > 12) {
-			padding = 1;
-		}
-
-		if (map.getZoom() > 13) {
-			padding = 0;
-		}
-
-		bounds_input[`level${zoom}`] = {
-			min_x: Math.max(0, boundaries.west - padding),
-			max_x: Math.min(maxTiles, boundaries.east + padding),
-			min_y: Math.max(0, boundaries.north - padding),
-			max_y: Math.min(maxTiles, boundaries.south + padding)
-		};
-	}
-
-	return bounds_input;
+	return {
+		min_x: Math.max(0, boundaries.west - padding),
+		max_x: Math.min(maxTiles, boundaries.east + padding),
+		min_y: Math.max(0, boundaries.north - padding),
+		max_y: Math.min(maxTiles, boundaries.south + padding)
+	};
 }
 
-export function get_tile_boundaries(map: maplibregl.Map, zoom: number) {
+export function bounds_input_calculate(map: maplibregl.Map): BoundsInputV3 {
+	return {
+		level5: bounds_for_zoom(map, 5),
+		level7: bounds_for_zoom(map, 7),
+		level8: bounds_for_zoom(map, 8),
+		level12: bounds_for_zoom(map, 12)
+	};
+}
+
+export function get_tile_boundaries(map: maplibregl.Map, zoom: number): TileBoundaries {
 	const bounds = map.getBounds();
 	const north = bounds.getNorth();
 	const south = bounds.getSouth();
 	const east = bounds.getEast();
 	const west = bounds.getWest();
-
 	const n = Math.pow(2, zoom);
-
 	const lat_rad_north = (north * Math.PI) / 180;
 	const lat_rad_south = (south * Math.PI) / 180;
-
 	const xtile_west = Math.floor(((west + 180) / 360) * n);
 	const xtile_east = Math.floor(((east + 180) / 360) * n);
-
 	const ytile_north = Math.floor(
 		((1 - Math.log(Math.tan(lat_rad_north) + 1 / Math.cos(lat_rad_north)) / Math.PI) / 2) * n
 	);

@@ -7,38 +7,19 @@
 	import VehicleInfo from './vehicle_info.svelte';
 	import Clock from './Clock.svelte';
 	import DonationPopup from './DonationPopup.svelte';
+	import type { RouteHistoryRow, VehicleHistoryLookupResponse } from '$lib/types/backend/birch';
+	import type { PostgresRoute } from '$lib/types/backend/common';
 
 	export let chateau: string;
 	export let vehicle: string;
 	export let route_id: string | null = null;
 
-	type VehicleHistoryRow = {
-		operation_date: string;
-		unix_start_time: number | null;
-		trip_id: string;
-		route_id: string;
-		trip_short_name: string | null;
-		direction_headsign: string | null;
-		block_id: string | null;
-	};
-
-	type RouteInfo = {
-		short_name?: string | null;
-		long_name?: string | null;
-		color?: string | null;
-		text_color?: string | null;
-		route_type?: number | null;
-	};
-
-	type VehicleHistoryResponse = {
-		trip_history: VehicleHistoryRow[];
-		routes: Record<string, RouteInfo>;
-		agency_timezone: string;
-		agency_name?: string | null;
+	type VehicleHistoryResponse = Omit<VehicleHistoryLookupResponse, 'agency_name'> & {
+		agency_name: string | null;
 	};
 
 	let history_data: VehicleHistoryResponse | null = null;
-	let grouped_history: Record<string, VehicleHistoryRow[]> = {};
+	let grouped_history: Record<string, RouteHistoryRow[]> = {};
 	let loading = true;
 	let error: string | null = null;
 	let last_lookup_key = '';
@@ -46,10 +27,10 @@
 	let sort_descending = true;
 
 	function group_history(
-		rows: VehicleHistoryRow[],
+		rows: RouteHistoryRow[],
 		descending: boolean
-	): Record<string, VehicleHistoryRow[]> {
-		const grouped: Record<string, VehicleHistoryRow[]> = {};
+	): Record<string, RouteHistoryRow[]> {
+		const grouped: Record<string, RouteHistoryRow[]> = {};
 		const sorted_rows = [...rows].sort((left, right) => {
 			const date_comparison = left.operation_date.localeCompare(right.operation_date);
 			if (date_comparison !== 0) {
@@ -87,7 +68,7 @@
 		return colour.startsWith('#') ? colour : `#${colour}`;
 	}
 
-	function route_name(route: RouteInfo | undefined, fallback: string): string {
+	function route_name(route: PostgresRoute | undefined, fallback: string): string {
 		return route?.short_name || route?.long_name || fallback;
 	}
 

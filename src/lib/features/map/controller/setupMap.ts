@@ -8,6 +8,8 @@ import { addStopsLayers } from '$components/addLayers/addStops';
 import { addGeoRadius } from '$components/userradius';
 import { addShapes } from '$components/addLayers/addShapes';
 import { fetch_realtime_vehicle_locations } from '$components/fetch_realtime_vehicle_locations';
+import type { RealtimeLayerSettings } from '$components/fetch_realtime_vehicle_locations';
+import type { BoundsInputV3 } from '$lib/types/backend/spruce';
 import { makeCircleLayers, makeTrajectoryCircleLayers } from '$components/addLayers/addLiveDots';
 import { makeBearingArrowPointers } from '$components/addLayers/makebearingarrowpointers';
 import { makeGpsLayer } from '$components/makeGpsLayer';
@@ -37,7 +39,7 @@ export async function setupMap(
 	darkMode: boolean,
 	layerspercategory: Record<string, any>,
 	chateaus_in_frame: Writable<string[]>,
-	layersettings: Record<string, any>,
+	layersettings: RealtimeLayerSettings & Record<string, unknown>,
 	recompute_map_padding: () => void,
 	setSidebarOpen: () => void
 ) {
@@ -59,7 +61,7 @@ export async function setupMap(
 		recompute_map_padding();
 		clearbottomright();
 
-		let current_request_bounds: any = null;
+		let current_request_bounds: BoundsInputV3 | null = null;
 
 		// Subscribe to map data updates from WebSocket
 		// We use a singleton store, so it fires whenever data comes.
