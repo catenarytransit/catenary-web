@@ -3,11 +3,6 @@ import type { Map, GeoJSONSource } from 'maplibre-gl';
 import { spruce_trajectory_data, subscribeTrajectories, unsubscribeTrajectories } from '../spruce_websocket';
 import { determineDarkModeToBool } from './determineDarkModeToBool';
 import { getContrastColours } from './processVehicleFeature';
-import {
-	clearTrajectoryOverlayData,
-	isTrajectoryOverlayActive,
-	setTrajectoryOverlayData
-} from './trajectory_overlay';
 
 let lastTrajectorySubTime = 0;
 let lastTrajectorySubParams = '';
@@ -16,7 +11,6 @@ let wsUnsubscribe: (() => void) | null = null;
 let activeTrajectoriesData: Record<string, { content: any[]; timestamp: number }> = {};
 let pendingSourceData: Record<string, any> = {};
 let sourceHasFeatures: Record<string, boolean> = {};
-let overlayWasActive = false;
 
 // Calculate bearing in degrees from [lon1, lat1] to [lon2, lat2]
 function calculateBearing(lon1: number, lat1: number, lon2: number, lat2: number): number {
@@ -114,7 +108,6 @@ export function fetch_trajectories(layersettings: Record<string, any>, map: Map)
 			unsubscribeTrajectories();
 			lastTrajectorySubParams = '';
 		}
-		clearTrajectoryOverlayData();
 		return;
 	}
 
@@ -145,41 +138,12 @@ export function startTrajectoryManager(map: Map) {
 		console.log('[DEBUGTrajectories] Received spruce_trajectory_data msg:', Object.keys(data).length, 'chateaus');
 		if (data) {
 			activeTrajectoriesData = data;
-			setTrajectoryOverlayData(data);
 		}
 	});
 
-	// Keep the MapLibre path running until the worker explicitly reports ready.
-	// If the worker later fails, the same loop automatically resumes the fallback.
+	// Run interpolation update loop every 0.5 second (500ms)
 	interpolationInterval = setInterval(() => {
 		if (!map) return;
-
-		const overlayActive = isTrajectoryOverlayActive();
-		if (overlayActive) {
-			if (!overlayWasActive) {
-				console.info('[trajectory overlay] switching off MapLibre trajectory sources');
-				for (const sourceName of [
-					'trajectory_buses',
-					'trajectory_localrail',
-					'trajectory_intercityrail',
-					'trajectory_other'
-				]) {
-					const source = map.getSource(sourceName) as GeoJSONSource;
-					if (source) {
-						source.setData({ type: 'FeatureCollection', features: [] });
-					}
-					delete pendingSourceData[sourceName];
-					sourceHasFeatures[sourceName] = false;
-				}
-				overlayWasActive = true;
-			}
-			return;
-		}
-
-		if (overlayWasActive) {
-			console.warn('[trajectory overlay] worker unavailable; resuming MapLibre fallback');
-			overlayWasActive = false;
-		}
 
 		const now = Date.now();
 		const darkMode = determineDarkModeToBool();
@@ -361,20 +325,13 @@ export function stopTrajectoryManager() {
 		wsUnsubscribe();
 		wsUnsubscribe = null;
 	}
-	clearTrajectoryOverlayData();
 	activeTrajectoriesData = {};
 	lastTrajectorySubParams = '';
 	pendingSourceData = {};
 	sourceHasFeatures = {};
-	overlayWasActive = false;
 }
 
 export function applyPendingSourceData(map: Map) {
-	if (isTrajectoryOverlayActive()) {
-		pendingSourceData = {};
-		return;
-	}
-
 	for (const sourceName in pendingSourceData) {
 		const source = map.getSource(sourceName) as GeoJSONSource;
 		if (source) {

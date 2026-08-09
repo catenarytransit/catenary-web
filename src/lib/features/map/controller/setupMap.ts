@@ -21,7 +21,6 @@ import {
 	startTrajectoryManager,
 	stopTrajectoryManager
 } from '$components/trajectory_manager';
-import { destroyTrajectoryOverlay, setupTrajectoryOverlay } from '$components/trajectory_overlay';
 import { setup_click_handler } from '$components/mapClickHandler';
 import { initSpruceWebSocket, spruce_map_data } from '$root/spruce_websocket';
 import { initRamondaWebSocket } from '$root/ramonda_websocket';
@@ -49,7 +48,6 @@ export async function setupMap(
 	// Start WebSocket and trajectory manager early, before the style / map load event
 	initSpruceWebSocket();
 	initRamondaWebSocket();
-	setupTrajectoryOverlay(map);
 	startTrajectoryManager(map);
 	fetch_trajectories(layersettings, map);
 
@@ -150,7 +148,6 @@ export async function setupMap(
 		settingsTimeouts.forEach((timeout) => window.clearTimeout(timeout));
 		unsubscribeSpruce?.();
 		unsubscribeSpruce = null;
-		destroyTrajectoryOverlay();
 		stopTrajectoryManager();
 	});
 }
