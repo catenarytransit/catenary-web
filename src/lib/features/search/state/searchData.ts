@@ -251,6 +251,7 @@ export function performAutocompleteQuery(rawText: string): void {
 	const geolocation = get(geolocation_store);
 	const hasGeolocation = typeof geolocation?.coords?.latitude === 'number';
 	const focusWeight = zoom > 13 ? 5 : zoom > 10 ? 4 : zoom < 7 ? 2 : 3;
+	const motisFocusWeight = zoom > 13 ? 2 : zoom > 10 ? 1.5 : zoom < 7 ? 1.5 : 1;
 
 	const transitUrl = new URL('https://birch_search.catenarymaps.org/text_search_v1');
 	transitUrl.searchParams.set('text', text);
@@ -264,11 +265,12 @@ export function performAutocompleteQuery(rawText: string): void {
 
 	const motisUrl = new URL('https://api.transitous.org/api/v1/geocode');
 	motisUrl.searchParams.set('text', text);
+	motisUrl.searchParams.set('language', 'fr,en,de,es,it,nl,pl,pt,ru,zh');
 	// MOTIS is used only for addresses and places. Birch remains responsible for stops/stations.
 	motisUrl.searchParams.append('type', 'ADDRESS');
 	motisUrl.searchParams.append('type', 'PLACE');
 	motisUrl.searchParams.set('place', `${center.lat},${center.lng}`);
-	motisUrl.searchParams.set('placeBias', String(focusWeight));
+	motisUrl.searchParams.set('placeBias', String(motisFocusWeight));
 	motisUrl.searchParams.set('numResults', '16');
 
 	/*
