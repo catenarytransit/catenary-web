@@ -49,16 +49,26 @@ export function refreshUIMaplibre() {
 		let layers = map.getStyle().layers;
 
 		let url = darkMode ? '/dark-style.json' : '/light-style.json';
+		let opposite_url = darkMode ? '/light-style.json' : '/dark-style.json';
+		let opposite_style_promise = fetch(opposite_url)
+			.then((response) => response.json())
+			.catch(() => ({ layers: [] }));
 
 		fetch(url)
 			.then((response) => response.json())
-			.then((data) => {
+			.then(async (data) => {
 				console.log('new style to set', data, layers);
 
 				let new_layers_into_obj = {};
+				let opposite_layer_ids = new Set<string>();
+				let opposite_data = await opposite_style_promise;
 
 				for (let i = 0; i < data.layers.length; i++) {
 					new_layers_into_obj[data.layers[i].id] = data.layers[i];
+				}
+
+				for (let i = 0; i < opposite_data.layers.length; i++) {
+					opposite_layer_ids.add(opposite_data.layers[i].id);
 				}
 
 				for (let i = 0; i < layers.length; i++) {
@@ -128,6 +138,9 @@ export function refreshUIMaplibre() {
 								map.setPaintProperty('pedestrian_area_pattern', 'fill-pattern', null);
 							}
 						}
+					} else if (opposite_layer_ids.has(layer.id)) {
+						// Do not touch runtime layers that are absent from both base styles.
+						map.setLayoutProperty(layer.id, 'visibility', 'none');
 					}
 				}
 			});
