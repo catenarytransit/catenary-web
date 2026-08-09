@@ -83,7 +83,7 @@
 	function clearSearch(): void {
 		textInput = '';
 		searchText.set('');
-		selectedResultIndex.set(-1);
+		performAutocompleteQuery('');
 	}
 </script>
 
@@ -106,7 +106,7 @@
 			{/if}
 
 			<input
-				type="search"
+				type="text"
 				on:input={handleTextChange}
 				on:focus={focusInput}
 				on:blur={blurInput}

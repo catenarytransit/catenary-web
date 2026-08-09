@@ -8,7 +8,7 @@ import type {
 	MotisGeocodeResponse
 } from '$lib/types/backend/motis';
 import {
-	OsmItemStack,
+	OsmSearchResultStack,
 	OsmStationStack,
 	RouteStack,
 	StackInterface,
@@ -133,6 +133,15 @@ function updateMotisSource(map: Map | null, data: MotisAddressOrPlaceResponse): 
 	});
 }
 
+function syncMotisSourceToFocus(): void {
+	const map = get(map_pointer_store) as Map | null;
+	if (!map) return;
+
+	updateMotisSource(map, get(autocompleteFocus) ? (get(latestMotisResults) ?? []) : []);
+}
+
+autocompleteFocus.subscribe(() => syncMotisSourceToFocus());
+
 function parseMotisOsmId(id: string): { osmId: string; osmType: 'N' | 'W' | 'R' } | null {
 	const match = /^(node|way|relation)\/(?:\[(\d+)\]|(\d+))$/.exec(id);
 	if (!match) return null;
@@ -144,6 +153,22 @@ function parseMotisOsmId(id: string): { osmId: string; osmType: 'N' | 'W' | 'R' 
 		osmId,
 		osmType: match[1] === 'relation' ? 'R' : match[1] === 'way' ? 'W' : 'N'
 	};
+}
+
+function getMotisAddress(match: MotisAddressOrPlaceMatch): string {
+	const area =
+		match.areas.find((candidate) => candidate.default)?.name ??
+		match.areas.find((candidate) => candidate.unique)?.name;
+	const streetAddress = [match.houseNumber, match.street].filter(Boolean).join(' ');
+	const parts = [streetAddress, area, match.zip, match.country].filter(
+		(value, index, values): value is string =>
+			typeof value === 'string' &&
+			value.length > 0 &&
+			value.toLocaleLowerCase() !== match.name.toLocaleLowerCase() &&
+			values.indexOf(value) === index
+	);
+
+	return parts.join(', ') || match.category || match.type;
 }
 
 function stopActiveQuery(): AbortController {
@@ -161,6 +186,7 @@ function resetResults(): void {
 	latestOsmStationResults.set(null);
 	selectedResultIndex.set(-1);
 	displayedResults.set([]);
+	updateMotisSource(get(map_pointer_store) as Map | null, []);
 }
 
 async function fetchJson<T>(url: string, signal: AbortSignal): Promise<T> {
@@ -192,13 +218,19 @@ export function selectResult(item: SearchResultItem): void {
 	switch (item.type) {
 		case 'motis': {
 			const match = item.data as MotisAddressOrPlaceMatch;
+			const osm = parseMotisOsmId(match.id);
 
-			if (match.type === 'PLACE') {
-				const osm = parseMotisOsmId(match.id);
-				if (osm) {
-					pushScreen(new OsmItemStack(osm.osmId, match.category ?? 'place', osm.osmType));
-				}
-			}
+			pushScreen(
+				new OsmSearchResultStack(
+					osm?.osmId ?? match.id,
+					match.category ?? match.type.toLocaleLowerCase(),
+					osm?.osmType ?? null,
+					match.name,
+					getMotisAddress(match),
+					match.lat,
+					match.lon
+				)
+			);
 
 			map?.flyTo({ center: [match.lon, match.lat], zoom: 16 });
 			break;
@@ -298,7 +330,9 @@ export function performAutocompleteQuery(rawText: string): void {
 	if (cachedMotis) {
 		latestMotisResults.set(cachedMotis);
 		selectedResultIndex.set(-1);
-		updateMotisSource(map, cachedMotis);
+		if (get(autocompleteFocus)) {
+			updateMotisSource(map, cachedMotis);
+		}
 	}
 
 	void fetchJson<MotisGeocodeResponse>(motisUrl.toString(), query.signal)
@@ -310,7 +344,9 @@ export function performAutocompleteQuery(rawText: string): void {
 			if (get(searchText).trim() === text) {
 				latestMotisResults.set(addressAndPlaceResults);
 				selectedResultIndex.set(-1);
-				updateMotisSource(map, addressAndPlaceResults);
+				if (get(autocompleteFocus)) {
+					updateMotisSource(map, addressAndPlaceResults);
+				}
 			}
 		})
 		.catch((error) => reportSearchError('MOTIS', error));

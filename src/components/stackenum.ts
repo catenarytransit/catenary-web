@@ -60,6 +60,29 @@ export class OsmItemStack {
 	}
 }
 
+export class OsmSearchResultStack extends OsmItemStack {
+	public name: string;
+	public address: string;
+	public lat: number;
+	public lon: number;
+
+	constructor(
+		osm_id: string,
+		osm_class: string,
+		osm_type: string | null,
+		name: string,
+		address: string,
+		lat: number,
+		lon: number
+	) {
+		super(osm_id, osm_class, osm_type);
+		this.name = name;
+		this.address = address;
+		this.lat = lat;
+		this.lon = lon;
+	}
+}
+
 export class BlockStack {
 	public chateau_id: string;
 	public block_id: string;

@@ -3,6 +3,7 @@
 		BlockStack,
 		MapSelectionScreen,
 		OsmItemStack,
+		OsmSearchResultStack,
 		OsmStationStack,
 		RouteStack,
 		SettingsStack,
@@ -17,6 +18,7 @@
 	import NearbyDepartures from '$components/NearbyDepartures.svelte';
 	import SingleTripInfo from '$components/SingleTripInfo.svelte';
 	import OsmItemInfo from '$components/OsmItemInfo.svelte';
+	import OsmSearchResultInfo from '$components/OsmSearchResultInfo.svelte';
 	import RouteScreen from '$components/RouteScreen.svelte';
 	import DonationPopup from '$components/DonationPopup.svelte';
 	import VehicleInfo from '$components/vehicle_info.svelte';
@@ -127,7 +129,15 @@
 		/>
 	{/if}
 
-	{#if latest_item_on_stack.data instanceof OsmItemStack}
+	{#if latest_item_on_stack.data instanceof OsmSearchResultStack}
+		<HomeButton />
+		<OsmSearchResultInfo
+			name={latest_item_on_stack.data.name}
+			address={latest_item_on_stack.data.address}
+			lat={latest_item_on_stack.data.lat}
+			lon={latest_item_on_stack.data.lon}
+		/>
+	{:else if latest_item_on_stack.data instanceof OsmItemStack}
 		<HomeButton />
 		<OsmItemInfo
 			osm_class={latest_item_on_stack.data.osm_class}
