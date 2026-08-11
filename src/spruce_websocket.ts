@@ -88,9 +88,7 @@ function ensureConnection() {
 		spruce_status.set('connected');
 		spruce_error.set(null);
 
-		heartbeatInterval = setInterval(() => {
-			send({ type: 'ping' });
-		}, 10000);
+		// No application-level ping: this endpoint only accepts live map/trajectory updates.
 
 		// Resubscribe Map if active
 		if (activeMapParams) {

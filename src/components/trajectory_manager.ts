@@ -11,6 +11,8 @@ let wsUnsubscribe: (() => void) | null = null;
 let activeTrajectoriesData: Record<string, { content: any[]; timestamp: number }> = {};
 let pendingSourceData: Record<string, any> = {};
 let sourceHasFeatures: Record<string, boolean> = {};
+let trajectorySourceDebugged = new Set<string>();
+let missingTrajectorySources = new Set<string>();
 
 // Calculate bearing in degrees from [lon1, lat1] to [lon2, lat2]
 function calculateBearing(lon1: number, lat1: number, lon2: number, lat2: number): number {
@@ -292,14 +294,55 @@ export function startTrajectoryManager(map: Map) {
 				return;
 			}
 
-			const source = map.getSource(sourceName) as GeoJSONSource;
+			let source = map.getSource(sourceName) as GeoJSONSource | undefined;
+
+			if (!source && map.isStyleLoaded()) {
+				console.warn('[DEBUGTrajectories] trajectory source missing; recreating', sourceName);
+				map.addSource(sourceName, {
+					type: 'geojson',
+					data: { type: 'FeatureCollection', features: [] }
+				});
+				source = map.getSource(sourceName) as GeoJSONSource | undefined;
+			}
+
 			if (source) {
+				missingTrajectorySources.delete(sourceName);
+				if (!trajectorySourceDebugged.has(sourceName)) {
+					const attachedLayers = (map.getStyle().layers ?? [])
+						.filter((layer: any) => layer.source === sourceName)
+						.map((layer: any) => ({
+							id: layer.id,
+							visibility: layer.layout?.visibility ?? 'visible',
+							minzoom: layer.minzoom ?? null,
+							maxzoom: layer.maxzoom ?? null
+						}));
+					console.info('[DEBUGTrajectories] MapLibre trajectory source active', {
+						sourceName,
+						featureCount: features.length,
+						attachedLayers
+					});
+					trajectorySourceDebugged.add(sourceName);
+				}
 				source.setData({
 					type: 'FeatureCollection',
 					features
 				});
+				if (features.length > 0) {
+					console.debug('[DEBUGTrajectories] setData complete', {
+						sourceName,
+						featureCount: features.length
+					});
+				}
 				delete pendingSourceData[sourceName];
 			} else {
+				if (!missingTrajectorySources.has(sourceName)) {
+					console.error('[DEBUGTrajectories] MapLibre trajectory source still missing', {
+						sourceName,
+						styleLoaded: map.isStyleLoaded(),
+						featureCount: features.length
+					});
+					missingTrajectorySources.add(sourceName);
+				}
 				pendingSourceData[sourceName] = {
 					type: 'FeatureCollection',
 					features
