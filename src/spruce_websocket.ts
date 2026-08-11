@@ -21,6 +21,40 @@ export const spruce_trajectory_data = writable<TrajectoryDataByChateau>({});
 
 let trajectory_timestamps: Record<string, number> = {};
 let trajectory_accumulators: Record<string, TrajectoryWrapper[]> = {};
+let trajectory_publish_timers: Record<string, ReturnType<typeof setTimeout>> = {};
+
+// A trajectory snapshot is normally published when Spruce marks the final chunk.
+// Also publish after chunks settle so a missing/off-by-one final-chunk marker cannot
+// make trajectories disappear completely.
+const TRAJECTORY_CHUNK_SETTLE_MS = 250;
+
+function publishTrajectoryAccumulator(chateau: string): void {
+	const timestamp = trajectory_timestamps[chateau];
+	const content = trajectory_accumulators[chateau];
+	if (timestamp === undefined || !content) return;
+
+	spruce_trajectory_data.update((data) => ({
+		...data,
+		[chateau]: {
+			content: [...content],
+			timestamp
+		}
+	}));
+}
+
+function scheduleTrajectoryPublish(chateau: string): void {
+	const existing = trajectory_publish_timers[chateau];
+	if (existing) clearTimeout(existing);
+
+	trajectory_publish_timers[chateau] = setTimeout(() => {
+		delete trajectory_publish_timers[chateau];
+		console.debug('[Trajectories] publishing settled chunk accumulator', {
+			chateau,
+			count: trajectory_accumulators[chateau]?.length ?? 0
+		});
+		publishTrajectoryAccumulator(chateau);
+	}, TRAJECTORY_CHUNK_SETTLE_MS);
+}
 
 let socket: WebSocket | null = null;
 let heartbeatInterval: ReturnType<typeof setInterval> | null = null;
@@ -129,6 +163,11 @@ function ensureConnection() {
 				const chateau = parsed.chateau || 'unknown';
 
 				if (parsed.timestamp !== trajectory_timestamps[chateau]) {
+					const pendingPublish = trajectory_publish_timers[chateau];
+					if (pendingPublish) {
+						clearTimeout(pendingPublish);
+						delete trajectory_publish_timers[chateau];
+					}
 					trajectory_timestamps[chateau] = parsed.timestamp;
 					trajectory_accumulators[chateau] = [...parsed.content];
 				} else {
@@ -136,14 +175,27 @@ function ensureConnection() {
 					trajectory_accumulators[chateau].push(...parsed.content);
 				}
 
-				if (parsed.total_chunks === 0 || parsed.chunk_index === parsed.total_chunks - 1) {
-					spruce_trajectory_data.update((data) => ({
-						...data,
-						[chateau]: {
-							content: trajectory_accumulators[chateau],
-							timestamp: trajectory_timestamps[chateau]
-						}
-					}));
+				console.debug('[Trajectories] received buffer chunk', {
+					chateau,
+					timestamp: parsed.timestamp,
+					chunk_index: parsed.chunk_index,
+					total_chunks: parsed.total_chunks,
+					chunk_size: parsed.content.length,
+					accumulated: trajectory_accumulators[chateau].length
+				});
+
+				const isFinalChunk =
+					parsed.total_chunks === 0 || parsed.chunk_index === parsed.total_chunks - 1;
+
+				if (isFinalChunk) {
+					const pendingPublish = trajectory_publish_timers[chateau];
+					if (pendingPublish) {
+						clearTimeout(pendingPublish);
+						delete trajectory_publish_timers[chateau];
+					}
+					publishTrajectoryAccumulator(chateau);
+				} else {
+					scheduleTrajectoryPublish(chateau);
 				}
 			} else if (parsed.type === 'pong') {
 				console.log('Spruce WS received pong');
