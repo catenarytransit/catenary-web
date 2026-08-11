@@ -38,11 +38,11 @@ function addGeoJsonSource(
 	}
 }
 
-export async function addApplicationSources(
+export function addApplicationSources(
 	map: maplibregl.Map,
 	chateauData: GeoJsonData | null
-): Promise<void> {
-	addGeoJsonSource(map, 'motis_results', emptyFeatureCollection);
+): void {
+	addGeoJsonSource(map, 'cypress_results', emptyFeatureCollection);
 	addGeoJsonSource(map, 'chateaus', chateauData ?? emptyFeatureCollection);
 
 	for (const { id, url } of VECTOR_SOURCES) {
@@ -55,23 +55,16 @@ export async function addApplicationSources(
 		addGeoJsonSource(map, id, emptyFeatureCollection);
 	}
 
-	let searchimage = await map.loadImage('/icons/search_option.png');
-	map.addImage('searchimage', searchimage.data);
-
-	if (!map.getLayer('motis_results_symbol')) {
+	if (!map.getLayer('cypress_results_symbol')) {
 		map.addLayer({
-			id: 'motis_results_symbol',
+			id: 'cypress_results_symbol',
 			type: 'symbol',
-			source: 'motis_results',
+			source: 'cypress_results',
 			layout: {
-				'icon-image': 'searchimage',
-				'icon-size': 0.2,
+				'icon-image': 'station-enter',
+				'icon-size': 0.3,
 				'icon-allow-overlap': true,
-				'icon-ignore-placement': true,
-				'text-field': ['get', 'name'],
-				'text-font': ['Arimo-Medium'],
-				'text-size': 12,
-				'text-offset': [0, 1.5],
+				'icon-ignore-placement': true
 			},
 			paint: { 'icon-opacity': 0.9 }
 		});

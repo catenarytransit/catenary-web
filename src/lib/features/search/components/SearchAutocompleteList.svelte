@@ -1,11 +1,11 @@
 <script lang="ts">
+	import { locale } from 'svelte-i18n';
 	import RouteResultItem from './RouteResultItem.svelte';
 	import StopRankingInfo from './StopRankingInfo.svelte';
 	import { getTopHistory } from '../state/stationHistory';
-	import type { MotisAddressOrPlaceMatch } from '$lib/types/backend/motis';
 	import {
 		displayedResults,
-		latestMotisResults,
+		latestCypressResults,
 		latestOsmStationResults,
 		latestTransitResults,
 		searchText,
@@ -16,23 +16,28 @@
 
 	export let length = 16;
 
-	function getMotisSubtitle(match: MotisAddressOrPlaceMatch): string {
-		const area =
-			match.areas.find((candidate) => candidate.default)?.name ??
-			match.areas.find((candidate) => candidate.unique)?.name;
+	function getSubtitle(properties: Record<string, unknown>): string {
+		const parts = [
+			properties.housenumber,
+			properties.street,
+			properties.locality,
+			properties.region,
+			properties.country
+		].filter((value): value is string => typeof value === 'string' && value.length > 0);
 
-		const parts = [match.houseNumber, match.street, area, match.country].filter(
-			(value, index, values): value is string =>
-				typeof value === 'string' &&
-				value.length > 0 &&
-				value !== match.name &&
-				values.indexOf(value) === index
-		);
+		if (parts.length > 0) {
+			return parts.join(', ');
+		}
 
-		return parts.length > 0 ? parts.join(', ') : match.category ?? match.type;
+		return typeof properties.display_name === 'string'
+			? properties.display_name
+			: typeof properties.layer === 'string'
+				? properties.layer
+				: '';
 	}
 
 	let visibleItems: SearchResultItem[] = [];
+	$: currentLocale = $locale ?? 'default';
 
 	$: {
 		const items: SearchResultItem[] = [];
@@ -42,8 +47,8 @@
 				items.push({ type: 'osm_station', data: station });
 			}
 
-			for (const match of $latestMotisResults?.slice(0, length) ?? []) {
-				items.push({ type: 'motis', data: match });
+			for (const feature of $latestCypressResults?.features?.slice(0, length) ?? []) {
+				items.push({ type: 'cypress', data: feature });
 			}
 
 			const routeSection = $latestTransitResults?.routes_section;
@@ -83,7 +88,7 @@
 <div id="search-autocomplete" class="flex flex-col">
 	{#if visibleItems.length > 0}
 		{#each visibleItems as item, index}
-			{#if item.type === 'motis'}
+			{#if item.type === 'cypress'}
 				<button
 					on:click={() => selectResult(item)}
 					class="px-3 cursor-pointer w-full {index === $selectedResultIndex
@@ -92,15 +97,18 @@
 				>
 					<div class="align-start flex flex-col content-start items-start text-left">
 						<p class="font-medium dark:text-white">
-							{item.data.name}
+							{item.data.properties.name}
 							<span class="font-light text-xs text-gray-700 dark:text-gray-300"
-								>{item.data.type === 'ADDRESS'
-									? 'Address'
-									: item.data.category ?? 'Place'}</span
+								>{item.data.properties.layer}</span
 							>
 						</p>
+						{#if item.data.properties.names && item.data.properties.names[currentLocale] && item.data.properties.names[currentLocale].toLowerCase() !== item.data.properties.name.toLowerCase()}
+							<p class="text-[11px] text-gray-600 dark:text-gray-400 -mt-0.5 leading-tight">
+								{item.data.properties.names[currentLocale]}
+							</p>
+						{/if}
 						<p class="text-[10px] text-gray-800 dark:text-gray-200">
-							{getMotisSubtitle(item.data)}
+							{getSubtitle(item.data.properties)}
 						</p>
 					</div>
 				</button>

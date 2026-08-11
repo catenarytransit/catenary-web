@@ -1,14 +1,8 @@
 import type { GeoJSONSource, Map } from 'maplibre-gl';
 import { get, writable, type Writable } from 'svelte/store';
 import { data_stack_store, geolocation_store, map_pointer_store } from '$root/globalstores';
-import type {
-	MotisAddressOrPlaceMatch,
-	MotisAddressOrPlaceResponse,
-	MotisGeocodeMatch,
-	MotisGeocodeResponse
-} from '$lib/types/backend/motis';
 import {
-	OsmSearchResultStack,
+	OsmItemStack,
 	OsmStationStack,
 	RouteStack,
 	StackInterface,
@@ -53,10 +47,6 @@ export interface SearchQueryResponse {
 	routes_section: RoutesSection;
 }
 
-/*
- * Legacy Cypress response types. Keep these commented out with the request below
- * so Cypress can be restored as a geocoding fallback later.
- *
 interface CypressFeature {
 	type: 'Feature';
 	geometry: {
@@ -78,10 +68,9 @@ interface CypressFeatureCollection {
 	type: 'FeatureCollection';
 	features: CypressFeature[];
 }
- */
 
 export interface SearchResultItem {
-	type: 'motis' | 'route' | 'stop' | 'osm_station';
+	type: 'cypress' | 'route' | 'stop' | 'osm_station';
 	data: any;
 	chateau?: string;
 	gtfs_id?: string;
@@ -89,10 +78,10 @@ export interface SearchResultItem {
 
 const transitQueryCache: Writable<Record<string, SearchQueryResponse>> = writable({});
 const osmStationQueryCache: Writable<Record<string, OsmStationSearchResponse>> = writable({});
-const motisQueryCache: Writable<Record<string, MotisAddressOrPlaceResponse>> = writable({});
+const cypressQueryCache: Writable<Record<string, CypressFeatureCollection>> = writable({});
 
 export const latestTransitResults = writable<SearchQueryResponse | null>(null);
-export const latestMotisResults = writable<MotisAddressOrPlaceResponse | null>(null);
+export const latestCypressResults = writable<CypressFeatureCollection | null>(null);
 export const latestOsmStationResults = writable<OsmStationSearchResponse | null>(null);
 export const searchText = writable('');
 export const autocompleteFocus = writable(false);
@@ -106,69 +95,11 @@ function pushScreen(screen: unknown): void {
 	data_stack_store.update((stack) => [...stack, new StackInterface(screen)]);
 }
 
-function isMotisAddressOrPlace(match: MotisGeocodeMatch): match is MotisAddressOrPlaceMatch {
-	return match.type === 'ADDRESS' || match.type === 'PLACE';
-}
-
-function updateMotisSource(map: Map | null, data: MotisAddressOrPlaceResponse): void {
-	const source = map?.getSource('motis_results') as GeoJSONSource | undefined;
-	if (!source) return;
-
-	source.setData({
-		type: 'FeatureCollection',
-		features: data.map((match) => ({
-			type: 'Feature',
-			geometry: {
-				type: 'Point',
-				coordinates: [match.lon, match.lat]
-			},
-			properties: {
-				id: match.id,
-				name: match.name,
-				type: match.type,
-				category: match.category ?? null,
-				score: match.score
-			}
-		}))
-	});
-}
-
-function syncMotisSourceToFocus(): void {
-	const map = get(map_pointer_store) as Map | null;
-	if (!map) return;
-
-	updateMotisSource(map, get(autocompleteFocus) ? (get(latestMotisResults) ?? []) : []);
-}
-
-autocompleteFocus.subscribe(() => syncMotisSourceToFocus());
-
-function parseMotisOsmId(id: string): { osmId: string; osmType: 'N' | 'W' | 'R' } | null {
-	const match = /^(node|way|relation)\/(?:\[(\d+)\]|(\d+))$/.exec(id);
-	if (!match) return null;
-
-	const osmId = match[2] ?? match[3];
-	if (!osmId) return null;
-
-	return {
-		osmId,
-		osmType: match[1] === 'relation' ? 'R' : match[1] === 'way' ? 'W' : 'N'
-	};
-}
-
-function getMotisAddress(match: MotisAddressOrPlaceMatch): string {
-	const area =
-		match.areas.find((candidate) => candidate.default)?.name ??
-		match.areas.find((candidate) => candidate.unique)?.name;
-	const streetAddress = [match.houseNumber, match.street].filter(Boolean).join(' ');
-	const parts = [streetAddress, area, match.zip, match.country].filter(
-		(value, index, values): value is string =>
-			typeof value === 'string' &&
-			value.length > 0 &&
-			value.toLocaleLowerCase() !== match.name.toLocaleLowerCase() &&
-			values.indexOf(value) === index
-	);
-
-	return parts.join(', ') || match.category || match.type;
+function updateCypressSource(map: Map | null, data: CypressFeatureCollection): void {
+	const source = map?.getSource('cypress_results') as GeoJSONSource | undefined;
+	if (source && data.type === 'FeatureCollection' && Array.isArray(data.features)) {
+		source.setData(data);
+	}
 }
 
 function stopActiveQuery(): AbortController {
@@ -182,11 +113,10 @@ function stopActiveQuery(): AbortController {
 
 function resetResults(): void {
 	latestTransitResults.set(null);
-	latestMotisResults.set(null);
+	latestCypressResults.set(null);
 	latestOsmStationResults.set(null);
 	selectedResultIndex.set(-1);
 	displayedResults.set([]);
-	updateMotisSource(get(map_pointer_store) as Map | null, []);
 }
 
 async function fetchJson<T>(url: string, signal: AbortSignal): Promise<T> {
@@ -216,23 +146,16 @@ export function selectResult(item: SearchResultItem): void {
 	recalculateBackButton();
 
 	switch (item.type) {
-		case 'motis': {
-			const match = item.data as MotisAddressOrPlaceMatch;
-			const osm = parseMotisOsmId(match.id);
+		case 'cypress': {
+			const feature = item.data as CypressFeature;
+			const [osmKind, osmId = '0'] = String(feature.properties.id ?? '').split('/');
+			const osmType = osmKind === 'relation' ? 'R' : osmKind === 'way' ? 'W' : 'N';
+			const category = feature.properties.categories?.[0] ?? feature.properties.layer;
+			pushScreen(new OsmItemStack(osmId, category, osmType));
 
-			pushScreen(
-				new OsmSearchResultStack(
-					osm?.osmId ?? match.id,
-					match.category ?? match.type.toLocaleLowerCase(),
-					osm?.osmType ?? null,
-					match.name,
-					getMotisAddress(match),
-					match.lat,
-					match.lon
-				)
-			);
-
-			map?.flyTo({ center: [match.lon, match.lat], zoom: 16 });
+			if (feature.geometry?.coordinates) {
+				map?.flyTo({ center: feature.geometry.coordinates, zoom: 16 });
+			}
 			break;
 		}
 		case 'route':
@@ -283,7 +206,6 @@ export function performAutocompleteQuery(rawText: string): void {
 	const geolocation = get(geolocation_store);
 	const hasGeolocation = typeof geolocation?.coords?.latitude === 'number';
 	const focusWeight = zoom > 13 ? 5 : zoom > 10 ? 4 : zoom < 7 ? 2 : 3;
-	const motisFocusWeight = zoom > 13 ? 2 : zoom > 10 ? 1.5 : zoom < 7 ? 1.5 : 1;
 
 	const transitUrl = new URL('https://birch_search.catenarymaps.org/text_search_v1');
 	transitUrl.searchParams.set('text', text);
@@ -295,20 +217,6 @@ export function performAutocompleteQuery(rawText: string): void {
 		transitUrl.searchParams.set('user_lon', String(geolocation.coords.longitude));
 	}
 
-	const motisUrl = new URL('https://api.transitous.org/api/v1/geocode');
-	motisUrl.searchParams.set('text', text);
-	motisUrl.searchParams.set('language', 'fr,en,de,es,it,nl,pl,pt,ru,zh');
-	// MOTIS is used only for addresses and places. Birch remains responsible for stops/stations.
-	motisUrl.searchParams.append('type', 'ADDRESS');
-	motisUrl.searchParams.append('type', 'PLACE');
-	motisUrl.searchParams.set('place', `${center.lat},${center.lng}`);
-	motisUrl.searchParams.set('placeBias', String(motisFocusWeight));
-	motisUrl.searchParams.set('numResults', '16');
-
-	/*
-	 * Legacy Cypress geocoder request. Keep this commented out so it can be
-	 * restored as a fallback later.
-	 *
 	const cypressSubdomains = ['cypress', 'cypress1', 'cypress2'];
 	const cypressHost = cypressSubdomains[Math.floor(Math.random() * cypressSubdomains.length)];
 	const cypressUrl = new URL(`https://${cypressHost}.catenarymaps.org/v2/search`);
@@ -316,7 +224,6 @@ export function performAutocompleteQuery(rawText: string): void {
 	cypressUrl.searchParams.set('focus.point.lat', String(center.lat));
 	cypressUrl.searchParams.set('focus.point.lon', String(center.lng));
 	cypressUrl.searchParams.set('focus.point.weight', String(focusWeight));
-	 */
 
 	const osmStationUrl = new URL('https://birch_search.catenarymaps.org/osm_station_search');
 	osmStationUrl.searchParams.set('text', text);
@@ -326,35 +233,6 @@ export function performAutocompleteQuery(rawText: string): void {
 		osmStationUrl.searchParams.set('focus_weight', String(focusWeight));
 	}
 
-	const cachedMotis = get(motisQueryCache)[text];
-	if (cachedMotis) {
-		latestMotisResults.set(cachedMotis);
-		selectedResultIndex.set(-1);
-		if (get(autocompleteFocus)) {
-			updateMotisSource(map, cachedMotis);
-		}
-	}
-
-	void fetchJson<MotisGeocodeResponse>(motisUrl.toString(), query.signal)
-		.then((data) => {
-			// Defense in depth: never surface MOTIS STOP results even if the server
-			// ignores or changes handling of the repeated type query parameters.
-			const addressAndPlaceResults = data.filter(isMotisAddressOrPlace);
-			motisQueryCache.update((cache) => ({ ...cache, [text]: addressAndPlaceResults }));
-			if (get(searchText).trim() === text) {
-				latestMotisResults.set(addressAndPlaceResults);
-				selectedResultIndex.set(-1);
-				if (get(autocompleteFocus)) {
-					updateMotisSource(map, addressAndPlaceResults);
-				}
-			}
-		})
-		.catch((error) => reportSearchError('MOTIS', error));
-
-	/*
-	 * Legacy Cypress response handling. Keep this commented out with the
-	 * request above so it can be restored as a fallback later.
-	 *
 	const cachedCypress = get(cypressQueryCache)[text];
 	if (cachedCypress) {
 		latestCypressResults.set(cachedCypress);
@@ -372,7 +250,6 @@ export function performAutocompleteQuery(rawText: string): void {
 			}
 		})
 		.catch((error) => reportSearchError('Cypress', error));
-	 */
 
 	const cachedStations = get(osmStationQueryCache)[text];
 	if (cachedStations) {
