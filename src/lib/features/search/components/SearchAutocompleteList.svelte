@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { locale } from 'svelte-i18n';
+	import { _, locale } from 'svelte-i18n';
 	import RouteResultItem from './RouteResultItem.svelte';
 	import StopRankingInfo from './StopRankingInfo.svelte';
 	import { getTopHistory } from '../state/stationHistory';
@@ -8,6 +8,7 @@
 		latestCypressResults,
 		latestOsmStationResults,
 		latestTransitResults,
+		searchResultsLoading,
 		searchText,
 		selectResult,
 		selectedResultIndex,
@@ -191,5 +192,19 @@
 				</button>
 			{/if}
 		{/each}
+	{/if}
+
+	{#if $searchResultsLoading}
+		<div
+			class="flex items-center justify-center gap-2 border-t border-gray-200 px-3 py-2 text-xs text-gray-600 dark:border-gray-700 dark:text-gray-300"
+			role="status"
+			aria-live="polite"
+		>
+			<span
+				class="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-700 dark:border-gray-600 dark:border-t-gray-200"
+				aria-hidden="true"
+			></span>
+			<span>{$_('search_results_loading')}</span>
+		</div>
 	{/if}
 </div>

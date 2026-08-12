@@ -88,6 +88,7 @@ export const autocompleteFocus = writable(false);
 export const showBackButton = writable(false);
 export const selectedResultIndex = writable(-1);
 export const displayedResults = writable<SearchResultItem[]>([]);
+export const searchResultsLoading = writable(false);
 
 let activeQuery: AbortController | null = null;
 
@@ -192,14 +193,18 @@ export function performAutocompleteQuery(rawText: string): void {
 	const query = stopActiveQuery();
 
 	if (text.length === 0) {
+		searchResultsLoading.set(false);
 		resetResults();
 		return;
 	}
 
 	const map = get(map_pointer_store) as Map | null;
 	if (!map) {
+		searchResultsLoading.set(false);
 		return;
 	}
+
+	searchResultsLoading.set(true);
 
 	const center = map.getCenter();
 	const zoom = Math.round(map.getZoom());
@@ -240,7 +245,8 @@ export function performAutocompleteQuery(rawText: string): void {
 		updateCypressSource(map, cachedCypress);
 	}
 
-	void fetchJson<CypressFeatureCollection>(cypressUrl.toString(), query.signal)
+	const cypressRequest = fetchJson<CypressFeatureCollection>(cypressUrl.toString(), query.signal);
+	void cypressRequest
 		.then((data) => {
 			cypressQueryCache.update((cache) => ({ ...cache, [text]: data }));
 			if (get(searchText).trim() === text) {
@@ -252,10 +258,12 @@ export function performAutocompleteQuery(rawText: string): void {
 		.catch((error) => reportSearchError('Cypress', error));
 
 	const cachedStations = get(osmStationQueryCache)[text];
+	let osmStationRequest: Promise<OsmStationSearchResponse> | null = null;
 	if (cachedStations) {
 		latestOsmStationResults.set(cachedStations);
 	} else {
-		void fetchJson<OsmStationSearchResponse>(osmStationUrl.toString(), query.signal)
+		osmStationRequest = fetchJson<OsmStationSearchResponse>(osmStationUrl.toString(), query.signal);
+		void osmStationRequest
 			.then((data) => {
 				osmStationQueryCache.update((cache) => ({ ...cache, [text]: data }));
 				if (get(searchText).trim() === text) {
@@ -270,7 +278,8 @@ export function performAutocompleteQuery(rawText: string): void {
 		latestTransitResults.set(cachedTransit);
 	}
 
-	void fetchJson<SearchQueryResponse>(transitUrl.toString(), query.signal)
+	const transitRequest = fetchJson<SearchQueryResponse>(transitUrl.toString(), query.signal);
+	void transitRequest
 		.then((data) => {
 			transitQueryCache.update((cache) => ({ ...cache, [text]: data }));
 			if (get(searchText).trim() === text) {
@@ -279,4 +288,15 @@ export function performAutocompleteQuery(rawText: string): void {
 			}
 		})
 		.catch((error) => reportSearchError('Transit', error));
+
+	const pendingRequests: Promise<unknown>[] = [cypressRequest, transitRequest];
+	if (osmStationRequest) {
+		pendingRequests.push(osmStationRequest);
+	}
+
+	void Promise.allSettled(pendingRequests).then(() => {
+		if (activeQuery === query && get(searchText).trim() === text) {
+			searchResultsLoading.set(false);
+		}
+	});
 }

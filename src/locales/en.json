@@ -144,6 +144,7 @@
   "gpsdisclaimer": "If the wait is too long, check if this site has browser permissions to access your location, and verify your GPS signal is strong.",
   "last_stop": "last stop",
   "search_here": "Search here",
+  "search_results_loading": "Still loading search results...",
   "previous_departures": "Previous departures",
   "next_stop": "Next stop",
   "loadingmoredepartures": "Loading more departures",
