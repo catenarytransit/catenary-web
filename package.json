@@ -4,7 +4,7 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
-		"cloudflarebuild": "mv cloudflare-svelte.config.js svelte.config.js && vite build",
+		"cloudflarebuild": "mv cloudflare-svelte.config.js svelte.config.js && svelte-kit sync && vite build",
 		"preview": "vite preview --port 16172",
 		"betapreview": "vite preview --port 16173",
 		"test": "playwright test",
