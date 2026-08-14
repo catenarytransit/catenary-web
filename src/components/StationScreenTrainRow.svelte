@@ -35,9 +35,17 @@
 	$: show_route_name =
 		event.chateau !== 'nationalrailuk' || ['TW', 'ME', 'LO', 'XR', 'HX'].includes(agencyId);
 
-	$: is_db_fernverkehr = event.chateau === 'deutschland' && agencyId && ['12681', '13557', '10918'].includes(agencyId.toString());
-	$: trip_short_name_no_zeros = event.trip_short_name ? event.trip_short_name.replace(/^0+/, '') : null;
-	$: db_train_data = is_db_fernverkehr && trip_short_name_no_zeros ? (db_train_lookup as Record<string, any[]>)[trip_short_name_no_zeros] : null;
+	$: is_db_fernverkehr =
+		event.chateau === 'deutschland' &&
+		agencyId &&
+		['12681', '13557', '10918'].includes(agencyId.toString());
+	$: trip_short_name_no_zeros = event.trip_short_name
+		? event.trip_short_name.replace(/^0+/, '')
+		: null;
+	$: db_train_data =
+		is_db_fernverkehr && trip_short_name_no_zeros
+			? (db_train_lookup as Record<string, any[]>)[trip_short_name_no_zeros]
+			: null;
 	$: db_display_name = db_train_data ? db_train_data[0].display_name : event.trip_short_name;
 
 	$: is_rail = routeDef?.route_type == RouteTypes.RAIL;
@@ -103,8 +111,13 @@
 			{:else if shared_rt_time}
 				<!-- Vertical Mode: Scheduled -> Delay -> Realtime -->
 				{#if shared_rt_time != shared_scheduled_time}
-					<span class="text-gray-600 dark:text-gray-400 line-through text-xs">
+					<span class="text-gray-600 dark:text-gray-400 line-through">
 						<Clock {timezone} time_seconds={shared_scheduled_time} {show_seconds} />
+					</span>
+					<span
+						class={`text-seashore dark:text-seashoredark font-medium ${shared_rt_time < current_time / 1000 ? 'opacity-70' : ''}`}
+					>
+						<Clock {timezone} time_seconds={shared_rt_time} {show_seconds} />
 					</span>
 					{#if shared_scheduled_time}
 						<DelayDiff
@@ -113,11 +126,6 @@
 							{use_symbol_sign}
 						/>
 					{/if}
-					<span
-						class={`text-seashore dark:text-seashoredark font-medium ${shared_rt_time < current_time / 1000 ? 'opacity-70' : ''}`}
-					>
-						<Clock {timezone} time_seconds={shared_rt_time} {show_seconds} />
-					</span>
 				{:else}
 					<!-- On Time (Vertical) - Just show Clock -->
 					<span
@@ -227,6 +235,9 @@
 
 			<div class="flex flex-row items-center gap-2 mb-1">
 				<div class="text-base font-medium font-bold leading-tight">
+					{#if event.final_station_name}
+						<span class="mr-1">{event.final_station_name}{' '}</span>
+					{/if}
 					{event.headsign}
 
 					{#if eurostyle || swiss_style}

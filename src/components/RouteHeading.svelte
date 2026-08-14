@@ -8,7 +8,7 @@
 		has_schedule_pdf,
 		schedule_pdf_needs_hydration
 	} from './pdf_schedules';
-	import { onMount } from 'svelte';
+	import { createEventDispatcher, onMount } from 'svelte';
 	import {
 		data_stack_store,
 		// ... other imports
@@ -27,6 +27,8 @@
 	import StationScreenRouteBadge from './StationScreenRouteBadge.svelte';
 	import RatpBullet from './ratpbullet.svelte';
 
+	const dispatch = createEventDispatcher<{ vehicle: void }>();
+
 	export let routeDef: RouteMinimal;
 	// export let routeDef.color: string;
 	// export let routeDef.text_color: string;
@@ -38,6 +40,7 @@
 	export let run_number: string | null = null;
 	export let icon: string | null = null;
 	export let vehicle: string | null = null;
+	export let vehicle_history_clickable: boolean = false;
 
 	export let is_route_only: boolean;
 
@@ -64,6 +67,34 @@
 	export let make_clickable_route_name: boolean = false;
 
 	export let pin_route_setting_shown: boolean = false;
+
+	export let show_route_dropdown: boolean = false;
+
+	let showOverflowMenu = false;
+	let showExportModal = false;
+	let selectedFormat: 'geojson' | 'kml' | 'gpx' = 'geojson';
+	let includeStops = false;
+
+	function portal(node: HTMLElement) {
+		document.body.appendChild(node);
+		return {
+			destroy() {
+				if (node.parentNode) {
+					node.parentNode.removeChild(node);
+				}
+			}
+		};
+	}
+
+	function triggerExport() {
+		const cleanRoute = cleanRouteId(route_id);
+		let exportUrl = `https://birch.catenarymaps.org/export_route_geom?chateau=${encodeURIComponent(chateau_id)}&route_id=${encodeURIComponent(cleanRoute)}&format=${selectedFormat}`;
+		if (includeStops) {
+			exportUrl += `&include_stops=true`;
+		}
+		window.open(exportUrl, '_blank');
+		showExportModal = false;
+	}
 
 	let isPinned = false;
 	const LS_KEY = 'pinned_routes_v1';
@@ -141,7 +172,7 @@
 	$: isSubway = isSubwayRouteId(routeDef.route_id) && routeDef.chateau == MTA_CHATEAU_ID;
 	$: isRatp = routeDef.chateau === IDFM_CHATEAU_ID && isRatpRoute(routeDef.short_name);
 	$: is_sbahn =
-		['dbregioag', 'deutschland'].includes(routeDef.chateau) &&
+		['vbb', 'dbregioag', 'deutschland'].includes(routeDef.chateau) &&
 		(routeDef.short_name || '').match(/^S\d+/) !== null;
 	
 	import db_train_lookup from '../../static/fernverkehr_2026_train_lookup.json';
@@ -226,6 +257,39 @@
 						</span>
 					{/if}
 				</button>
+
+				{#if show_route_dropdown}
+					<div class="relative inline-block text-left">
+						<button
+							class="shrink-0 rounded-full leading-none text-sm px-1 hover:bg-gray-100 dark:hover:bg-gray-700 border-2 border-gray-500 flex items-center justify-center"
+							aria-label="More options"
+							title="More options"
+							on:click|stopPropagation={() => (showOverflowMenu = !showOverflowMenu)}
+						>
+							<span class="material-symbols-outlined text-base leading-none"> more_vert </span>
+						</button>
+
+						{#if showOverflowMenu}
+							<!-- Backdrop to close dropdown on click outside -->
+							<div class="fixed inset-0 z-40" on:click={() => (showOverflowMenu = false)}></div>
+
+							<div
+								class="absolute right-0 mt-1 w-44 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50 py-1"
+							>
+								<button
+									class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+									on:click={() => {
+										showOverflowMenu = false;
+										showExportModal = true;
+									}}
+								>
+									<span class="material-symbols-outlined text-base">download</span>
+									Export geometry
+								</button>
+							</div>
+						{/if}
+					</div>
+				{/if}
 			{/if}
 			<slot name="controls" />
 		</div>
@@ -255,20 +319,41 @@
 			{/if}
 		</span>
 		{#if vehicle && vehicle != run_number}
-			<span class="text-sm align-middle ml-2 text-gray-600 dark:text-gray-400 inline-block">
-				<span class="material-symbols-outlined !text-sm align-middle -translate-y-[0.03rem]"
-					>{#if routeDef.route_type == 0}
-						tram
-					{:else if routeDef.route_type == 1}
-						subway
-					{:else if routeDef.route_type == 2}
-						train
-					{:else}
-						directions_bus
-					{/if}</span
+			{#if vehicle_history_clickable}
+				<button
+					type="button"
+					on:click={() => dispatch('vehicle')}
+					class="ml-2 inline-block bg-transparent p-0 text-sm align-middle text-gray-600 underline decoration-sky-500/80 hover:decoration-sky-500 dark:text-gray-400"
 				>
-				{vehicle}
-			</span>
+					<span class="material-symbols-outlined !text-sm align-middle -translate-y-[0.03rem]"
+						>{#if route_type == 0}
+							tram
+						{:else if route_type == 1}
+							subway
+						{:else if route_type == 2}
+							train
+						{:else}
+							directions_bus
+						{/if}</span
+					>
+					{vehicle}
+				</button>
+			{:else}
+				<span class="text-sm align-middle ml-2 text-gray-600 dark:text-gray-400 inline-block">
+					<span class="material-symbols-outlined !text-sm align-middle -translate-y-[0.03rem]"
+						>{#if route_type == 0}
+							tram
+						{:else if route_type == 1}
+							subway
+						{:else if route_type == 2}
+							train
+						{:else}
+							directions_bus
+						{/if}</span
+					>
+					{vehicle}
+				</span>
+			{/if}
 		{/if}
 	</h2>
 
@@ -295,5 +380,95 @@
 				</div>
 			</a>
 		{/if}
+	</div>
+{/if}
+
+{#if showExportModal}
+	<!-- Backdrop over entire window screen -->
+	<div
+		use:portal
+		class="fixed inset-0 w-screen h-screen bg-black/50 dark:bg-black/70 z-[9999] transition-opacity"
+		on:click={() => (showExportModal = false)}
+	></div>
+
+	<!-- Centered Modal across the entire window screen -->
+	<div
+		use:portal
+		class="fixed inset-0 w-screen h-screen z-[10000] flex items-center justify-center p-4 pointer-events-none"
+	>
+		<div
+			class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-xl shadow-2xl p-6 w-full max-w-md pointer-events-auto border border-gray-200 dark:border-gray-700 space-y-5"
+			on:click|stopPropagation
+		>
+			<div
+				class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-3"
+			>
+				<h3 class="text-lg font-bold flex items-center gap-2">
+					<span class="material-symbols-outlined text-blue-600 dark:text-blue-400">download</span>
+					Export geometry
+				</h3>
+				<button
+					class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full p-1 transition-colors"
+					on:click={() => (showExportModal = false)}
+					aria-label="Close modal"
+				>
+					<span class="material-symbols-outlined text-xl leading-none">close</span>
+				</button>
+			</div>
+
+			<div class="space-y-4">
+				<div>
+					<label class="block text-sm font-semibold mb-2">Format</label>
+					<div class="grid grid-cols-3 gap-2">
+						{#each ['geojson', 'kml', 'gpx'] as fmt}
+							<button
+								type="button"
+								class={`py-2 px-3 text-sm font-medium rounded-lg border transition-all text-center ${
+									selectedFormat === fmt
+										? 'border-blue-600 dark:border-blue-500 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 font-bold ring-1 ring-blue-600 dark:ring-blue-500'
+										: 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+								}`}
+								on:click={() => (selectedFormat = fmt)}
+							>
+								{#if fmt == 'geojson'}
+									<span>GeoJSON</span>
+								{:else}
+									<span class="uppercase">{fmt}</span>
+								{/if}
+							</button>
+						{/each}
+					</div>
+				</div>
+
+				<div class="pt-2">
+					<label class="flex items-center space-x-3 cursor-pointer select-none">
+						<input
+							type="checkbox"
+							bind:checked={includeStops}
+							class="w-4 h-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:bg-gray-700"
+						/>
+						<span class="text-sm font-medium">Include stops</span>
+					</label>
+				</div>
+			</div>
+
+			<div class="flex justify-end gap-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+				<button
+					type="button"
+					class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+					on:click={() => (showExportModal = false)}
+				>
+					Cancel
+				</button>
+				<button
+					type="button"
+					class="px-5 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 rounded-lg shadow-sm transition-colors flex items-center gap-1.5"
+					on:click={triggerExport}
+				>
+					<span class="material-symbols-outlined text-base">download</span>
+					Export
+				</button>
+			</div>
+		</div>
 	</div>
 {/if}

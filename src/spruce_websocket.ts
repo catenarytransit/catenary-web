@@ -1,21 +1,73 @@
 import { writable } from 'svelte/store';
+import type {
+	BulkFetchResponseV2,
+	ClientTrajectorySubscriptionParams,
+	SpruceClientMessage,
+	SubscribeMapV2Params,
+	TrajectoryDataByChateau,
+	TrajectoryWrapper
+} from '$lib/types/backend/spruce';
+import {
+	extractSpruceMapPayload,
+	isSpruceServerMessage
+} from '$lib/types/backend/spruce';
+import { isRecord } from '$lib/types/backend/common';
+import type { WebSocketStatus } from '$lib/types/backend/common';
 
-export const spruce_status = writable<'connecting' | 'connected' | 'disconnected' | 'error'>(
-	'disconnected'
-);
+export const spruce_status = writable<WebSocketStatus>('disconnected');
 export const spruce_error = writable<string | null>(null);
-export const spruce_map_data = writable<any>(null);
-export const spruce_trajectory_data = writable<Record<string, { content: any[]; timestamp: number }>>({});
+export const spruce_map_data = writable<BulkFetchResponseV2 | null>(null);
+export const spruce_trajectory_data = writable<TrajectoryDataByChateau>({});
 
 let trajectory_timestamps: Record<string, number> = {};
-let trajectory_accumulators: Record<string, any[]> = {};
+let trajectory_accumulators: Record<string, TrajectoryWrapper[]> = {};
+let trajectory_publish_timers: Record<string, ReturnType<typeof setTimeout>> = {};
+
+// A trajectory snapshot is normally published when Spruce marks the final chunk.
+// Also publish after chunks settle so a missing/off-by-one final-chunk marker cannot
+// make trajectories disappear completely.
+const TRAJECTORY_CHUNK_SETTLE_MS = 250;
+
+function publishTrajectoryAccumulator(chateau: string): void {
+	const timestamp = trajectory_timestamps[chateau];
+	const content = trajectory_accumulators[chateau];
+	if (timestamp === undefined || !content) return;
+
+	spruce_trajectory_data.update((data) => ({
+		...data,
+		[chateau]: {
+			content: [...content],
+			timestamp
+		}
+	}));
+}
+
+function scheduleTrajectoryPublish(chateau: string): void {
+	const existing = trajectory_publish_timers[chateau];
+	if (existing) clearTimeout(existing);
+
+	trajectory_publish_timers[chateau] = setTimeout(() => {
+		delete trajectory_publish_timers[chateau];
+		console.debug('[Trajectories] publishing settled chunk accumulator', {
+			chateau,
+			count: trajectory_accumulators[chateau]?.length ?? 0
+		});
+		publishTrajectoryAccumulator(chateau);
+	}, TRAJECTORY_CHUNK_SETTLE_MS);
+}
 
 let socket: WebSocket | null = null;
-let heartbeatInterval: any = null;
+let heartbeatInterval: ReturnType<typeof setInterval> | null = null;
 
 // Active state for resubscription on connection loss
-let activeMapParams: any = null;
-let activeTrajectoryParams: any = null;
+let activeMapParams: SubscribeMapV2Params | null = null;
+let activeTrajectoryParams: ClientTrajectorySubscriptionParams | null = null;
+
+function send(message: SpruceClientMessage): void {
+	if (socket?.readyState === WebSocket.OPEN) {
+		socket.send(JSON.stringify(message));
+	}
+}
 
 function ensureConnection() {
 	if (
@@ -34,109 +86,123 @@ function ensureConnection() {
 	socket.onopen = () => {
 		console.log('Spruce WS Connected');
 		spruce_status.set('connected');
+		spruce_error.set(null);
 
-		heartbeatInterval = setInterval(() => {
-			if (socket && socket.readyState === WebSocket.OPEN) {
-				socket.send(JSON.stringify({ type: 'unsubscribe_trip', chateau: 'ping-noop' }));
-			}
-		}, 10000);
-
+		// No application-level ping: this endpoint only accepts live map/trajectory updates.
 
 		// Resubscribe Map if active
 		if (activeMapParams) {
-			const msg = {
+			const msg: SpruceClientMessage = {
 				type: 'subscribe_map_v2',
 				...activeMapParams
 			};
 			console.log('Resending subscribe_map to Spruce:', msg);
-			socket?.send(JSON.stringify(msg));
+			send(msg);
 		}
 
 		// Resubscribe Trajectories if active
 		if (activeTrajectoryParams) {
-			const msg = {
+			const msg: SpruceClientMessage = {
 				type: 'subscribe_trajectories',
 				...activeTrajectoryParams
 			};
 			console.log('Resending subscribe_trajectories to Spruce:', msg);
-			socket?.send(JSON.stringify(msg));
+			send(msg);
 		}
 	};
 
-	socket.onmessage = (event) => {
+	socket.onmessage = (event: MessageEvent<unknown>) => {
 		try {
-			const msg = JSON.parse(event.data);
+			if (typeof event.data !== 'string') {
+				console.warn('Ignoring non-text Spruce WS message');
+				return;
+			}
 
-			if (msg.type === 'map_update') {
-				// Check for payload in possibly different locations due to serde serialization
-				// Try msg.data, msg.map_update, or msg itself if fields like 'chateaus' are present
-				let payload = msg.data || msg.map_update;
+			const parsed: unknown = JSON.parse(event.data);
 
-				if (!payload && msg.chateaus) {
-					payload = msg;
-				}
+			if (isRecord(parsed) && parsed.type === 'map_update') {
+				const payload = extractSpruceMapPayload(parsed);
+				if (payload) spruce_map_data.set(payload);
+				return;
+			}
 
-				if (payload) {
-					spruce_map_data.set(payload);
-				}
-			} else if (msg.type === 'buffer') {
-				if (msg.content) {
-					for (const item of msg.content) {
-						const traj = item.content;
-						if (traj) {
-							if (traj.route_id === '') traj.route_id = null;
-							if (traj.start_time === '') traj.start_time = null;
-							if (traj.start_date === '') traj.start_date = null;
+			if (!isSpruceServerMessage(parsed)) {
+				console.warn('Ignoring invalid Spruce WS message', parsed);
+				return;
+			}
 
-							if (!traj.start_time && traj.stops && traj.stops.length > 0 && traj.stops[0].departure) {
-								try {
-									const date = new Date(traj.stops[0].departure);
-									if (!isNaN(date.getTime())) {
-										const hh = String(date.getUTCHours()).padStart(2, '0');
-										const mm = String(date.getUTCMinutes()).padStart(2, '0');
-										const ss = String(date.getUTCSeconds()).padStart(2, '0');
-										traj.start_time = `${hh}:${mm}:${ss}`;
+			if (parsed.type === 'buffer') {
+				for (const item of parsed.content) {
+					const traj = item.content;
+					if (traj.route_id === '') traj.route_id = null;
+					if (traj.start_time === '') traj.start_time = null;
+					if (traj.start_date === '') traj.start_date = null;
 
-										const yyyy = date.getUTCFullYear();
-										const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-										const day = String(date.getUTCDate()).padStart(2, '0');
-										traj.start_date = `${yyyy}${month}${day}`;
-									}
-								} catch (e) {
-									console.error('Error parsing departure in spruce_websocket', e);
-								}
+					if (!traj.start_time && traj.stops.length > 0 && traj.stops[0].departure) {
+						try {
+							const date = new Date(traj.stops[0].departure);
+							if (!Number.isNaN(date.getTime())) {
+								const hh = String(date.getUTCHours()).padStart(2, '0');
+								const mm = String(date.getUTCMinutes()).padStart(2, '0');
+								const ss = String(date.getUTCSeconds()).padStart(2, '0');
+								traj.start_time = `${hh}:${mm}:${ss}`;
+
+								const yyyy = date.getUTCFullYear();
+								const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+								const day = String(date.getUTCDate()).padStart(2, '0');
+								traj.start_date = `${yyyy}${month}${day}`;
 							}
+						} catch (error) {
+							console.error('Error parsing departure in spruce_websocket', error);
 						}
 					}
 				}
 
-				const chateau = msg.chateau || 'unknown';
+				const chateau = parsed.chateau || 'unknown';
 
-				if (msg.timestamp !== trajectory_timestamps[chateau]) {
-					trajectory_timestamps[chateau] = msg.timestamp;
-					trajectory_accumulators[chateau] = [...(msg.content || [])];
+				if (parsed.timestamp !== trajectory_timestamps[chateau]) {
+					const pendingPublish = trajectory_publish_timers[chateau];
+					if (pendingPublish) {
+						clearTimeout(pendingPublish);
+						delete trajectory_publish_timers[chateau];
+					}
+					trajectory_timestamps[chateau] = parsed.timestamp;
+					trajectory_accumulators[chateau] = [...parsed.content];
 				} else {
-					if (!trajectory_accumulators[chateau]) trajectory_accumulators[chateau] = [];
-					trajectory_accumulators[chateau].push(...(msg.content || []));
+					trajectory_accumulators[chateau] ??= [];
+					trajectory_accumulators[chateau].push(...parsed.content);
 				}
 
-				if (msg.total_chunks === 0 || msg.chunk_index === msg.total_chunks - 1) {
-					spruce_trajectory_data.update(data => {
-						data[chateau] = {
-							content: trajectory_accumulators[chateau],
-							timestamp: trajectory_timestamps[chateau]
-						};
-						return { ...data }; // Trigger Svelte reactivity
-					});
+				console.debug('[Trajectories] received buffer chunk', {
+					chateau,
+					timestamp: parsed.timestamp,
+					chunk_index: parsed.chunk_index,
+					total_chunks: parsed.total_chunks,
+					chunk_size: parsed.content.length,
+					accumulated: trajectory_accumulators[chateau].length
+				});
+
+				const isFinalChunk =
+					parsed.total_chunks === 0 || parsed.chunk_index === parsed.total_chunks - 1;
+
+				if (isFinalChunk) {
+					const pendingPublish = trajectory_publish_timers[chateau];
+					if (pendingPublish) {
+						clearTimeout(pendingPublish);
+						delete trajectory_publish_timers[chateau];
+					}
+					publishTrajectoryAccumulator(chateau);
+				} else {
+					scheduleTrajectoryPublish(chateau);
 				}
-			} else if (msg.type === 'pong') {
+			} else if (parsed.type === 'pong') {
 				console.log('Spruce WS received pong');
-			} else if (msg.type === 'error') {
-				spruce_error.set(msg.message);
-				console.error('Spruce WS Error message:', msg.message);
+			} else if (parsed.type === 'error') {
+				spruce_error.set(parsed.message);
+				console.error('Spruce WS Error message:', parsed.message);
 			}
-		} catch (e) {
-			console.error('Error parsing Spruce WS message', e);
+		} catch (error) {
+			console.error('Error parsing Spruce WS message', error);
 		}
 	};
 
@@ -157,8 +223,8 @@ function ensureConnection() {
 		}, 3000);
 	};
 
-	socket.onerror = (e) => {
-		console.error('Spruce WebSocket error', e);
+	socket.onerror = (error) => {
+		console.error('Spruce WebSocket error', error);
 		spruce_status.set('error');
 	};
 }
@@ -167,46 +233,25 @@ export function initSpruceWebSocket() {
 	ensureConnection();
 }
 
-export function updateMap(params: any) {
-	// Defensively unwrap if passed as { params } instead of raw params
-	if (params && params.params) {
-		params = params.params;
-	}
+type UpdateMapInput = SubscribeMapV2Params | { params: SubscribeMapV2Params };
+
+export function updateMap(input: UpdateMapInput) {
+	// Defensively unwrap if passed as { params } instead of raw params.
+	const params = 'params' in input ? input.params : input;
 
 	activeMapParams = params;
 	ensureConnection();
-
-	// params should correspond to CategoryAskParamsV2 structure
-	const msg = {
-		type: 'subscribe_map_v2',
-		...params
-	};
-	if (socket && socket.readyState === WebSocket.OPEN) {
-		socket.send(JSON.stringify(msg));
-	}
+	send({ type: 'subscribe_map_v2', ...params });
 }
 
-export function subscribeTrajectories(params: any) {
+export function subscribeTrajectories(params: ClientTrajectorySubscriptionParams) {
 	activeTrajectoryParams = params;
 	ensureConnection();
-	const msg = {
-		type: 'subscribe_trajectories',
-		...params
-	};
-	if (socket && socket.readyState === WebSocket.OPEN) {
-		socket.send(JSON.stringify(msg));
-	}
+	send({ type: 'subscribe_trajectories', ...params });
 }
 
 export function unsubscribeTrajectories() {
 	activeTrajectoryParams = null;
 	ensureConnection();
-	const msg = {
-		type: 'unsubscribe_trajectories'
-	};
-	if (socket && socket.readyState === WebSocket.OPEN) {
-		socket.send(JSON.stringify(msg));
-	}
+	send({ type: 'unsubscribe_trajectories' });
 }
-
-

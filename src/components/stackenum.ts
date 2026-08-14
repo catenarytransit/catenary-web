@@ -8,6 +8,7 @@ export class StackInterface {
 		| MapSelectionScreen
 		| SettingsStack
 		| BlockStack
+		| VehicleHistoryStack
 		| OsmItemStack
 		| OsmStationStack;
 
@@ -21,6 +22,7 @@ export class StackInterface {
 			| MapSelectionScreen
 			| SettingsStack
 			| BlockStack
+			| VehicleHistoryStack
 			| OsmItemStack
 			| OsmStationStack
 	) {
@@ -58,6 +60,29 @@ export class OsmItemStack {
 	}
 }
 
+export class OsmSearchResultStack extends OsmItemStack {
+	public name: string;
+	public address: string;
+	public lat: number;
+	public lon: number;
+
+	constructor(
+		osm_id: string,
+		osm_class: string,
+		osm_type: string | null,
+		name: string,
+		address: string,
+		lat: number,
+		lon: number
+	) {
+		super(osm_id, osm_class, osm_type);
+		this.name = name;
+		this.address = address;
+		this.lat = lat;
+		this.lon = lon;
+	}
+}
+
 export class BlockStack {
 	public chateau_id: string;
 	public block_id: string;
@@ -67,6 +92,18 @@ export class BlockStack {
 		this.chateau_id = chateau_id;
 		this.block_id = block_id;
 		this.service_date = service_date;
+	}
+}
+
+export class VehicleHistoryStack {
+	public chateau_id: string;
+	public vehicle_id: string;
+	public route_id: string | null;
+
+	constructor(chateau_id: string, vehicle_id: string, route_id: string | null) {
+		this.chateau_id = chateau_id;
+		this.vehicle_id = vehicle_id;
+		this.route_id = route_id;
 	}
 }
 
@@ -279,5 +316,170 @@ export class OsmStationMapSelector {
 		this.mode_type = mode_type;
 		this.lat = lat;
 		this.lon = lon;
+	}
+}
+
+type PageQueryValue = string | number | boolean | null | undefined;
+
+const PAGE_QUERY_KEYS = [
+	'page',
+	'screen',
+	'chateau',
+	'trip',
+	'trip_id',
+	'route',
+	'route_id',
+	'stop',
+	'stop_id',
+	'block',
+	'block_id',
+	'service_date',
+	'osm_id',
+	'osm_class',
+	'osm_type',
+	'name',
+	'mode',
+	'lat',
+	'lon',
+	'start_time',
+	'start_date',
+	'vehicle',
+	'route_type',
+	'is_now',
+	'time'
+];
+
+function replacePageQuery(params: Record<string, PageQueryValue>): void {
+	if (typeof window === 'undefined') return;
+
+	const url = new URL(window.location.href);
+	for (const key of PAGE_QUERY_KEYS) {
+		url.searchParams.delete(key);
+	}
+
+	for (const [key, value] of Object.entries(params)) {
+		if (value !== null && value !== undefined && value !== '') {
+			url.searchParams.set(key, String(value));
+		}
+	}
+
+	const nextUrl = `${url.pathname}${url.search}${url.hash}`;
+	const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+	if (nextUrl !== currentUrl) {
+		window.history.replaceState(window.history.state, '', nextUrl);
+	}
+}
+
+function stackDataToPageQuery(data: StackInterface['data']): Record<string, PageQueryValue> | null {
+	if (data instanceof SingleTrip) {
+		return {
+			page: 'trip',
+			chateau: data.chateau_id,
+			trip: data.trip_id,
+			route: data.route_id,
+			start_time: data.start_time,
+			start_date: data.start_date,
+			vehicle: data.vehicle_id,
+			route_type: data.route_type
+		};
+	}
+
+	if (data instanceof StopStack) {
+		return {
+			page: 'stop',
+			chateau: data.chateau_id,
+			stop: data.stop_id,
+			is_now: data.is_now,
+			time: data.is_now === false ? data.selected_unix_time : null
+		};
+	}
+
+	if (data instanceof OsmStationStack) {
+		return {
+			page: 'osm_departures',
+			osm_id: data.osm_id,
+			name: data.name,
+			mode: data.mode_type,
+			lat: data.lat,
+			lon: data.lon,
+			is_now: data.is_now,
+			time: data.is_now === false ? data.selected_unix_time : null
+		};
+	}
+
+	if (data instanceof BlockStack) {
+		return {
+			page: 'block',
+			chateau: data.chateau_id,
+			block: data.block_id,
+			service_date: data.service_date
+		};
+	}
+
+	if (data instanceof VehicleHistoryStack) {
+		return {
+			page: 'vehicle_history',
+			chateau: data.chateau_id,
+			vehicle: data.vehicle_id,
+			route: data.route_id
+		};
+	}
+
+	if (data instanceof OsmItemStack) {
+		return {
+			page: 'osm_item',
+			osm_id: data.osm_id,
+			osm_class: data.osm_class,
+			osm_type: data.osm_type
+		};
+	}
+
+	if (data instanceof RouteStack) {
+		return {
+			page: 'route',
+			chateau: data.chateau_id,
+			route: data.route_id
+		};
+	}
+
+	if (data instanceof NearbyDeparturesStack) {
+		return {
+			page: 'nearby',
+			lat: data.lat,
+			lon: data.lon
+		};
+	}
+
+	return null;
+}
+
+export function syncStackUrl(stack: StackInterface[]): void {
+	for (let index = stack.length - 1; index >= 0; index--) {
+		const params = stackDataToPageQuery(stack[index].data);
+		if (params) {
+			replacePageQuery(params);
+			return;
+		}
+	}
+
+	replacePageQuery({});
+}
+
+export function syncNearbyDeparturesUrl(lat: number, lon: number): void {
+	if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+
+	replacePageQuery({
+		page: 'nearby',
+		lat,
+		lon
+	});
+}
+
+export function clearNearbyDeparturesUrl(): void {
+	if (typeof window === 'undefined') return;
+
+	const page = new URL(window.location.href).searchParams.get('page');
+	if (page === 'nearby' || page === 'nearby_departures') {
+		replacePageQuery({});
 	}
 }

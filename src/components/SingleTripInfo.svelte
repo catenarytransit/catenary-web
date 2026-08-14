@@ -92,6 +92,7 @@
 	import StopTimeNumber from './StopTimeNumber.svelte';
 	import Clock from './Clock.svelte';
 	import VehicleInfo from './vehicle_info.svelte';
+	import { VehicleHistoryStack } from './stackenum';
 	import ConsolidatedRouteList from './ConsolidatedRouteList.svelte';
 	import CoachSequencePage from './CoachSequencePage.svelte';
 	import type { GtfsRtRefreshData, TripIntroductionInformation } from '../utils/models';
@@ -102,6 +103,27 @@
 		} else {
 			return vehicle_id;
 		}
+	}
+
+	function open_vehicle_history() {
+		const vehicle_label =
+			trip_selected.vehicle_id || trip_data?.vehicle?.label || trip_data?.vehicle?.id || null;
+
+		if (!vehicle_label) return;
+
+		data_stack_store.update((stack) => {
+			stack.push(
+				new StackInterface(
+					new VehicleHistoryStack(
+						trip_selected.chateau_id,
+						vehicle_label,
+						trip_data?.route_id || trip_selected.route_id
+					)
+				)
+			);
+
+			return stack;
+		});
 	}
 
 	let show_seconds = get(show_seconds_store);
@@ -371,46 +393,14 @@
 					}
 				});
 
-				// Propagate delay to stops without realtime data
-				let last_known_arrival_delay: number | null = null;
-				let last_known_departure_delay: number | null = null;
-
+				// Preserve same-stop chronology without inventing realtime data for later stops.
 				next_stoptimes_cleaned.forEach((stoptime: any) => {
-					// Track the last known delays from stops that have RT data
-					if (typeof stoptime.rt_arrival_diff === 'number') {
-						last_known_arrival_delay = stoptime.rt_arrival_diff;
-					}
-					if (typeof stoptime.rt_departure_diff === 'number') {
-						last_known_departure_delay = stoptime.rt_departure_diff;
-					}
-
-					// If this stop doesn't have RT data but we have a known delay, propagate it
-					if (stoptime.rt_arrival_time == null && last_known_arrival_delay != null) {
-						if (stoptime.scheduled_arrival_time_unix_seconds) {
-							stoptime.rt_arrival_time =
-								stoptime.scheduled_arrival_time_unix_seconds + last_known_arrival_delay;
-							stoptime.rt_arrival_diff = last_known_arrival_delay;
-							stoptime.strike_arrival = true;
-						}
-					}
-
-					if (stoptime.rt_departure_time == null && last_known_departure_delay != null) {
-						if (stoptime.scheduled_departure_time_unix_seconds) {
-							stoptime.rt_departure_time =
-								stoptime.scheduled_departure_time_unix_seconds + last_known_departure_delay;
-							stoptime.rt_departure_diff = last_known_departure_delay;
-							stoptime.strike_departure = true;
-						}
-					}
-
-					// Ensure departure is not before arrival after propagation
 					if (
 						typeof stoptime.rt_departure_time === 'number' &&
-						typeof stoptime.rt_arrival_time === 'number'
+						typeof stoptime.rt_arrival_time === 'number' &&
+						stoptime.rt_departure_time < stoptime.rt_arrival_time
 					) {
-						if (stoptime.rt_departure_time < stoptime.rt_arrival_time) {
-							stoptime.rt_departure_time = stoptime.rt_arrival_time;
-						}
+						stoptime.rt_departure_time = stoptime.rt_arrival_time;
 					}
 				});
 
@@ -909,46 +899,14 @@
 					index = index + 1;
 				});
 
-				// Propagate delay to stops without realtime data
-				let last_known_arrival_delay: number | null = null;
-				let last_known_departure_delay: number | null = null;
-
+				// Preserve same-stop chronology without inventing realtime data for later stops.
 				stoptimes_cleaned.forEach((stoptime: any) => {
-					// Track the last known delays from stops that have RT data
-					if (typeof stoptime.rt_arrival_diff === 'number') {
-						last_known_arrival_delay = stoptime.rt_arrival_diff;
-					}
-					if (typeof stoptime.rt_departure_diff === 'number') {
-						last_known_departure_delay = stoptime.rt_departure_diff;
-					}
-
-					// If this stop doesn't have RT data but we have a known delay, propagate it
-					if (stoptime.rt_arrival_time == null && last_known_arrival_delay != null) {
-						if (stoptime.scheduled_arrival_time_unix_seconds) {
-							stoptime.rt_arrival_time =
-								stoptime.scheduled_arrival_time_unix_seconds + last_known_arrival_delay;
-							stoptime.rt_arrival_diff = last_known_arrival_delay;
-							stoptime.strike_arrival = true;
-						}
-					}
-
-					if (stoptime.rt_departure_time == null && last_known_departure_delay != null) {
-						if (stoptime.scheduled_departure_time_unix_seconds) {
-							stoptime.rt_departure_time =
-								stoptime.scheduled_departure_time_unix_seconds + last_known_departure_delay;
-							stoptime.rt_departure_diff = last_known_departure_delay;
-							stoptime.strike_departure = true;
-						}
-					}
-
-					// Ensure departure is not before arrival after propagation
 					if (
 						typeof stoptime.rt_departure_time === 'number' &&
-						typeof stoptime.rt_arrival_time === 'number'
+						typeof stoptime.rt_arrival_time === 'number' &&
+						stoptime.rt_departure_time < stoptime.rt_arrival_time
 					) {
-						if (stoptime.rt_departure_time < stoptime.rt_arrival_time) {
-							stoptime.rt_departure_time = stoptime.rt_arrival_time;
-						}
+						stoptime.rt_departure_time = stoptime.rt_arrival_time;
 					}
 				});
 
@@ -1169,8 +1127,12 @@
 				}}
 				agency_name={trip_data.agency_name}
 				trip_short_name={trip_data.trip_short_name}
-
-				vehicle={trip_data.vehicle?.label || trip_data.vehicle?.id || trip_selected.vehicle_id}
+				vehicle={fix_vehicle_number(
+					trip_selected.chateau_id,
+					trip_data.vehicle?.label || trip_data.vehicle?.id || trip_selected.vehicle_id
+				)}
+				vehicle_history_clickable={true}
+				on:vehicle={open_vehicle_history}
 				arrow={true}
 				text={trip_data.trip_headsign}
 				{darkMode}
@@ -1363,7 +1325,7 @@
 				</div>
 			{/if}
 
-			{#if trip_data.consist}
+			{#if trip_data.consist || trip_data.sbb_formation}
 				<div class="px-3 my-2">
 					<div class="flex p-1 bg-gray-200 dark:bg-gray-800 rounded-[30px] w-full">
 						<button
@@ -1390,9 +1352,10 @@
 				</div>
 			{/if}
 
-			{#if coach_sequence_screen_shown && trip_data.consist}
+			{#if coach_sequence_screen_shown && (trip_data.consist || trip_data.sbb_formation)}
 				<CoachSequencePage
 					coach_sequence={trip_data.consist}
+					sbb_formation={trip_data.sbb_formation}
 					close_coach_page={() => {
 						coach_sequence_screen_shown = false;
 					}}
@@ -1501,6 +1464,20 @@
 					{#each stoptimes_cleaned_dataset as stoptime, i}
 						{@const connectionKey = stop_connections[stoptime.stop_id] ? stoptime.stop_id : null}
 						{@const isDoubleTime = shouldShowDoubleTime(stoptime)}
+						{@const isLastStop = i === stoptimes_cleaned_dataset.length - 1}
+						{@const mainRealtimeTime =
+							stoptime.rt_departure_time ?? (!isDoubleTime ? stoptime.rt_arrival_time : null)}
+						{@const mainDisplayTime =
+							mainRealtimeTime ??
+							stoptime.scheduled_departure_time_unix_seconds ??
+							stoptime.scheduled_arrival_time_unix_seconds ??
+							stoptime.interpolated_stoptime_unix_seconds}
+						{@const mainRealtimeDiff =
+							typeof stoptime.rt_departure_time === 'number'
+								? stoptime.rt_departure_diff
+								: !isDoubleTime && typeof stoptime.rt_arrival_time === 'number'
+									? stoptime.rt_arrival_diff
+									: null}
 
 						{#if isDoubleTime}
 							<!-- Arrival Row -->
@@ -1533,7 +1510,7 @@
 								>
 									<div class="flex flex-col items-end mt-0.5">
 										<div class="flex flex-row gap-2 justify-end">
-											<div class="font-bold leading-none text-sm">
+											<div class={`leading-none text-sm ${isLastStop ? 'font-bold' : 'font-normal'}`}>
 												<Clock
 													timezone={stoptime.timezone || trip_data.tz}
 													time_seconds={stoptime.rt_arrival_time ||
@@ -1548,24 +1525,19 @@
 										{#if stoptime.rt_arrival_diff}
 											<div class="leading-none">
 												<DelayDiff
-													alltextclass="text-xs"
+													alltextclass="text-xs font-normal"
 													use_symbol_sign={true}
+													use_ticks={true}
 													{show_seconds}
 													diff={stoptime.rt_arrival_diff}
 												/>
 											</div>
 										{/if}
 									</div>
-								</td>
 
-								<!-- Arrival Countdown -->
+									<!-- Arrival Countdown -->
 								{#if show_countdown_to_stop}
-									<td
-										class="align-top text-right whitespace-nowrap {i <= last_inactive_stop_idx
-											? 'opacity-70'
-											: ''}"
-									>
-										<div class="leading-none text-xs italic opacity-75 mt-0.5">
+										<div class="leading-none text-xs opacity-75 mt-0.5">
 											<TimeDiff
 												diff={(stoptime.rt_arrival_time ||
 													stoptime.scheduled_arrival_time_unix_seconds ||
@@ -1573,12 +1545,15 @@
 													current_time / 1000}
 												{show_seconds}
 												show_brackets={false}
-												use_ticks={false}
+												use_ticks={true}
+												space_between={false}
 												textclass={'text-xs slashed-zero tabular-nums'}
 											/>
 										</div>
-									</td>
 								{/if}
+								</td>
+
+								
 
 								<!-- Pearl Chain Column: Just the line -->
 								<td class="w-4 relative p-0 align-top">
@@ -1632,49 +1607,42 @@
 										<div class="font-bold leading-none text-sm">
 											<Clock
 												timezone={stoptime.timezone || trip_data.tz}
-												time_seconds={stoptime.rt_departure_time ||
-													stoptime.scheduled_departure_time_unix_seconds ||
-													stoptime.interpolated_stoptime_unix_seconds}
+												time_seconds={mainDisplayTime}
 												{show_seconds}
 											/>
 										</div>
 									</div>
 
-									<!-- Arrival Delay -->
-									{#if stoptime.rt_departure_diff}
+									<!-- Departure Delay -->
+									{#if typeof mainRealtimeDiff === 'number'}
 										<div class="leading-none">
 											<DelayDiff
 												alltextclass="text-xs"
 												use_symbol_sign={true}
+													use_ticks={true}
 												{show_seconds}
-												diff={stoptime.rt_departure_diff}
+												diff={mainRealtimeDiff}
 											/>
 										</div>
 									{/if}
 								</div>
-							</td>
 
-							<!-- Countdown Column -->
+								<!-- Countdown Column -->
 							{#if show_countdown_to_stop}
-								<td
-									class="align-top text-right whitespace-nowrap {i <= last_inactive_stop_idx
-										? 'opacity-70'
-										: ''}"
-								>
-									<div class="leading-none text-xs italic opacity-75 mt-0.5">
+									<div class="leading-none text-xs  opacity-75 mt-0.5">
 										<TimeDiff
-											diff={(stoptime.rt_departure_time ||
-												stoptime.scheduled_departure_time_unix_seconds ||
-												stoptime.interpolated_stoptime_unix_seconds) -
-												current_time / 1000}
+											diff={mainDisplayTime - current_time / 1000}
 											{show_seconds}
 											show_brackets={false}
-											use_ticks={false}
+											space_between={false}
+											use_ticks={true}
 											textclass={'text-xs slashed-zero tabular-nums'}
 										/>
 									</div>
-								</td>
 							{/if}
+							</td>
+
+							
 
 							<!-- Pearl Chain Column -->
 							<td class="w-4 relative p-0 align-top">
@@ -1683,19 +1651,17 @@
 								>
 									<!-- Top Line -->
 									{#if i > 0 || isDoubleTime}
-										{#if i < stoptimes_cleaned_dataset.length - 1}
-											<div
-												class="bg-gray-800 dark:bg-gray-300 w-0.5 absolute top-0 bottom-1/2 bg-current"
-												style={` opacity: ${i <= last_inactive_stop_idx - 1 ? '0.4' : '1'};`}
-											></div>
-										{/if}
+										<div
+											class="bg-gray-800 dark:bg-gray-300 w-0.5 absolute top-0 bottom-1/2 bg-current"
+											style={` opacity: ${i <= last_inactive_stop_idx - 1 ? '0.4' : '1'};`}
+										></div>
 									{/if}
 
 									<!-- Bottom Line -->
-									{#if i < stoptimes_cleaned_dataset.length - 1}
+									{#if !isLastStop}
 										<div
-											class="bg-gray-800 dark:bg-gray-300 w-0.5 absolute top-1/2 bottom-0 bg-current"
-											style={` opacity: ${i <= last_inactive_stop_idx - 1 ? '0.4' : '1'};`}
+											class="bg-gray-800 dark:bg-gray-300 w-0.5 absolute bottom-0 bg-current"
+											style={` top: ${i === 0 && !isDoubleTime ? '0.5rem' : '50%'}; opacity: ${i <= last_inactive_stop_idx - 1 ? '0.4' : '1'};`}
 										></div>
 									{/if}
 

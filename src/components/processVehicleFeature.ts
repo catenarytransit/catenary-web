@@ -1,25 +1,22 @@
 import { componentToHex } from '../geoMathsAssist';
 import { titleCase } from '../utils/titleCase';
 import { get } from 'svelte/store';
-import {
-	hexToRgb,
-	rgbToHsl,
-	hslToRgb,
-	relativeLuminance,
-	srgbToLinear,
-	brightenForDarkModeKeepSat
-} from '../utils/colour';
+import { hexToRgb, brightenForDarkModeKeepSat } from '../utils/colour';
 import { calculateGamma } from './colour/computeBrightness';
 import { adjustGamma } from './colour/readjustGamma';
 import { occupancy_to_symbol } from './occupancy_to_symbol';
 import { _ } from 'svelte-i18n';
-import type { GeoJSONFeature } from 'maplibre-gl';
+import type {
+	AspenisedVehiclePositionOutput,
+	PositionedVehicle,
+	PostgresRoute
+} from '$lib/types/backend/common';
 
-function translate(key: string, options?: Record<string, any>): string {
+function translate(key: string, options?: Record<string, unknown>): string {
 	return get(_)(key, options);
 }
 
-function getVehicleLabel(vehicle_data: any, chateau_id: string): string {
+function getVehicleLabel(vehicle_data: AspenisedVehiclePositionOutput, chateau_id: string): string {
 	let vehiclelabel = vehicle_data.vehicle?.label || vehicle_data.vehicle?.id || '';
 
 	if (chateau_id === 'new-south-wales' && vehiclelabel.includes(' to ')) {
@@ -29,9 +26,9 @@ function getVehicleLabel(vehicle_data: any, chateau_id: string): string {
 	return vehiclelabel.replace('ineo-tram:', '').replace('ineo-bus:', '');
 }
 
-export function getTripInfo(vehicle_data: any, chateau_id: string) {
+export function getTripInfo(vehicle_data: AspenisedVehiclePositionOutput, chateau_id: string) {
 	let tripIdLabel = '';
-	let trip_short_name = null;
+	let trip_short_name: string | null = null;
 	let headsign = '';
 
 	if (vehicle_data.trip) {
@@ -39,8 +36,8 @@ export function getTripInfo(vehicle_data: any, chateau_id: string) {
 			tripIdLabel = vehicle_data.trip.trip_short_name;
 			trip_short_name = vehicle_data.trip.trip_short_name;
 		} else if (chateau_id === 'metra') {
-			const split = vehicle_data.trip.trip_id.split('_');
-			if (split[1] != undefined) {
+			const split = vehicle_data.trip.trip_id?.split('_');
+			if (split?.[1] != null) {
 				tripIdLabel = split[1].replace(/\D/g, '');
 			}
 		}
@@ -64,15 +61,15 @@ export function getTripInfo(vehicle_data: any, chateau_id: string) {
 }
 
 export function getRouteInfo(
-	routeId: string,
+	routeId: string | null | undefined,
 	chateau_id: string,
-	chateau_route_cache: Record<string, any>
+	chateau_route_cache: Record<string, PostgresRoute> | undefined
 ) {
 	let colour = '#aaaaaa';
 	let text_colour = '#000000';
 	let maptag = '';
-	let route_short_name = null;
-	let route_long_name = null;
+	let route_short_name: string | null = null;
+	let route_long_name: string | null = null;
 
 	if (routeId && chateau_route_cache) {
 		const route = chateau_route_cache[routeId];
@@ -80,8 +77,8 @@ export function getRouteInfo(
 			route_long_name = route.long_name;
 			route_short_name = route.short_name;
 			maptag = route.short_name || route.long_name || '';
-			colour = route.color;
-			text_colour = route.text_color;
+			colour = route.color || '#aaaaaa';
+			text_colour = route.text_color || '#000000';
 
 			switch (maptag) {
 				case 'Metro E Line':
@@ -142,7 +139,7 @@ export function getContrastColours(colour: string, darkMode: boolean) {
 		let rgb = hexToRgb(colour);
 		const gamma = calculateGamma(rgb.r, rgb.g, rgb.b);
 		if (gamma > 0.55) {
-			let [r, g, b] = adjustGamma([rgb.r, rgb.g, rgb.b], 0.55);
+			const [r, g, b] = adjustGamma([rgb.r, rgb.g, rgb.b], 0.55);
 			rgb = { r, g, b };
 		}
 		contrastlightmode = `#${componentToHex(rgb.r)}${componentToHex(rgb.g)}${componentToHex(rgb.b)}`;
@@ -151,10 +148,7 @@ export function getContrastColours(colour: string, darkMode: boolean) {
 	if (colour && darkMode === true) {
 		const rgb = hexToRgb(colour);
 		if (rgb != null) {
-			let newdarkrgb = brightenForDarkModeKeepSat(rgb, 0.5);
-
-			let newdarkhsl = rgbToHsl(newdarkrgb.r, newdarkrgb.g, newdarkrgb.b);
-
+			const newdarkrgb = brightenForDarkModeKeepSat(rgb, 0.5);
 			const newdarkbearingline = brightenForDarkModeKeepSat(rgb, 0.3);
 
 			contrastdarkmode = `#${componentToHex(newdarkrgb.r)}${componentToHex(newdarkrgb.g)}${componentToHex(newdarkrgb.b)}`;
@@ -175,9 +169,9 @@ export function makeDelayLabel(delay: number): string {
 
 export function processVehicleFeature(
 	rt_id: string,
-	vehicle_data: any,
+	vehicle_data: PositionedVehicle,
 	chateau_id: string,
-	route_cache_data: Record<string, any>,
+	route_cache_data: Record<string, Record<string, PostgresRoute>>,
 	darkMode: boolean,
 	usunits: boolean
 ): GeoJSON.Feature<GeoJSON.Point> {
@@ -196,18 +190,15 @@ export function processVehicleFeature(
 	);
 
 	let speedstr = '';
-	if (typeof vehicle_data.position.speed == 'number') {
+	if (typeof vehicle_data.position.speed === 'number') {
 		speedstr = usunits
 			? `${(vehicle_data.position.speed * 2.23694).toFixed(1)} ᵐᵖʰ`
 			: `${(vehicle_data.position.speed * 3.6).toFixed(1)} ㎞/ʰ`;
 	}
 
-	let delay_label = '';
-	if (vehicle_data.trip?.delay !== undefined) {
-		delay_label = makeDelayLabel(vehicle_data.trip.delay);
-	}
-
-	let feature_id = chateau_id + '_' + routeId + '_' + tripIdLabel + '_' + vehiclelabel;
+	const delay = vehicle_data.trip?.delay;
+	const delay_label = typeof delay === 'number' ? makeDelayLabel(delay) : '';
+	const feature_id = `${chateau_id}_${routeId || ''}_${tripIdLabel}_${vehiclelabel || rt_id}`;
 
 	return {
 		type: 'Feature',
@@ -226,10 +217,10 @@ export function processVehicleFeature(
 				.replace(' Line', '')
 				.replace('Counterclockwise', 'ACW')
 				.replace('Clockwise', 'CW'),
-			trip_short_name: trip_short_name,
-			route_short_name: route_short_name,
-			route_long_name: route_long_name,
-			contrastdarkmode: contrastdarkmode,
+			trip_short_name,
+			route_short_name,
+			route_long_name,
+			contrastdarkmode,
 			contrastdarkmodebearing,
 			contrastlightmode: contrastlightmode,
 			routeId: routeId,
@@ -237,15 +228,14 @@ export function processVehicleFeature(
 				.replace('Counterclockwise', translate('anticlockwise_abbrievation'))
 				.replace('Clockwise', translate('clockwise_abbrievation')),
 			timestamp: vehicle_data.timestamp,
-			//id: feature_id,
 			text_color: text_colour,
 			trip_id: vehicle_data.trip?.trip_id,
 			start_time: vehicle_data.trip?.start_time,
 			start_date: vehicle_data.trip?.start_date,
 			crowd_symbol: occupancy_to_symbol(vehicle_data.occupancy_status),
 			occupancy_status: vehicle_data.occupancy_status,
-			delay_label: delay_label,
-			delay: vehicle_data.trip?.delay
+			delay_label,
+			delay
 		},
 		geometry: {
 			type: 'Point',

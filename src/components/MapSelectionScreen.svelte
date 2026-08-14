@@ -119,7 +119,7 @@
 <div class="px-4 flex flex-col w-full">
 	<h1 class="text-lg md:text-2xl font-semibold leading-tight">
 		{map_selection_screen.arrayofoptions.length}
-		{$_('itemsselected')}
+		{$_('itemsselected', { values: { n: map_selection_screen.arrayofoptions.length } })}
 	</h1>
 </div>
 <div class="px-4 catenary-scroll overflow-y-auto pr-2 h-full pb-16">

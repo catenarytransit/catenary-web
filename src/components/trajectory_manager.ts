@@ -10,6 +10,9 @@ let interpolationInterval: any = null;
 let wsUnsubscribe: (() => void) | null = null;
 let activeTrajectoriesData: Record<string, { content: any[]; timestamp: number }> = {};
 let pendingSourceData: Record<string, any> = {};
+let sourceHasFeatures: Record<string, boolean> = {};
+let trajectorySourceDebugged = new Set<string>();
+let missingTrajectorySources = new Set<string>();
 
 // Calculate bearing in degrees from [lon1, lat1] to [lon2, lat2]
 function calculateBearing(lon1: number, lat1: number, lon2: number, lat2: number): number {
@@ -238,8 +241,6 @@ export function startTrajectoryManager(map: Map) {
 					type: 'Feature' as const,
 					id: `trajectory_${uniqueTripId}`,
 					properties: {
-						vehicleIdLabel: '',
-						speed: '',
 						color: rawColor,
 						chateau: traj.chateau_id || '',
 						route_type: routeType,
@@ -258,8 +259,8 @@ export function startTrajectoryManager(map: Map) {
 						timestamp: now,
 						text_color: traj.text_color || '#ffffff',
 						trip_id: tripId,
-						start_time: traj.start_time || departureStr,
-						start_date: traj.start_date || '',
+						start_time: null,
+						start_date: null,
 						crowd_symbol: '',
 						occupancy_status: '',
 						delay_label: '',
@@ -286,19 +287,69 @@ export function startTrajectoryManager(map: Map) {
 
 		// Update map GeoJSON sources
 		const updateSource = (sourceName: string, features: any[]) => {
-			const source = map.getSource(sourceName) as GeoJSONSource;
+			const hasFeatures = features.length > 0;
+
+			// Skip repeated empty updates, but clear a source once after it had features.
+			if (!hasFeatures && sourceHasFeatures[sourceName] !== true) {
+				return;
+			}
+
+			let source = map.getSource(sourceName) as GeoJSONSource | undefined;
+
+			if (!source && map.isStyleLoaded()) {
+				console.warn('[DEBUGTrajectories] trajectory source missing; recreating', sourceName);
+				map.addSource(sourceName, {
+					type: 'geojson',
+					data: { type: 'FeatureCollection', features: [] }
+				});
+				source = map.getSource(sourceName) as GeoJSONSource | undefined;
+			}
+
 			if (source) {
+				missingTrajectorySources.delete(sourceName);
+				if (!trajectorySourceDebugged.has(sourceName)) {
+					const attachedLayers = (map.getStyle().layers ?? [])
+						.filter((layer: any) => layer.source === sourceName)
+						.map((layer: any) => ({
+							id: layer.id,
+							visibility: layer.layout?.visibility ?? 'visible',
+							minzoom: layer.minzoom ?? null,
+							maxzoom: layer.maxzoom ?? null
+						}));
+					console.info('[DEBUGTrajectories] MapLibre trajectory source active', {
+						sourceName,
+						featureCount: features.length,
+						attachedLayers
+					});
+					trajectorySourceDebugged.add(sourceName);
+				}
 				source.setData({
 					type: 'FeatureCollection',
 					features
 				});
+				if (features.length > 0) {
+					console.debug('[DEBUGTrajectories] setData complete', {
+						sourceName,
+						featureCount: features.length
+					});
+				}
 				delete pendingSourceData[sourceName];
 			} else {
+				if (!missingTrajectorySources.has(sourceName)) {
+					console.error('[DEBUGTrajectories] MapLibre trajectory source still missing', {
+						sourceName,
+						styleLoaded: map.isStyleLoaded(),
+						featureCount: features.length
+					});
+					missingTrajectorySources.add(sourceName);
+				}
 				pendingSourceData[sourceName] = {
 					type: 'FeatureCollection',
 					features
 				};
 			}
+
+			sourceHasFeatures[sourceName] = hasFeatures;
 		};
 
 		updateSource('trajectory_buses', busesFeatures);
@@ -320,6 +371,7 @@ export function stopTrajectoryManager() {
 	activeTrajectoriesData = {};
 	lastTrajectorySubParams = '';
 	pendingSourceData = {};
+	sourceHasFeatures = {};
 }
 
 export function applyPendingSourceData(map: Map) {

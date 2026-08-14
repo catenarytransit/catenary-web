@@ -1,19 +1,30 @@
 import { writable } from 'svelte/store';
-import type { GtfsRtRefreshData, TripIntroductionInformation } from './utils/models';
+import type {
+	GtfsRtRefreshData,
+	QueryTripInformationParams,
+	RamondaClientMessage,
+	TripIntroductionInformation
+} from '$lib/types/backend/ramonda';
+import { isRamondaServerMessage } from '$lib/types/backend/ramonda';
+import type { WebSocketStatus } from '$lib/types/backend/common';
 
-export const ramonda_status = writable<'connecting' | 'connected' | 'disconnected' | 'error'>(
-	'disconnected'
-);
-export const ramonda_trip_data = writable<TripIntroductionInformation>(null);
-export const ramonda_update_data = writable<GtfsRtRefreshData>(null);
+export const ramonda_status = writable<WebSocketStatus>('disconnected');
+export const ramonda_trip_data = writable<TripIntroductionInformation | null>(null);
+export const ramonda_update_data = writable<GtfsRtRefreshData | null>(null);
 export const ramonda_error = writable<string | null>(null);
 
 let socket: WebSocket | null = null;
-let heartbeatInterval: any = null;
+let heartbeatInterval: ReturnType<typeof setInterval> | null = null;
 
 // Active state for resubscription on connection loss
 let activeChateau: string | null = null;
-let activeParams: any = null;
+let activeParams: QueryTripInformationParams | null = null;
+
+function send(message: RamondaClientMessage): void {
+	if (socket?.readyState === WebSocket.OPEN) {
+		socket.send(JSON.stringify(message));
+	}
+}
 
 function ensureConnection() {
 	if (
@@ -32,40 +43,48 @@ function ensureConnection() {
 	socket.onopen = () => {
 		console.log('Ramonda WS Connected');
 		ramonda_status.set('connected');
+		ramonda_error.set(null);
 
 		heartbeatInterval = setInterval(() => {
-			if (socket && socket.readyState === WebSocket.OPEN) {
-				socket.send(JSON.stringify({ type: 'ping' }));
-			}
+			send({ type: 'ping' });
 		}, 10000);
 
 		if (activeChateau && activeParams) {
-			const msg = {
+			const msg: RamondaClientMessage = {
 				type: 'subscribe_trip',
 				chateau: activeChateau,
 				...activeParams
 			};
 			console.log('Resending subscribe to Ramonda:', msg);
-			socket?.send(JSON.stringify(msg));
+			send(msg);
 		}
 	};
 
-	socket.onmessage = (event) => {
+	socket.onmessage = (event: MessageEvent<unknown>) => {
 		try {
-			const msg = JSON.parse(event.data);
-
-			if (msg.type === 'initial_trip') {
-				ramonda_trip_data.set(msg.data);
-			} else if (msg.type === 'update_trip') {
-				ramonda_update_data.set(msg.data);
-			} else if (msg.type === 'pong') {
-				console.log('Ramonda WS received pong');
-			} else if (msg.type === 'error') {
-				ramonda_error.set(msg.message);
-				console.error('Ramonda WS Error message:', msg.message);
+			if (typeof event.data !== 'string') {
+				console.warn('Ignoring non-text Ramonda WS message');
+				return;
 			}
-		} catch (e) {
-			console.error('Error parsing Ramonda WS message', e);
+
+			const parsed: unknown = JSON.parse(event.data);
+			if (!isRamondaServerMessage(parsed)) {
+				console.warn('Ignoring invalid Ramonda WS message', parsed);
+				return;
+			}
+
+			if (parsed.type === 'initial_trip') {
+				ramonda_trip_data.set(parsed.data);
+			} else if (parsed.type === 'update_trip') {
+				ramonda_update_data.set(parsed.data);
+			} else if (parsed.type === 'pong') {
+				console.log('Ramonda WS received pong');
+			} else if (parsed.type === 'error') {
+				ramonda_error.set(parsed.message);
+				console.error('Ramonda WS Error message:', parsed.message);
+			}
+		} catch (error) {
+			console.error('Error parsing Ramonda WS message', error);
 		}
 	};
 
@@ -86,61 +105,67 @@ function ensureConnection() {
 		}, 3000);
 	};
 
-	socket.onerror = (e) => {
-		console.error('Ramonda WebSocket error', e);
+	socket.onerror = (error) => {
+		console.error('Ramonda WebSocket error', error);
 		ramonda_status.set('error');
 	};
 }
 
-export function connectRamondaWebSocket(chateau: string, params: any) {
-	ensureConnection();
+function nullIfEmpty(value: string | null | undefined): string | null | undefined {
+	return value === '' ? null : value;
+}
 
-	const sanitizedParams = { ...params };
-	for (const key in sanitizedParams) {
-		if (sanitizedParams[key] === '') {
-			sanitizedParams[key] = null;
-		}
-	}
-	if (sanitizedParams.start_time && sanitizedParams.start_time.includes('T')) {
+function sanitiseParams(params: QueryTripInformationParams): QueryTripInformationParams {
+	const sanitised: QueryTripInformationParams = {
+		trip_id: params.trip_id,
+		start_time: nullIfEmpty(params.start_time),
+		start_date: nullIfEmpty(params.start_date),
+		route_id: nullIfEmpty(params.route_id)
+	};
+
+	if (sanitised.start_time?.includes('T')) {
 		try {
-			const date = new Date(sanitizedParams.start_time);
-			if (!isNaN(date.getTime())) {
+			const date = new Date(sanitised.start_time);
+			if (!Number.isNaN(date.getTime())) {
 				const hh = String(date.getUTCHours()).padStart(2, '0');
 				const mm = String(date.getUTCMinutes()).padStart(2, '0');
 				const ss = String(date.getUTCSeconds()).padStart(2, '0');
-				sanitizedParams.start_time = `${hh}:${mm}:${ss}`;
+				sanitised.start_time = `${hh}:${mm}:${ss}`;
 
-				if (!sanitizedParams.start_date) {
+				if (!sanitised.start_date) {
 					const yyyy = date.getUTCFullYear();
 					const month = String(date.getUTCMonth() + 1).padStart(2, '0');
 					const day = String(date.getUTCDate()).padStart(2, '0');
-					sanitizedParams.start_date = `${yyyy}${month}${day}`;
+					sanitised.start_date = `${yyyy}${month}${day}`;
 				}
 			}
-		} catch (e) {
-			console.error('Error formatting start_time/start_date in ramonda_websocket', e);
+		} catch (error) {
+			console.error('Error formatting start_time/start_date in ramonda_websocket', error);
 		}
 	}
 
-	activeChateau = chateau;
-	activeParams = sanitizedParams;
+	return sanitised;
+}
 
-	// Send subscribe
-	const msg = {
-		type: 'subscribe_trip',
-		chateau: chateau,
-		...sanitizedParams
-	};
+export function connectRamondaWebSocket(chateau: string, params: QueryTripInformationParams) {
+	ensureConnection();
+
+	const sanitisedParams = sanitiseParams(params);
+	activeChateau = chateau;
+	activeParams = sanitisedParams;
 
 	// reset trip data stores
 	ramonda_trip_data.set(null);
 	ramonda_update_data.set(null);
 	ramonda_error.set(null);
 
-	if (socket && socket.readyState === WebSocket.OPEN) {
-		console.log('Sending subscribe to Ramonda:', msg);
-		socket.send(JSON.stringify(msg));
-	}
+	const msg: RamondaClientMessage = {
+		type: 'subscribe_trip',
+		chateau,
+		...sanitisedParams
+	};
+	console.log('Sending subscribe to Ramonda:', msg);
+	send(msg);
 }
 
 export function initRamondaWebSocket() {
@@ -148,14 +173,13 @@ export function initRamondaWebSocket() {
 }
 
 export function disconnectRamondaWebSocket() {
-	if (socket && socket.readyState === WebSocket.OPEN && activeChateau) {
+	if (activeChateau && activeParams) {
 		console.log('Unsubscribing from Trip');
-		const msg = {
+		send({
 			type: 'unsubscribe_trip',
 			chateau: activeChateau,
 			...activeParams
-		};
-		socket.send(JSON.stringify(msg));
+		});
 	}
 
 	activeChateau = null;

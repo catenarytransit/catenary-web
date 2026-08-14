@@ -22,7 +22,7 @@
 	import type { RouteMinimal } from '../utils/models';
 
 	$: is_sbahn =
-		['dbregioag', 'deutschland'].includes(chateau) &&
+		['vbb', 'deutschland'].includes(chateau) &&
 		(routeDef?.short_name || '').match(/^S\d+/) !== null;
 
 	$: rounded_class = is_sbahn ? 'rounded-full' : 'rounded-sm';

@@ -105,6 +105,9 @@ export function makeFireMap(map: maplibregl.Map, chateaus_in_frame: Writable<str
 
 	const viirs_nw_url =
 		'https://fireboundscache.catenarymaps.org/data/viirs_nw.json';
+
+	const viirs_ne_url =
+		'https://fireboundscache.catenarymaps.org/data/viirs_ne.json';
 	//const national_usa_fire_arcgis_url =	'https://raw.githubusercontent.com/catenarytransit/fire-bounds-cache/refs/heads/main/data/wfigs_fire_bounds.json';
 	const california_firis_arcgis_url =
 		'https://raw.githubusercontent.com/catenarytransit/fire-bounds-cache/refs/heads/main/data/ca_fire_bounds.json';
@@ -283,6 +286,11 @@ export function makeFireMap(map: maplibregl.Map, chateaus_in_frame: Writable<str
 		data: viirs_nw_url
 	});
 
+	map.addSource('viirs_ne', {
+		type: 'geojson',
+		data: viirs_ne_url
+	});
+
 	/*
 
 	map.addSource('firenames', {
@@ -414,9 +422,23 @@ export function makeFireMap(map: maplibregl.Map, chateaus_in_frame: Writable<str
 		paint: {
 			'circle-color': ['interpolate', ['linear'], ['get', 'frp'], 3, '#ff751f', 100, '#ff1a1a'],
 			'circle-opacity': ['interpolate', ['linear'], ['get', 'frp'], 3, 0.1, 10, 0.3, 100, 0.4],
-			'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 0.3, 9, 1.6, 12, 5, 15, 13, 22, 16]
+			'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 0.3, 9, 1.6, 12, 5, 15, 13, 22, 16],
+			'circle-blur': ['interpolate', ['linear'], ['zoom'], 5, 0.3, 9, 0.2, 12, 0.1, 15, 0.05]
 		},
 		source: 'viirs_nw'
+	});
+
+		map.addLayer({
+		type: 'circle',
+		minzoom: 5,
+		id: 'viirs_ne',
+		paint: {
+			'circle-color': ['interpolate', ['linear'], ['get', 'frp'], 3, '#ff751f', 100, '#ff1a1a'],
+			'circle-opacity': ['interpolate', ['linear'], ['get', 'frp'], 3, 0.1, 10, 0.3, 100, 0.4],
+			'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 0.3, 9, 1.6, 12, 5, 15, 13, 22, 16],
+			'circle-blur': ['interpolate', ['linear'], ['zoom'], 5, 0.3, 9, 0.2, 12, 0.1, 15, 0.05]
+		},
+		source: 'viirs_ne'
 	});
 
 	map.addLayer({

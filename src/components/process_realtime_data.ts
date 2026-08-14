@@ -23,20 +23,12 @@ import { _ } from 'svelte-i18n';
 import { writable } from 'svelte/store';
 import type { Writable } from 'svelte/store';
 import { processVehicleFeature } from './processVehicleFeature';
-interface ChateauCategoryData {
-	vehicle_positions?: Record<number, Record<number, Record<string, any>>>;
-	replaces_all?: boolean;
-	last_updated_time_ms?: number;
-	list_of_agency_ids?: string[];
-}
-
-interface ChateauData {
-	categories?: Record<string, ChateauCategoryData>;
-}
-
-interface BirchVehiclesResponse {
-	chateaus: Record<string, ChateauData>;
-}
+import type {
+	AspenisedVehiclePositionOutput,
+	PositionedVehicle,
+	PostgresRoute
+} from '$lib/types/backend/common';
+import type { BoundsInputV3, BulkFetchResponseV2 } from '$lib/types/backend/spruce';
 
 function category_name_to_source_name(category: string): string {
 	switch (category) {
@@ -73,7 +65,7 @@ function fetch_routes_of_chateau_by_agency(
 		(agency_id) => !agencies_known_for_chateau.includes(agency_id)
 	);
 
-	var agencies_submit_list = agencies_to_fetch;
+	let agencies_submit_list: string[] | null = agencies_to_fetch;
 
 	if (agencies_to_fetch.length === 0) {
 		agencies_submit_list = null;
@@ -86,7 +78,7 @@ function fetch_routes_of_chateau_by_agency(
 		agency_filter: agencies_submit_list
 	});
 
-	const requestOptions = {
+	const requestOptions: RequestInit = {
 		method: 'POST',
 		headers: myHeaders,
 		body: raw,
@@ -98,7 +90,7 @@ function fetch_routes_of_chateau_by_agency(
 		requestOptions
 	)
 		.then((response) => response.json())
-		.then((new_routes: any[]) => {
+		.then((new_routes: PostgresRoute[]) => {
 			//remove the key
 			fetches_in_progress.update((set) => {
 				set.delete(stringified_key);
@@ -132,9 +124,9 @@ function fetch_routes_of_chateau_by_agency(
 }
 
 export function process_realtime_vehicle_locations_v2(
-	response_from_birch_vehicles_2: BirchVehiclesResponse,
+	response_from_birch_vehicles_2: BulkFetchResponseV2,
 	map: maplibregl.Map,
-	bounds: Record<string, any>
+	bounds: BoundsInputV3
 ) {
 	let rerender_category: Set<string> = new Set();
 
@@ -302,7 +294,7 @@ export function rerender_category_live_dots(category: string, map: maplibregl.Ma
 
 	const features = Object.entries(realtime_vehicle_locations[category])
 		.map(([chateau_id, grid_data]) => {
-			let chateau_vehicles_list: Record<string, any> = {};
+			const chateau_vehicles_list: Record<string, AspenisedVehiclePositionOutput> = {};
 
 			if (grid_data) {
 				Object.values(grid_data).forEach((y_data) => {
@@ -319,7 +311,9 @@ export function rerender_category_live_dots(category: string, map: maplibregl.Ma
 			//console.log("chateau_vehicles_list", chateau_vehicles_list)
 
 			return Object.entries(chateau_vehicles_list)
-				.filter(([rt_id, vehicle_data]) => vehicle_data.position != null)
+				.filter(
+					(entry): entry is [string, PositionedVehicle] => entry[1].position != null
+				)
 				.filter(([rt_id, vehicle_data]) => {
 					if (
 						vehicle_data.position.latitude == 34.099503 &&
@@ -370,6 +364,6 @@ export function rerender_category_live_dots(category: string, map: maplibregl.Ma
 	}
 }
 
-function translate(key: string, options?: Record<string, any>): string {
+function translate(key: string, options?: Record<string, unknown>): string {
 	return get(_)(key, options);
 }

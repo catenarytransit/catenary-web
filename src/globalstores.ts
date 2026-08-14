@@ -6,20 +6,46 @@ import {
 	VehicleMapSelector,
 	RouteStack,
 	StopStack,
-	RouteMapSelector
+	RouteMapSelector,
+	syncStackUrl
 } from './components/stackenum';
+import type {
+	AspenisedVehiclePositionOutput,
+	AspenisedVehicleRouteCache,
+	PostgresRoute
+} from '$lib/types/backend/common';
+import type {
+	BoundsInputPerLevel,
+	RealtimeCategory,
+	TileVehicleGrid
+} from '$lib/types/backend/spruce';
 
 export const consentGiven = writable<boolean | null>(null);
 
 import { writable } from 'svelte/store';
 import type { Writable } from 'svelte/store';
 
-export const data_stack_store: Writable<StackInterface[]> = writable([]);
+const data_stack_writable = writable<StackInterface[]>([]);
+
+export const data_stack_store: Writable<StackInterface[]> = {
+	subscribe: data_stack_writable.subscribe,
+	set(value) {
+		data_stack_writable.set(value);
+		syncStackUrl(value);
+	},
+	update(updater) {
+		data_stack_writable.update((value) => {
+			const nextValue = updater(value);
+			syncStackUrl(nextValue);
+			return nextValue;
+		});
+	}
+};
 export const on_sidebar_trigger_store = writable(0);
 export const clock_skew_store = writable<number | null>(null);
 
 export const realtime_vehicle_locations_store: Writable<
-	Record<string, Record<string, Record<string, any>>>
+	Record<RealtimeCategory, Record<string, Record<string, AspenisedVehiclePositionOutput>>>
 > = writable({
 	bus: {},
 	rail: {},
@@ -27,9 +53,9 @@ export const realtime_vehicle_locations_store: Writable<
 	other: {}
 });
 
-//category -> chateau -> u32 -> u32 -> string -> any
+// category -> chateau -> x tile -> y tile -> realtime id -> vehicle
 export const realtime_vehicle_locations_storev2: Writable<
-	Record<string, Record<string, Record<number, Record<number, Record<string, any>>>>>
+	Record<RealtimeCategory, Record<string, TileVehicleGrid>>
 > = writable({
 	bus: {},
 	rail: {},
@@ -37,25 +63,15 @@ export const realtime_vehicle_locations_storev2: Writable<
 	other: {}
 });
 
-export interface CategoryHash {
-	bus: number;
-	rail: number;
-	metro: number;
-	other: number;
-}
+export type CategoryHash = Partial<Record<RealtimeCategory, number>>;
 
-export interface TileBounds {
-	min_x: number;
-	max_x: number;
-	min_y: number;
-	max_y: number;
-}
+export type TileBounds = BoundsInputPerLevel;
 
 export const current_orm_layer_type_store: Writable<string | null> = writable(null);
 export const current_orm_layer_theme_is_dark_mode_store: Writable<boolean | null> = writable(null);
 
 export const realtime_vehicle_route_cache_store: Writable<
-	Record<string, Record<string, Record<string, any>>>
+	Record<string, Record<string, Record<string, AspenisedVehicleRouteCache>>>
 > = writable({});
 export const realtime_vehicle_route_cache_hash_store: Writable<Record<string, CategoryHash>> =
 	writable({});
@@ -67,7 +83,7 @@ export const previous_tile_boundaries_store: Writable<Record<string, Record<stri
 export const realtime_vehicle_locations_last_updated_store: Writable<Record<string, CategoryHash>> =
 	writable({});
 //chateau -> route_id -> route_data
-export const route_cache: Writable<Record<string, Record<string, any>>> = writable({});
+export const route_cache: Writable<Record<string, Record<string, PostgresRoute>>> = writable({});
 //chateau -> route_id_list
 export const route_cache_agencies_known: Writable<Record<string, string[]>> = writable({});
 export const lock_on_gps_store = writable(false);
