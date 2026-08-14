@@ -240,7 +240,7 @@
 					{/if}
 					{event.headsign}
 
-					{#if eurostyle || swiss_style}
+					{#if eurostyle_or_swiss_style_rail}
 						<span class="ml-1">
 							{is_db_fernverkehr ? db_display_name : event.trip_short_name}
 						</span>
