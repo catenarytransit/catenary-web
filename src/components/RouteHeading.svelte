@@ -238,15 +238,16 @@
 	<h2
 		class={`${window_height_known < 600 ? 'text-xs' : 'text-sm md:text-base my-0.5'}  font-medium ${arrow ? '-translate-x-1.5' : ''} leading-tight`}
 	>
+		{#if effective_trip_short_name}
+			<span class="font-bold ml-1 align-middle">{effective_trip_short_name}</span>
+		{/if}
 		{#if arrow}
 			<span class="material-symbols-outlined text-2xl align-middle">chevron_right</span>
 		{/if}
 		<span class="align-middle">
 			{text}
 
-			{#if run_number}
-				<span class="font-bold text-md px-1 py-0.5 mr-1 rounded-md w-min">{effective_trip_short_name}</span>
-			{/if}
+			
 			{#if icon}
 				<span class="material-symbols-outlined text-xl align-middle -translate-y-0.5 ml-1"
 					>{icon}</span
