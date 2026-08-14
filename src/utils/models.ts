@@ -7,6 +7,20 @@ export type NearbyDeparturesChunk = any;
 export type SerializableStop = any;
 export type DirectionsSummary = any;
 
+export const RouteTypes = {
+  TRAM       : 0,
+  METRO      : 1,
+  RAIL       : 2,
+  BUS        : 3,
+  FERRY      : 4,
+  CABLE_CAR  : 5,
+  AERIAL     : 6,
+  FUNICULAR  : 7,
+  TROLLEYBUS : 11,
+  MONORAIL   : 12,
+} as const;
+export type RouteType = typeof RouteTypes[keyof typeof RouteTypes];
+
 type String = string;
 type EcoString = string;
 type CompactString = string;
@@ -41,7 +55,7 @@ export interface Route {
 	long_name_translations: Option<any>,
 	gtfs_desc: Option<String>,
 	gtfs_desc_translations: Option<any>,
-	route_type: i16,
+	route_type: RouteType,
 	url: Option<String>,
 	url_translations: Option<any>,
 	agency_id: Option<String>,
@@ -60,7 +74,7 @@ export interface RouteMinimal {
 	short_name: Option<String>,
 	long_name: Option<String>,
 	gtfs_desc: Option<String>,
-	route_type: i16,
+	route_type: RouteType,
 	url: Option<String>,
 	agency_id: Option<String>,
 	color: Option<String>,
@@ -77,7 +91,7 @@ export interface RouteInfoResponseV2 {
 	url: Option<String>,
 	color: Option<String>,
 	text_color: Option<String>,
-	route_type: i16,
+	route_type: RouteType,
 	pdf_url: Option<String>,
 	stops: HashMap<String, SerializableStop>,
 	direction_patterns: BTreeMap<String, DirectionsSummary>,
@@ -173,7 +187,7 @@ export interface TripIntroductionInformation {
 	color: Option<String>,
 	text_color: Option<String>,
 	vehicle: Option<AspenisedVehicleDescriptor>,
-	route_type: i16,
+	route_type: RouteType,
 	stop_id_to_alert_ids: BTreeMap<String, Vec<String>>,
 	alert_id_to_alert: BTreeMap<String, AspenisedAlert>,
 	alert_ids_for_this_route: Vec<String>,

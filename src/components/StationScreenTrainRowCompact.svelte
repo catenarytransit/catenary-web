@@ -9,6 +9,7 @@
 	import { data_stack_store } from '../globalstores';
 	import StationScreenRouteBadge from './StationScreenRouteBadge.svelte';
 	import db_train_lookup from '../../static/fernverkehr_2026_train_lookup.json';
+	import { RouteTypes } from '../utils/models';
 
 	export let event: any;
 	export let data_from_server: any;
@@ -38,6 +39,11 @@
 	$: trip_short_name_no_zeros = event.trip_short_name ? event.trip_short_name.replace(/^0+/, '') : null;
 	$: db_train_data = is_db_fernverkehr && trip_short_name_no_zeros ? (db_train_lookup as Record<string, any[]>)[trip_short_name_no_zeros] : null;
 	$: db_display_name = db_train_data ? db_train_data[0].display_name : event.trip_short_name;
+
+	$: is_rail = routeDef?.route_type == RouteTypes.RAIL;
+	$: eurostyle_rail = eurostyle && is_rail;
+	$: swiss_style_rail = swiss_style && is_rail;
+	$: eurostyle_or_swiss_style_rail = eurostyle_rail || swiss_style_rail;
 </script>
 
 <tr
@@ -61,6 +67,25 @@
 		});
 	}}
 >
+	<!-- Leftmost: Route Name -->
+	{#if swiss_style_rail}
+		<td class="px-1 py-0.5 w-[40px] align-middle text-left">
+			{#if is_db_fernverkehr}
+				<span class="font-bold px-1 rounded bg-gray-200 dark:bg-gray-700 text-sm whitespace-nowrap">{db_display_name}</span>
+			{:else if show_route_name && routeDef?.short_name}
+				<StationScreenRouteBadge
+					{routeDef}
+					chateau={event.chateau}
+					remove_line={true}
+					extra_classes="inline-block min-w-[24px]"
+					fallback_long_name={false}
+					db_show_linie={false}
+					{db_train_data}
+				/>
+			{/if}
+		</td>
+	{/if}
+
 	<!-- Left: Time (Vertical Stack) -->
 	<td class="px-1 py-0.5 w-[50px] align-middle">
 		<div class="flex flex-col items-start justify-center text-xs">
@@ -130,6 +155,7 @@
 	</td>
 
 	<!-- Middle: Route Name + Trip Short Name -->
+	{#if !eurostyle_or_swiss_style_rail}
 	<td class="px-1 py-0.5 w-[100px] align-middle text-left">
 		{#if show_route_name && routeDef?.short_name}
 			<StationScreenRouteBadge
@@ -146,7 +172,23 @@
 			<span class="font-bold ml-1 text-xs">{is_db_fernverkehr ? db_display_name : event.trip_short_name}</span>
 		{/if}
 	</td>
+	{/if}
 
+	<!-- Middle: Route Name for Eurostyle -->
+	{#if eurostyle_rail && !swiss_style_rail}
+		<td class="px-1 py-0.5 w-[40px] align-middle text-left">
+			{#if is_db_fernverkehr}
+				<span class="font-bold px-1 rounded bg-gray-200 dark:bg-gray-700 text-sm whitespace-nowrap">{db_display_name}</span>
+			{:else if show_route_name && routeDef?.short_name}
+				<StationScreenRouteBadge
+					{routeDef}
+					chateau={event.chateau}
+					remove_line={true}
+					extra_classes="inline-block min-w-[24px]"
+				/>
+			{/if}
+		</td>
+	{/if}
 
 	<!-- Middle: Info -->
 	<td class="px-1 py-0.5 align-middle">
@@ -155,7 +197,11 @@
 				<div class="text-sm font-normal leading-none">
 					{event.headsign}
 				</div>
+				{#if event.trip_short_name && !is_db_fernverkehr}
+					<span class="font-bold ml-1 text-xs">{event.trip_short_name}</span>
+				{/if}
 			</div>
+			
 			<div
 				class="flex flex-row text-xs text-gray-600 dark:text-gray-400 gap-2 items-center flex-wrap"
 			>
