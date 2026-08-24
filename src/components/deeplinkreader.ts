@@ -39,10 +39,12 @@ function getOptionalBoolean(urlParams: URLSearchParams, ...names: string[]): boo
 	return undefined;
 }
 
-export function deep_link_url_reader() {
-	if (typeof window === 'undefined') return;
+export function deep_link_url_reader(urlParams?: URLSearchParams) {
+	if (!urlParams) {
+		if (typeof window === 'undefined') return;
+		urlParams = new URLSearchParams(window.location.search);
+	}
 
-	const urlParams = new URLSearchParams(window.location.search);
 	const page = getFirstParam(urlParams, 'page', 'screen');
 	if (!page) return;
 

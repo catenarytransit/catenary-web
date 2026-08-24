@@ -36,7 +36,10 @@ export const data_stack_store: Writable<StackInterface[]> = {
 	update(updater) {
 		data_stack_writable.update((value) => {
 			const nextValue = updater(value);
-			syncStackUrl(nextValue);
+			if (nextValue !== value || nextValue.length > 0) {
+				// A no-op update of the initial empty stack must not erase an incoming deep link.
+				syncStackUrl(nextValue);
+			}
 			return nextValue;
 		});
 	}

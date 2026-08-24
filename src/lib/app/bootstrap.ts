@@ -2,6 +2,7 @@ import { get } from 'svelte/store';
 import { locale } from 'svelte-i18n';
 import { init_locales } from '$root/i18n';
 import { init_stores } from '$components/init_stores';
+import { deep_link_url_reader } from '$components/deeplinkreader';
 import { refreshUIMaplibre } from '$components/transitionDarkAndLight';
 import { StackInterface, OsmStationStack } from '$components/stackenum';
 import {
@@ -121,6 +122,7 @@ export function startBrowserRuntime(): () => void {
 	initializeGoogleAnalytics();
 	initializeOverlayState(searchParams, navigator.userAgent);
 	initializeUrlState(searchParams);
+	deep_link_url_reader(searchParams);
 	registerServiceWorker();
 
 	if (localStorage.getItem('show-my-location') === 'false') {

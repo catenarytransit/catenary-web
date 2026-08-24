@@ -6,7 +6,6 @@ import { getOptimalPixelRatio } from '$components/maplibre_starter';
 import { setupMap } from './setupMap';
 import { layerspercategory } from '$components/layernames';
 import { checkClockSync } from '$components/checkClockSync';
-import { deep_link_url_reader } from '$components/deeplinkreader';
 import { add_image_pedestrian_pattern } from '$components/pedestrian_layer';
 import { switch_orm_layers } from '$components/openrailwaymap';
 import { startSantaTracking } from '$components/santa_tracker';
@@ -167,7 +166,6 @@ export function createMapController(
 		currentMap.on('load', async () => {
 			loaded = true;
 			checkClockSync();
-			deep_link_url_reader();
 			add_image_pedestrian_pattern(currentMap);
 
 			currentMap.setProjection({ type: 'globe' });
