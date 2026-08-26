@@ -11,15 +11,11 @@ export default defineConfig({
 		sveltekit(),
 		tailwindcss(),
 		VitePWA({
-			// This is the key setting
-			registerType: 'autoUpdate',
-
-			// These options are often implied by 'autoUpdate'
-			// but are good to include explicitly.
-			// This ensures the new service worker activates immediately.
+			// Do not immediately claim tabs running an older JS bundle. Doing so can
+			// make lazy-loaded locale/feature chunks come from a different deployment.
+			registerType: 'prompt',
 			workbox: {
-				skipWaiting: true,
-				clientsClaim: true,
+				cleanupOutdatedCaches: true,
 				navigateFallback: null
 			}
 		})

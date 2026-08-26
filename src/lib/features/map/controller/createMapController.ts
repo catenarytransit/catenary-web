@@ -1,7 +1,6 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { get, writable, type Readable, type Writable } from 'svelte/store';
-import { isChromiumDesktop } from '$root/browserinfo';
 import { getOptimalPixelRatio } from '$components/maplibre_starter';
 import { setupMap } from './setupMap';
 import { layerspercategory } from '$components/layernames';
@@ -222,16 +221,12 @@ export function createMapController(
 		desktopApp.set(searchParams.get('desktop') === 'true');
 		configureWorkers();
 
-		const desynchronized = !(
-			navigator.userAgent.match(/Chrome\/\d+/) !== null && isChromiumDesktop()
-		);
 		const isLowSpec = getOptimalPixelRatio() === 1;
 
 		map = new maplibregl.Map({
 			canvasContextAttributes: {
 				antialias: !isLowSpec,
-				powerPreference: 'high-performance',
-				desynchronized
+				powerPreference: 'high-performance'
 			},
 			container,
 			localIdeographFontFamily: false,

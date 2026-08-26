@@ -12,4 +12,4 @@
 	});
 </script>
 
-<div bind:this={container} class="fixed top-0 left-0 h-[100vh] w-[100vw]"></div>
+<div bind:this={container} class="fixed inset-0 z-0 h-[100dvh] w-screen"></div>

@@ -1,5 +1,15 @@
 export function getOptimalPixelRatio() {
     const nativeRatio = window.devicePixelRatio || 1;
+    const isIOS =
+        /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    // Safari/WebKit can become extremely memory hungry when MapLibre is asked
+    // to render above the device's native pixel density. A DPR 3 iPhone was
+    // previously getting 7.5 here because Apple GPUs were classified as strong.
+    if (isIOS) {
+        return Math.min(nativeRatio, 2);
+    }
 
     const cores = navigator.hardwareConcurrency || 4;
     const memory = (navigator as any).deviceMemory || 4;

@@ -1,4 +1,5 @@
-import { register, init, getLocaleFromNavigator } from 'svelte-i18n';
+import { addMessages, getLocaleFromNavigator, init, register } from 'svelte-i18n';
+import en from './locales/en.json';
 
 //sort like Google / YouTube
 const locale_list = [
@@ -21,6 +22,7 @@ const locale_list = [
 	'no',
 	'pl',
 	'pt-PT',
+	'ro',
 	'sk',
 	'sl',
 	'sr',
@@ -33,22 +35,62 @@ const locale_list = [
 	'zh-TW',
 	'ja',
 	'ko'
-];
+] as const;
 
-for (let i = 0; i < locale_list.length; i++) {
-	register(locale_list[i], () => import(`./locales/${locale_list[i]}.json`));
+const supportedLocales = new Set<string>(locale_list);
+
+addMessages('en', en);
+
+for (const supportedLocale of locale_list) {
+	if (supportedLocale === 'en') {
+		continue;
+	}
+	register(supportedLocale, () => import(`./locales/${supportedLocale}.json`));
 }
 
-export function getLocaleStorageOrNav() {
-	if (typeof window != 'undefined') {
-		if (window.localStorage.language && window.localStorage.language !== 'undefined') {
-			return window.localStorage.language;
-		} else {
-			return getLocaleFromNavigator();
-		}
-	} else {
-		return getLocaleFromNavigator();
+export function normalizeLocale(value: string | null | undefined): string {
+	if (!value || value === 'undefined') {
+		return 'en';
 	}
+
+	const normalized = value.replace(/_/g, '-');
+	if (supportedLocales.has(normalized)) {
+		return normalized;
+	}
+
+	const lower = normalized.toLowerCase();
+	if (lower.startsWith('zh')) {
+		const traditionalChinese =
+			lower.includes('tw') ||
+			lower.includes('hk') ||
+			lower.includes('mo') ||
+			lower.includes('hant');
+		return traditionalChinese ? 'zh-TW' : 'zh-CN';
+	}
+
+	if (lower.startsWith('pt')) {
+		return 'pt-PT';
+	}
+
+	if (lower.startsWith('nb') || lower.startsWith('nn')) {
+		return 'no';
+	}
+
+	const base = lower.split('-')[0];
+	return locale_list.find((supportedLocale) => supportedLocale.toLowerCase() === base) ?? 'en';
+}
+
+export function getLocaleStorageOrNav(): string {
+	if (typeof window === 'undefined') {
+		return 'en';
+	}
+
+	const storedLocale = window.localStorage.language;
+	if (storedLocale && storedLocale !== 'undefined') {
+		return normalizeLocale(storedLocale);
+	}
+
+	return normalizeLocale(getLocaleFromNavigator());
 }
 
 export function init_locales() {

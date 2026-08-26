@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { isLoading } from 'svelte-i18n';
 	import { MapCanvas, MapControls, createMapController } from '$lib/features/map/public';
 	import { SearchOverlay } from '$lib/features/search/public';
 	import { LayerSettingsOverlay } from '$lib/features/settings/public';
@@ -41,9 +40,7 @@
 			{dismissDonationPopup}
 		/>
 
-		{#if !$isLoading}
-			<MapControls controller={mapController} sidebar={sidebarController} />
-			<LayerSettingsOverlay controller={mapController} />
-		{/if}
+		<MapControls controller={mapController} sidebar={sidebarController} />
+		<LayerSettingsOverlay controller={mapController} />
 	</main>
 </svelte:boundary>

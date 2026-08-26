@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { get } from 'svelte/store';
-	import { _, isLoading } from 'svelte-i18n';
+	import { _ } from 'svelte-i18n';
 	import { data_stack_store } from '$root/globalstores';
 	import { SettingsStack, StackInterface } from '$components/stackenum';
 	import {
@@ -87,55 +87,53 @@
 	}
 </script>
 
-{#if !$isLoading}
-	<div
-		class="w-full rounded-full border border-gray-500 bg-white px-2 py-1 sm:w-2/5 md:w-[350px] xl:w-[456px] dark:bg-gray-900 dark:text-white"
-	>
-		<div class="flex flex-row items-center gap-x-1 align-middle">
-			{#if $showBackButton}
-				<button
-					type="button"
-					class="mx-2 inline-block cursor-pointer align-middle text-sm text-black dark:text-white"
-					on:click={closeMobileSearch}
-					aria-label="Close search"
-				>
-					<span class="material-symbols-outlined inline-block align-middle">arrow_back</span>
-				</button>
-			{:else}
-				<img src="/logo.svg" alt="Catenary" class="my-auto mr-1 inline h-4 align-middle" />
-			{/if}
+<div
+	class="w-full rounded-full border border-gray-500 bg-white px-2 py-1 sm:w-2/5 md:w-[350px] xl:w-[456px] dark:bg-gray-900 dark:text-white"
+>
+	<div class="flex flex-row items-center gap-x-1 align-middle">
+		{#if $showBackButton}
+			<button
+				type="button"
+				class="mx-2 inline-block cursor-pointer align-middle text-sm text-black dark:text-white"
+				on:click={closeMobileSearch}
+				aria-label="Close search"
+			>
+				<span class="material-symbols-outlined inline-block align-middle">arrow_back</span>
+			</button>
+		{:else}
+			<img src="/logo.svg" alt="Catenary" class="my-auto mr-1 inline h-4 align-middle" />
+		{/if}
 
-			<input
-				type="text"
-				on:input={handleTextChange}
-				on:focus={focusInput}
-				on:blur={blurInput}
-				on:keydown={handleKeydown}
-				bind:value={textInput}
-				class="w-full focus:outline-none"
-				placeholder={$_('search_here')}
-				aria-label={$_('search_here')}
-			/>
+		<input
+			type="text"
+			on:input={handleTextChange}
+			on:focus={focusInput}
+			on:blur={blurInput}
+			on:keydown={handleKeydown}
+			bind:value={textInput}
+			class="w-full focus:outline-none"
+			placeholder={$_('search_here')}
+			aria-label={$_('search_here')}
+		/>
 
-			{#if textInput.length === 0}
-				<button
-					type="button"
-					class="mx-2 inline-block cursor-pointer align-middle text-sm text-black dark:text-white"
-					on:click={openSettings}
-					aria-label="Settings"
-				>
-					<span class="material-symbols-outlined inline-block align-middle">settings</span>
-				</button>
-			{:else}
-				<button
-					type="button"
-					class="mx-2 inline-block cursor-pointer align-middle text-sm text-black dark:text-white"
-					on:click={clearSearch}
-					aria-label="Clear search"
-				>
-					<span class="material-symbols-outlined inline-block align-middle">cancel</span>
-				</button>
-			{/if}
-		</div>
+		{#if textInput.length === 0}
+			<button
+				type="button"
+				class="mx-2 inline-block cursor-pointer align-middle text-sm text-black dark:text-white"
+				on:click={openSettings}
+				aria-label="Settings"
+			>
+				<span class="material-symbols-outlined inline-block align-middle">settings</span>
+			</button>
+		{:else}
+			<button
+				type="button"
+				class="mx-2 inline-block cursor-pointer align-middle text-sm text-black dark:text-white"
+				on:click={clearSearch}
+				aria-label="Clear search"
+			>
+				<span class="material-symbols-outlined inline-block align-middle">cancel</span>
+			</button>
+		{/if}
 	</div>
-{/if}
+</div>

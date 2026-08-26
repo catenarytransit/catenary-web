@@ -1,6 +1,6 @@
 import { get } from 'svelte/store';
 import { locale } from 'svelte-i18n';
-import { init_locales } from '$root/i18n';
+import { init_locales, normalizeLocale } from '$root/i18n';
 import { init_stores } from '$components/init_stores';
 import { deep_link_url_reader } from '$components/deeplinkreader';
 import { refreshUIMaplibre } from '$components/transitionDarkAndLight';
@@ -65,22 +65,14 @@ function preloadFeatureScreens(): void {
 	});
 }
 
-function registerServiceWorker(): void {
-	if (!('serviceWorker' in navigator)) {
-		preloadFeatureScreens();
+function cleanupLegacyServiceWorkerCache(): void {
+	if (!('caches' in window)) {
 		return;
 	}
 
-	void navigator.serviceWorker
-		.register('/sw.js', { scope: '/' })
-		.then(() => {
-			preloadFeatureScreens();
-			console.log('Service worker registration succeeded.');
-		})
-		.catch((error) => {
-			preloadFeatureScreens();
-			console.error('Service worker registration failed.', error);
-		});
+	void caches.delete('pwabuilder-page').catch((error) => {
+		console.warn('Unable to remove the legacy service worker cache.', error);
+	});
 }
 
 function initializeUrlState(searchParams: URLSearchParams): void {
@@ -123,7 +115,8 @@ export function startBrowserRuntime(): () => void {
 	initializeOverlayState(searchParams, navigator.userAgent);
 	initializeUrlState(searchParams);
 	deep_link_url_reader(searchParams);
-	registerServiceWorker();
+	preloadFeatureScreens();
+	cleanupLegacyServiceWorkerCache();
 
 	if (localStorage.getItem('show-my-location') === 'false') {
 		show_my_location_store.set(false);
@@ -135,7 +128,7 @@ export function startBrowserRuntime(): () => void {
 
 	const storedLocale = localStorage.getItem('language');
 	if (storedLocale) {
-		locale.set(storedLocale);
+		locale.set(normalizeLocale(storedLocale));
 	}
 
 	cleanups.push(
