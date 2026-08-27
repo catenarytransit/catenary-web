@@ -2560,7 +2560,7 @@
       "type": "symbol",
       "source": "openmaptiles",
       "source-layer": "water_name",
-      "filter": ["all"],
+      "filter": ["all", ["!=", "$type", "LineString"]],
       "layout": {
         "text-field": [
           "case",
