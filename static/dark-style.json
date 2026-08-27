@@ -2540,14 +2540,15 @@
         false
       ],
       "layout": {
-        "symbol-placement": "line",
+        "symbol-placement": "line-center",
         "symbol-spacing": 350,
         "text-field": ["get", "name"],
         "text-font": ["Arimo-Italic"],
         "text-letter-spacing": 0.2,
         "text-max-width": 5,
         "text-size": 14,
-        "text-pitch-alignment": "viewport"
+        "text-pitch-alignment": "viewport",
+        "symbol-avoid-edges": true
       },
       "paint": {
         "text-color": "#74aee9",
@@ -2571,7 +2572,8 @@
         "text-font": ["Arimo-Italic"],
         "text-letter-spacing": 0.2,
         "text-max-width": 5,
-        "text-size": ["interpolate", ["linear"], ["zoom"], 0, 10, 8, 14]
+        "text-size": ["interpolate", ["linear"], ["zoom"], 0, 10, 8, 14],
+        "symbol-avoid-edges": false
       },
       "paint": {
         "text-color": "rgba(136, 171, 250, 1)",
