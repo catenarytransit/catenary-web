@@ -33,6 +33,6 @@ Base layers:
 https://github.com/wipfli/esa-worldcover-polygons with data from https://esa-worldcover.org/en
 OpenFreeMap https://openfreemap.org/ with data from https://OpenStreetMap.org
 
-For the seperate but concurrent Kotlin Compose Rust project (early alpha): https://github.com/catenarytransit/catenary0compose
+For the seperate but concurrent Kotlin Compose Rust project: https://github.com/catenarytransit/catenary0compose
 
 The project to replicate Loom (line ordering optimised maps) by Patrick Brosi, PhD is a backend project, with minimal involvement with the frontend.
