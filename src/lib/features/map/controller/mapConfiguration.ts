@@ -56,6 +56,8 @@ export function getMapStyle(searchParams: URLSearchParams, darkMode: boolean): s
 			return '/nothing-dark.json';
 		case 'dark2025':
 			return '/dark-style-old-2025.json';
+		case 'screenshots': 
+			return 'light-screenshots.json';
 		default:
 			return darkMode ? '/dark-style.json' : '/light-style.json';
 	}
