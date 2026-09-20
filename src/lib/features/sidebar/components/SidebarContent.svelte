@@ -153,15 +153,7 @@
 {:else}
 	<div class="flex h-full flex-col py-1">
 		<div class="flex h-full flex-col select-text">
-			{#if showDonationPopup}
-				<div class="mx-3 mb-2 hidden md:block">
-					<DonationPopup
-						title="Help keep Catenary Maps running"
-						message="Our aging server is reaching its limits. Your support helps us replace it and add the computing power needed to release trip planning and navigation."
-						on:dismiss={dismissDonationPopup}
-					/>
-				</div>
-			{/if}
+			
 
 			<NearbyDepartures
 				{usunits}
