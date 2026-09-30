@@ -96,14 +96,21 @@ export class BlockStack {
 }
 
 export class VehicleHistoryStack {
-	public chateau_id: string;
+	public chateau_id: string | null;
 	public vehicle_id: string;
 	public route_id: string | null;
+	public unified_agency_id: string | null;
 
-	constructor(chateau_id: string, vehicle_id: string, route_id: string | null) {
+	constructor(
+		chateau_id: string | null,
+		vehicle_id: string,
+		route_id: string | null,
+		unified_agency_id: string | null = null
+	) {
 		this.chateau_id = chateau_id;
 		this.vehicle_id = vehicle_id;
 		this.route_id = route_id;
+		this.unified_agency_id = unified_agency_id;
 	}
 }
 
@@ -325,6 +332,7 @@ const PAGE_QUERY_KEYS = [
 	'page',
 	'screen',
 	'chateau',
+	'unified_agency_id',
 	'trip',
 	'trip_id',
 	'route',
@@ -420,6 +428,7 @@ function stackDataToPageQuery(data: StackInterface['data']): Record<string, Page
 		return {
 			page: 'vehicle_history',
 			chateau: data.chateau_id,
+			unified_agency_id: data.unified_agency_id,
 			vehicle: data.vehicle_id,
 			route: data.route_id
 		};

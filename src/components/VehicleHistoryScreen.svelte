@@ -10,7 +10,8 @@
 	import type { RouteHistoryRow, VehicleHistoryLookupResponse } from '$lib/types/backend/birch';
 	import type { PostgresRoute } from '$lib/types/backend/common';
 
-	export let chateau: string;
+	export let chateau: string | null = null;
+	export let unified_agency_id: string | null = null;
 	export let vehicle: string;
 	export let route_id: string | null = null;
 
@@ -25,6 +26,7 @@
 	let last_lookup_key = '';
 	let request_sequence = 0;
 	let sort_descending = true;
+	let vehicle_info_chateau: string | null = null;
 
 	function group_history(
 		rows: RouteHistoryRow[],
@@ -70,6 +72,10 @@
 
 	function route_name(route: PostgresRoute | undefined, fallback: string): string {
 		return route?.short_name || route?.long_name || fallback;
+	}
+
+	function chateau_for_row(row: RouteHistoryRow): string | null {
+		return chateau || history_data?.routes?.[row.route_id]?.chateau || null;
 	}
 
 	function local_noon_unix_seconds(operation_date: string, timezone: string): number | null {
@@ -154,12 +160,14 @@
 
 	function open_trip(row: VehicleHistoryRow) {
 		const route = history_data?.routes?.[row.route_id];
+		const row_chateau = chateau_for_row(row);
+		if (!row_chateau) return;
 
 		data_stack_store.update((stack) => {
 			stack.push(
 				new StackInterface(
 					new SingleTrip(
-						chateau,
+						row_chateau,
 						row.trip_id,
 						row.route_id,
 						gtfs_start_time_from_unix(row.unix_start_time, row.operation_date),
@@ -176,9 +184,13 @@
 
 	function open_block(row: VehicleHistoryRow) {
 		if (!row.block_id) return;
+		const row_chateau = chateau_for_row(row);
+		if (!row_chateau) return;
 
 		data_stack_store.update((stack) => {
-			stack.push(new StackInterface(new BlockStack(chateau, row.block_id!, row.operation_date)));
+			stack.push(
+				new StackInterface(new BlockStack(row_chateau, row.block_id!, row.operation_date))
+			);
 
 			return stack;
 		});
@@ -190,11 +202,17 @@
 		error = null;
 		history_data = null;
 
-		const params = new URLSearchParams({
-			vehicle,
-			chateau
-		});
-		if (route_id) params.set('route_id', route_id);
+		const params = new URLSearchParams({ vehicle });
+		if (chateau) {
+			params.set('chateau', chateau);
+			if (route_id) params.set('route_id', route_id);
+		} else if (unified_agency_id) {
+			params.set('unified_agency_id', unified_agency_id);
+		} else {
+			error = 'Vehicle history requires either chateau or unified_agency_id.';
+			loading = false;
+			return;
+		}
 
 		try {
 			const response = await fetch(
@@ -228,14 +246,20 @@
 	}
 
 	$: {
-		const lookup_key = `${chateau}\u0000${vehicle}\u0000${route_id || ''}`;
-		if (chateau && vehicle && lookup_key !== last_lookup_key) {
+		const lookup_key = `${chateau || ''}\u0000${unified_agency_id || ''}\u0000${vehicle}\u0000${
+			route_id || ''
+		}`;
+		if ((chateau || unified_agency_id) && vehicle && lookup_key !== last_lookup_key) {
 			last_lookup_key = lookup_key;
 			void load_history();
 		}
 	}
 
 	$: grouped_history = group_history(history_data?.trip_history || [], sort_descending);
+	$: vehicle_info_chateau =
+		chateau ||
+		Object.values(history_data?.routes || {}).find((route) => Boolean(route.chateau))?.chateau ||
+		null;
 </script>
 
 <HomeButton />
@@ -268,9 +292,11 @@
 		<p class="text-sm text-gray-600 dark:text-gray-400">
 			{$_('vehicle', { default: 'Vehicle' })}: <span class="font-semibold">{vehicle}</span>
 		</p>
-		<div class="mt-2">
-			<VehicleInfo label={vehicle} {chateau} {route_id} />
-		</div>
+		{#if vehicle_info_chateau}
+			<div class="mt-2">
+				<VehicleInfo label={vehicle} chateau={vehicle_info_chateau} {route_id} />
+			</div>
+		{/if}
 		<div class="mt-3">
 			<DonationPopup
 				title="Help us store richer bus history"

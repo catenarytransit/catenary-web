@@ -61,6 +61,7 @@
 		{#await import('$components/VehicleHistoryScreen.svelte') then { default: VehicleHistoryScreen }}
 			<VehicleHistoryScreen
 				chateau={latest_item_on_stack.data.chateau_id}
+				unified_agency_id={latest_item_on_stack.data.unified_agency_id}
 				vehicle={latest_item_on_stack.data.vehicle_id}
 				route_id={latest_item_on_stack.data.route_id}
 			/>

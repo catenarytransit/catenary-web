@@ -136,11 +136,17 @@ export function deep_link_url_reader(urlParams?: URLSearchParams) {
 
 	if (page === 'vehicle_history') {
 		const chateau = getFirstParam(urlParams, 'chateau');
+		const unifiedAgencyId = getFirstParam(urlParams, 'unified_agency_id');
 		const vehicleId = getFirstParam(urlParams, 'vehicle');
 
-		if (chateau && vehicleId) {
+		if (vehicleId && ((chateau && !unifiedAgencyId) || (!chateau && unifiedAgencyId))) {
 			nextStack = new StackInterface(
-				new VehicleHistoryStack(chateau, vehicleId, getFirstParam(urlParams, 'route', 'route_id'))
+				new VehicleHistoryStack(
+					chateau,
+					vehicleId,
+					getFirstParam(urlParams, 'route', 'route_id'),
+					unifiedAgencyId
+				)
 			);
 		}
 	}
