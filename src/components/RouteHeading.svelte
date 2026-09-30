@@ -172,7 +172,7 @@
 	$: is_sbahn =
 		['vbb', 'deutschland'].includes(chateau_id) && (short_name || '').match(/^S\d+/) !== null;
 
-	import db_train_lookup from '../../static/fernverkehr_2026_train_lookup.json';
+	import db_train_lookup from '../fernverkehr_2026_train_lookup.json';
 	$: is_db_fernverkehr =
 		chateau_id === 'deutschland' &&
 		((agency_id !== null && ['12681', '13557', '10918'].includes(agency_id.toString())) ||

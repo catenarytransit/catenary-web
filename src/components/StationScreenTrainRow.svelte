@@ -8,7 +8,7 @@
 	import { SingleTrip, StackInterface } from './stackenum';
 	import { data_stack_store } from '../globalstores';
 	import StationScreenRouteBadge from './StationScreenRouteBadge.svelte';
-	import db_train_lookup from '../../static/fernverkehr_2026_train_lookup.json';
+	import db_train_lookup from '../fernverkehr_2026_train_lookup.json';
 
 	export let event: any;
 	export let data_from_server: any;

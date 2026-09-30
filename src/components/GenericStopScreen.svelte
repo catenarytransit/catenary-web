@@ -42,7 +42,7 @@
 	import RatpBullet from './ratpbullet.svelte';
 	import DatePicker from './DatePicker.svelte';
 	import ServiceAlerts from './serviceAlerts.svelte';
-	import db_train_lookup from '../../static/fernverkehr_2026_train_lookup.json';
+	import db_train_lookup from '../../src/fernverkehr_2026_train_lookup.json';
 
 	export let initial_is_now: boolean = true;
 	export let initial_selected_unix_time: number = Date.now() / 1000;
