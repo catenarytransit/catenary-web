@@ -662,12 +662,10 @@
 
 				stop_connections = tmp_stop_connections;
 
-				if (map.getSource('transit_shape_context_for_stop')) {
-					map.getSource('transit_shape_context_for_stop').setData({
-						type: 'FeatureCollection',
-						features: []
-					});
-				}
+				map?.getSource('transit_shape_context_for_stop')?.setData({
+					type: 'FeatureCollection',
+					features: []
+				});
 
 				if (data.shape_polyline) {
 					let geojson_polyline_geo = polyline.toGeoJSON(data.shape_polyline);
@@ -697,36 +695,40 @@
 
 						let transit_shape_detour = map.getSource('transit_shape_context_detour');
 
-						if (data.old_shape_polyline) {
-							transit_shape_detour.setData({
-								type: 'FeatureCollection',
-								features: [
-									{
-										geometry: polyline.toGeoJSON(data.old_shape_polyline),
-										type: 'Feature',
-										properties: {
-											text_color: data.text_color,
-											color: data.color,
-											route_label: data.route_short_name || data.route_long_name
+						if (transit_shape_detour) {
+							if (data.old_shape_polyline) {
+								transit_shape_detour.setData({
+									type: 'FeatureCollection',
+									features: [
+										{
+											geometry: polyline.toGeoJSON(data.old_shape_polyline),
+											type: 'Feature',
+											properties: {
+												text_color: data.text_color,
+												color: data.color,
+												route_label: data.route_short_name || data.route_long_name
+											}
 										}
-									}
-								]
-							});
-						} else {
-							transit_shape_detour.setData({ type: 'FeatureCollection', features: [] });
+									]
+								});
+							} else {
+								transit_shape_detour.setData({ type: 'FeatureCollection', features: [] });
+							}
 						}
 					}
 				} else {
-					let transit_shape_context = map.getSource('transit_shape_context');
-					transit_shape_context.setData({ type: 'FeatureCollection', features: [] });
-
-					let transit_shape_detour = map?.getSource('transit_shape_context_detour');
-
-					transit_shape_detour.setData({ type: 'FeatureCollection', features: [] });
-
-					let transit_shape_context_for_stop = map?.getSource('transit_shape_context_for_stop');
-
-					transit_shape_context_for_stop.setData({ type: 'FeatureCollection', features: [] });
+					map?.getSource('transit_shape_context')?.setData({
+						type: 'FeatureCollection',
+						features: []
+					});
+					map?.getSource('transit_shape_context_detour')?.setData({
+						type: 'FeatureCollection',
+						features: []
+					});
+					map?.getSource('transit_shape_context_for_stop')?.setData({
+						type: 'FeatureCollection',
+						features: []
+					});
 				}
 
 				if (map != null) {
@@ -1081,7 +1083,7 @@
 
 			let map = get(map_pointer_store);
 
-			map.getSource('livedots_context').setData({
+			map?.getSource('livedots_context')?.setData({
 				type: 'FeatureCollection',
 				features: []
 			});
