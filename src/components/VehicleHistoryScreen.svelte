@@ -32,9 +32,6 @@
 	let current_vehicle: AspenisedVehiclePosition | null = null;
 	let current_trip_id: string | null = null;
 	let current_trip_row: RouteHistoryRow | null = null;
-	let realtime_lookup_key = '';
-	let realtime_request_sequence = 0;
-	let realtime_interval: ReturnType<typeof setInterval> | null = null;
 	let pulse_animation_frame: number | null = null;
 	let map_context_key = '';
 
@@ -222,38 +219,6 @@
 			if (left_time !== right_time) return right_time - left_time;
 			return right.operation_date.localeCompare(left.operation_date);
 		})[0];
-	}
-
-	function open_current_trip() {
-		if (current_trip_row) {
-			open_trip(current_trip_row);
-			return;
-		}
-
-		const realtime_trip = current_vehicle?.trip;
-		if (!realtime_trip?.trip_id || !vehicle_info_chateau) return;
-
-		const realtime_route = realtime_trip.route_id
-			? history_data?.routes?.[realtime_trip.route_id]
-			: undefined;
-
-		data_stack_store.update((stack) => {
-			stack.push(
-				new StackInterface(
-					new SingleTrip(
-						vehicle_info_chateau!,
-						realtime_trip.trip_id,
-						realtime_trip.route_id,
-						realtime_trip.start_time,
-						realtime_trip.start_date?.replaceAll('-', '') ?? null,
-						vehicle,
-						current_vehicle?.route_type ?? realtime_route?.route_type ?? null
-					)
-				)
-			);
-
-			return stack;
-		});
 	}
 
 	function clear_pulse_animation() {
@@ -450,47 +415,12 @@
 		}
 	}
 
-	async function load_realtime_vehicle() {
-		if (!vehicle_info_chateau || !vehicle) return;
-		const request_id = ++realtime_request_sequence;
-
-		try {
-			const response = await fetch(
-				`https://birch.catenarymaps.org/get_vehicle_information_from_label/${encodeURIComponent(vehicle_info_chateau)}/${encodeURIComponent(vehicle)}`
-			);
-			if (request_id !== realtime_request_sequence) return;
-
-			if (!response.ok) {
-				current_vehicle = null;
-				await show_last_known_route_shape();
-				return;
-			}
-
-			const payload = await response.json().catch(() => null);
-			const vehicle_data = Array.isArray(payload?.data) ? payload.data[0] : payload?.data;
-			current_vehicle = vehicle_data || null;
-
-			if (current_vehicle?.position) show_current_vehicle_position(current_vehicle);
-			else await show_last_known_route_shape();
-		} catch (realtime_error) {
-			if (request_id !== realtime_request_sequence) return;
-			console.error('Unable to load current vehicle position', realtime_error);
-			current_vehicle = null;
-			await show_last_known_route_shape();
-		}
-	}
-
-	function start_realtime_updates() {
-		if (realtime_interval != null) clearInterval(realtime_interval);
-		void load_realtime_vehicle();
-		realtime_interval = setInterval(() => void load_realtime_vehicle(), 1_000);
-	}
-
 	async function load_history() {
 		const request_id = ++request_sequence;
 		loading = true;
 		error = null;
 		history_data = null;
+		current_vehicle = null;
 
 		const params = new URLSearchParams({ vehicle });
 		if (chateau) {
@@ -518,7 +448,8 @@
 						trip_history: [],
 						routes: {},
 						agency_timezone: 'UTC',
-						agency_name: null
+						agency_name: null,
+						current_vehicle: null
 					};
 					return;
 				}
@@ -527,6 +458,10 @@
 			}
 
 			history_data = payload as VehicleHistoryResponse;
+			current_vehicle = history_data.current_vehicle ?? null;
+
+			if (current_vehicle?.position) show_current_vehicle_position(current_vehicle);
+			else await show_last_known_route_shape();
 		} catch (request_error) {
 			if (request_id !== request_sequence) return;
 			error = request_error instanceof Error ? request_error.message : String(request_error);
@@ -570,17 +505,7 @@
 			) ?? null;
 	}
 
-	$: {
-		const next_realtime_lookup_key = `${vehicle_info_chateau || ''}\u0000${vehicle}`;
-		if (vehicle_info_chateau && vehicle && next_realtime_lookup_key !== realtime_lookup_key) {
-			realtime_lookup_key = next_realtime_lookup_key;
-			map_context_key = '';
-			start_realtime_updates();
-		}
-	}
-
 	onDestroy(() => {
-		if (realtime_interval != null) clearInterval(realtime_interval);
 		clear_pulse_animation();
 		const map = get(map_pointer_store) as any;
 		try {
@@ -629,34 +554,6 @@
 			<div class="mt-2">
 				<VehicleInfo label={vehicle} chateau={vehicle_info_chateau} {route_id} />
 			</div>
-		{/if}
-		{#if current_vehicle?.trip?.trip_id}
-			{@const current_route = current_vehicle.trip.route_id
-				? history_data?.routes?.[current_vehicle.trip.route_id]
-				: undefined}
-			<button
-				type="button"
-				on:click={open_current_trip}
-				class="mt-3 flex w-full items-center gap-3 rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-left transition-colors hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/30 dark:hover:bg-blue-950/50"
-			>
-				<span class="relative flex h-3 w-3 shrink-0">
-					<span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-500 opacity-60"></span>
-					<span class="relative inline-flex h-3 w-3 rounded-full bg-blue-600"></span>
-				</span>
-				<span class="min-w-0 flex-1">
-					<span class="block text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
-						{$_('current_trip', { default: 'Current trip' })}
-					</span>
-					<span class="block truncate font-semibold">
-						{current_vehicle.trip.trip_headsign || current_vehicle.trip.trip_short_name || current_vehicle.trip.trip_id}
-					</span>
-					<span class="block truncate text-xs text-gray-600 dark:text-gray-400">
-						{route_name(current_route, current_vehicle.trip.route_id || '')}
-						{#if current_vehicle.position} · {$_('live_position', { default: 'Live position' })}{/if}
-					</span>
-				</span>
-				<span class="material-symbols-outlined text-blue-700 dark:text-blue-300" aria-hidden="true">chevron_right</span>
-			</button>
 		{/if}
 		<div class="mt-3">
 			<DonationPopup

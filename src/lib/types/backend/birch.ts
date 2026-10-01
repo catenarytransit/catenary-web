@@ -34,6 +34,7 @@ export interface VehicleHistoryLookupResponse {
 	routes: Record<string, PostgresRoute>;
 	agency_timezone: string;
 	agency_name: string;
+	current_vehicle: AspenisedVehiclePosition | null;
 }
 
 export interface VehicleHistoryOfRouteRow {
