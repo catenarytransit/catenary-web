@@ -32,6 +32,9 @@
 	let current_vehicle: AspenisedVehiclePosition | null = null;
 	let current_trip_id: string | null = null;
 	let current_trip_row: RouteHistoryRow | null = null;
+	let realtime_lookup_key = '';
+	let realtime_request_sequence = 0;
+	let realtime_interval: ReturnType<typeof setInterval> | null = null;
 	let pulse_animation_frame: number | null = null;
 	let map_context_key = '';
 
@@ -415,6 +418,42 @@
 		}
 	}
 
+	async function load_realtime_vehicle() {
+		if (!vehicle_info_chateau || !vehicle) return;
+		const request_id = ++realtime_request_sequence;
+
+		try {
+			const response = await fetch(
+				`https://birch.catenarymaps.org/get_vehicle_information_from_label/${encodeURIComponent(vehicle_info_chateau)}/${encodeURIComponent(vehicle)}`
+			);
+			if (request_id !== realtime_request_sequence) return;
+
+			if (!response.ok) {
+				current_vehicle = null;
+				await show_last_known_route_shape();
+				return;
+			}
+
+			const payload = await response.json().catch(() => null);
+			const vehicle_data = Array.isArray(payload?.data) ? payload.data[0] : payload?.data;
+			current_vehicle = vehicle_data || null;
+
+			if (current_vehicle?.position) show_current_vehicle_position(current_vehicle);
+			else await show_last_known_route_shape();
+		} catch (realtime_error) {
+			if (request_id !== realtime_request_sequence) return;
+			console.error('Unable to load current vehicle position', realtime_error);
+			current_vehicle = null;
+			await show_last_known_route_shape();
+		}
+	}
+
+	function start_realtime_updates() {
+		if (realtime_interval != null) clearInterval(realtime_interval);
+		void load_realtime_vehicle();
+		realtime_interval = setInterval(() => void load_realtime_vehicle(), 1_000);
+	}
+
 	async function load_history() {
 		const request_id = ++request_sequence;
 		loading = true;
@@ -505,7 +544,17 @@
 			) ?? null;
 	}
 
+	$: {
+		const next_realtime_lookup_key = `${vehicle_info_chateau || ''}\u0000${vehicle}`;
+		if (vehicle_info_chateau && vehicle && next_realtime_lookup_key !== realtime_lookup_key) {
+			realtime_lookup_key = next_realtime_lookup_key;
+			map_context_key = '';
+			start_realtime_updates();
+		}
+	}
+
 	onDestroy(() => {
+		if (realtime_interval != null) clearInterval(realtime_interval);
 		clear_pulse_animation();
 		const map = get(map_pointer_store) as any;
 		try {
