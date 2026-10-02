@@ -4,11 +4,18 @@
 	import { get } from 'svelte/store';
 	import HomeButton from './SidebarParts/home_button.svelte';
 	import { data_stack_store, map_pointer_store } from '../globalstores';
+	import {
+		additional_filter_for_vehicles_store,
+		resetAdditionalVehicleFilter
+	} from './filterState';
 	import { BlockStack, SingleTrip, StackInterface } from './stackenum';
 	import { timezone_to_locale } from './timezone_to_locale';
 	import VehicleInfo from './vehicle_info.svelte';
 	import Clock from './Clock.svelte';
 	import DonationPopup from './DonationPopup.svelte';
+	import { determineDarkModeToBool } from './determineDarkModeToBool';
+	import { occupancy_to_symbol } from './occupancy_to_symbol';
+	import { getContrastColours, makeDelayLabel } from './processVehicleFeature';
 	import type { RouteHistoryRow, VehicleHistoryLookupResponse } from '$lib/types/backend/birch';
 	import type { AspenisedVehiclePosition, PostgresRoute } from '$lib/types/backend/common';
 
@@ -35,12 +42,7 @@
 	let realtime_lookup_key = '';
 	let realtime_request_sequence = 0;
 	let realtime_interval: ReturnType<typeof setInterval> | null = null;
-	let pulse_animation_frame: number | null = null;
 	let map_context_key = '';
-
-	const CURRENT_VEHICLE_SOURCE = 'vehicle-history-current-position';
-	const CURRENT_VEHICLE_PULSE_LAYER = 'vehicle-history-current-position-pulse';
-	const CURRENT_VEHICLE_DOT_LAYER = 'vehicle-history-current-position-dot';
 
 	const empty_feature_collection = () => ({ type: 'FeatureCollection', features: [] });
 
@@ -224,89 +226,85 @@
 		})[0];
 	}
 
-	function clear_pulse_animation() {
-		if (pulse_animation_frame != null) {
-			cancelAnimationFrame(pulse_animation_frame);
-			pulse_animation_frame = null;
-		}
-	}
-
-	function start_pulse_animation(map: any) {
-		clear_pulse_animation();
-		const started_at = performance.now();
-
-		const animate = (now: number) => {
-			if (get(map_pointer_store) !== map || !map.getLayer(CURRENT_VEHICLE_PULSE_LAYER)) {
-				pulse_animation_frame = null;
-				return;
-			}
-
-			const phase = (Math.sin((now - started_at) / 350) + 1) / 2;
-			map.setPaintProperty(CURRENT_VEHICLE_PULSE_LAYER, 'circle-radius', 11 + phase * 7);
-			map.setPaintProperty(CURRENT_VEHICLE_PULSE_LAYER, 'circle-opacity', 0.45 - phase * 0.25);
-			pulse_animation_frame = requestAnimationFrame(animate);
-		};
-
-		pulse_animation_frame = requestAnimationFrame(animate);
-	}
-
-	function ensure_current_vehicle_layers(map: any) {
-		if (!map.getSource(CURRENT_VEHICLE_SOURCE)) {
-			map.addSource(CURRENT_VEHICLE_SOURCE, {
-				type: 'geojson',
-				data: empty_feature_collection()
-			});
-		}
-
-		if (!map.getLayer(CURRENT_VEHICLE_PULSE_LAYER)) {
-			map.addLayer({
-				id: CURRENT_VEHICLE_PULSE_LAYER,
-				type: 'circle',
-				source: CURRENT_VEHICLE_SOURCE,
-				paint: {
-					'circle-radius': 14,
-					'circle-color': '#2563eb',
-					'circle-opacity': 0.3,
-					'circle-stroke-width': 0
-				}
-			});
-		}
-
-		if (!map.getLayer(CURRENT_VEHICLE_DOT_LAYER)) {
-			map.addLayer({
-				id: CURRENT_VEHICLE_DOT_LAYER,
-				type: 'circle',
-				source: CURRENT_VEHICLE_SOURCE,
-				paint: {
-					'circle-radius': 6,
-					'circle-color': '#2563eb',
-					'circle-stroke-color': '#ffffff',
-					'circle-stroke-width': 2
-				}
-			});
-		}
+	function clear_vehicle_context(map: any) {
+		map?.getSource('livedots_context')?.setData(empty_feature_collection());
+		resetAdditionalVehicleFilter();
 	}
 
 	function show_current_vehicle_position(vehicle_position: AspenisedVehiclePosition) {
 		const position = vehicle_position.position;
-		if (!position) return;
+		const chateau_id = vehicle_info_chateau;
+		if (!position || !chateau_id) return;
 
 		const map = get(map_pointer_store) as any;
 		if (!map || !map.isStyleLoaded?.()) return;
 
 		try {
-			ensure_current_vehicle_layers(map);
-			map.getSource(CURRENT_VEHICLE_SOURCE)?.setData({
+			const route_id =
+				vehicle_position.trip?.route_id ??
+				current_trip_row?.route_id ??
+				latest_history_row()?.route_id ??
+				null;
+			const route = route_id ? history_data?.routes?.[route_id] : undefined;
+			const color = route?.color || '#aaaaaa';
+			const text_color = route?.text_color || '#000000';
+			const route_type = route?.route_type ?? vehicle_position.route_type;
+			const contrast = getContrastColours(color, determineDarkModeToBool());
+			const vehicle_number =
+				vehicle_position.vehicle?.label || vehicle_position.vehicle?.id || vehicle;
+			const delay = vehicle_position.trip?.delay ?? null;
+			const trip_id = vehicle_position.trip?.trip_id ?? null;
+
+			map.getSource('livedots_context')?.setData({
 				type: 'FeatureCollection',
 				features: [{
 					type: 'Feature',
-					properties: { vehicle, trip_id: vehicle_position.trip?.trip_id ?? null },
+					id: `livedots_context-${chateau_id}-${trip_id || vehicle_number}`,
+					properties: {
+						chateau: chateau_id,
+						trip_id,
+						color,
+						text_color,
+						tripIdLabel: vehicle_position.trip?.trip_short_name || '',
+						maptag: route?.short_name || route?.long_name || '',
+						trip_short_name: vehicle_position.trip?.trip_short_name || null,
+						route_short_name: route?.short_name || null,
+						route_long_name: route?.long_name || null,
+						contrastlightmode: contrast.contrastlightmode,
+						contrastdarkmode: contrast.contrastdarkmode,
+						contrastdarkmodebearing: contrast.contrastdarkmodebearing,
+						routeId: route_id,
+						start_date: vehicle_position.trip?.start_date ?? null,
+						start_time: vehicle_position.trip?.start_time ?? null,
+						crowd_symbol: occupancy_to_symbol(vehicle_position.occupancy_status),
+						delay_label: typeof delay === 'number' ? makeDelayLabel(delay) : '',
+						delay,
+						route_type,
+						headsign: vehicle_position.trip?.trip_headsign || '',
+						vehicleIdLabel: vehicle_number
+					},
 					geometry: {
 						type: 'Point',
 						coordinates: [position.longitude, position.latitude]
 					}
 				}]
 			});
+
+			if (trip_id && [0, 1, 2, 3].includes(route_type)) {
+				additional_filter_for_vehicles_store.set([
+					'all',
+					[
+						'!',
+						[
+							'all',
+							['==', ['get', 'chateau'], chateau_id],
+							['==', ['get', 'trip_id'], trip_id]
+						]
+					]
+				]);
+			} else {
+				resetAdditionalVehicleFilter();
+			}
 
 			map.getSource('transit_shape_context')?.setData(empty_feature_collection());
 
@@ -319,8 +317,6 @@
 					duration: 800
 				});
 			}
-
-			if (pulse_animation_frame == null) start_pulse_animation(map);
 		} catch (map_error) {
 			console.error('Unable to show vehicle history realtime position', map_error);
 		}
@@ -343,8 +339,7 @@
 
 	async function show_last_known_route_shape() {
 		const map_before_fetch = get(map_pointer_store) as any;
-		map_before_fetch?.getSource(CURRENT_VEHICLE_SOURCE)?.setData(empty_feature_collection());
-		clear_pulse_animation();
+		clear_vehicle_context(map_before_fetch);
 
 		const row = latest_history_row();
 		if (!row) return;
@@ -378,8 +373,7 @@
 					: shape?.geometry || shape;
 			if (!geometry) return;
 
-			map.getSource(CURRENT_VEHICLE_SOURCE)?.setData(empty_feature_collection());
-			clear_pulse_animation();
+			clear_vehicle_context(map);
 			map.getSource('transit_shape_context')?.setData({
 				type: 'FeatureCollection',
 				features: [{
@@ -435,6 +429,7 @@
 			}
 
 			const payload = await response.json().catch(() => null);
+			if (request_id !== realtime_request_sequence) return;
 			const vehicle_data = Array.isArray(payload?.data) ? payload.data[0] : payload?.data;
 			current_vehicle = vehicle_data || null;
 
@@ -554,17 +549,15 @@
 	}
 
 	onDestroy(() => {
+		request_sequence += 1;
+		realtime_request_sequence += 1;
 		if (realtime_interval != null) clearInterval(realtime_interval);
-		clear_pulse_animation();
 		const map = get(map_pointer_store) as any;
 		try {
-			map?.getSource(CURRENT_VEHICLE_SOURCE)?.setData(empty_feature_collection());
+			clear_vehicle_context(map);
 			map?.getSource('transit_shape_context')?.setData(empty_feature_collection());
-			if (map?.getLayer(CURRENT_VEHICLE_DOT_LAYER)) map.removeLayer(CURRENT_VEHICLE_DOT_LAYER);
-			if (map?.getLayer(CURRENT_VEHICLE_PULSE_LAYER)) map.removeLayer(CURRENT_VEHICLE_PULSE_LAYER);
-			if (map?.getSource(CURRENT_VEHICLE_SOURCE)) map.removeSource(CURRENT_VEHICLE_SOURCE);
 		} catch (map_error) {
-			console.error('Unable to clean up vehicle history map layers', map_error);
+			console.error('Unable to clean up vehicle history map context', map_error);
 		}
 	});
 </script>
