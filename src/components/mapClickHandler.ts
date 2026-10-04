@@ -1,4 +1,4 @@
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import type { Writable } from 'svelte/store';
 import { writable, get } from 'svelte/store';
 import { data_stack_store, on_sidebar_trigger_store } from '../globalstores';

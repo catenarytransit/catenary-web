@@ -1,5 +1,5 @@
 <script lang="ts">
-	import maplibregl from 'maplibre-gl';
+	import * as maplibregl from 'maplibre-gl';
 	import { onMount } from 'svelte';
 	import { addShapes } from '../../components/addLayers/addShapes';
 

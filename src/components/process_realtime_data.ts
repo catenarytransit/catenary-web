@@ -17,7 +17,7 @@ import {
 	new_jeans_buses,
 	pride_buses
 } from './addLayers/customIcons';
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import { determineDarkModeToBool } from './determineDarkModeToBool';
 import { _ } from 'svelte-i18n';
 import { writable } from 'svelte/store';

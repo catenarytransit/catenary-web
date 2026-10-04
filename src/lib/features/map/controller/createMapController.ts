@@ -1,4 +1,4 @@
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { get, writable, type Readable, type Writable } from 'svelte/store';
 import { getOptimalPixelRatio } from '$components/maplibre_starter';

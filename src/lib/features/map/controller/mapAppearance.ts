@@ -1,5 +1,5 @@
 import mlcontour from 'maplibre-contour';
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 
 export function applySky(map: maplibregl.Map, darkMode: boolean): void {
 	const sky = darkMode

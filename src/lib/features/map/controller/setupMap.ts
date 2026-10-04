@@ -1,7 +1,7 @@
 import { get } from 'svelte/store';
 import type { Writable } from 'svelte/store';
 import { makeFireMap } from '$components/wildfireMap';
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import { show_zombie_buses_store, chateaus_store } from '$root/globalstores';
 import { clearbottomright } from '$components/clearbottomright';
 import { addStopsLayers } from '$components/addLayers/addStops';
