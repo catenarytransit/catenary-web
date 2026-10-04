@@ -14,6 +14,25 @@ let sourceHasFeatures: Record<string, boolean> = {};
 let trajectorySourceDebugged = new Set<string>();
 let missingTrajectorySources = new Set<string>();
 
+type PreparedTrajectorySegment = {
+	length: number;
+	start: number[];
+	end: number[];
+};
+
+type PreparedTrajectory = {
+	coordinates: number[][];
+	segments: PreparedTrajectorySegment[];
+	totalLength: number;
+	departure: number;
+	arrival: number;
+};
+
+const preparedTrajectoryCache = new WeakMap<
+	object,
+	{ segmentsRef: unknown; stopsRef: unknown; value: PreparedTrajectory | null }
+>();
+
 // Calculate bearing in degrees from [lon1, lat1] to [lon2, lat2]
 function calculateBearing(lon1: number, lat1: number, lon2: number, lat2: number): number {
 	const dLon = ((lon2 - lon1) * Math.PI) / 180;
@@ -29,25 +48,57 @@ function calculateBearing(lon1: number, lat1: number, lon2: number, lat2: number
 	return ((brng * 180) / Math.PI + 360) % 360;
 }
 
-// Interpolate coordinates and calculate bearing along path based on progress fraction (0..1)
-function interpolatePositionAndBearing(coordinates: number[][], progress: number) {
-	if (coordinates.length === 0) return null;
-	if (coordinates.length === 1) return { coords: coordinates[0], bearing: 0 };
-
-	const segments: { length: number; start: number[]; end: number[] }[] = [];
-	let totalLength = 0;
-
-	for (let i = 0; i < coordinates.length - 1; i++) {
-		const start = coordinates[i];
-		const end = coordinates[i + 1];
-		const dx = end[0] - start[0];
-		const dy = end[1] - start[1];
-		const length = Math.sqrt(dx * dx + dy * dy);
-		segments.push({ length, start, end });
-		totalLength += length;
+function prepareTrajectory(traj: any): PreparedTrajectory | null {
+	if (!traj || typeof traj !== 'object' || !Array.isArray(traj.segments) || !Array.isArray(traj.stops)) {
+		return null;
 	}
 
-	if (totalLength === 0) {
+	const cached = preparedTrajectoryCache.get(traj);
+	if (cached && cached.segmentsRef === traj.segments && cached.stopsRef === traj.stops) {
+		return cached.value;
+	}
+
+	const coordinates: number[][] = [];
+	for (const segment of traj.segments) {
+		if (!Array.isArray(segment?.coordinates)) continue;
+		for (const coordinate of segment.coordinates) {
+			if (Array.isArray(coordinate) && coordinate.length >= 2) coordinates.push(coordinate);
+		}
+	}
+
+	const departure = Date.parse(traj.stops[0]?.departure);
+	const arrival = Date.parse(traj.stops[traj.stops.length - 1]?.arrival);
+	let value: PreparedTrajectory | null = null;
+
+	if (coordinates.length > 0 && Number.isFinite(departure) && Number.isFinite(arrival) && arrival > departure) {
+		const segments: PreparedTrajectorySegment[] = [];
+		let totalLength = 0;
+
+		for (let i = 0; i < coordinates.length - 1; i++) {
+			const start = coordinates[i];
+			const end = coordinates[i + 1];
+			const dx = end[0] - start[0];
+			const dy = end[1] - start[1];
+			const length = Math.sqrt(dx * dx + dy * dy);
+			segments.push({ length, start, end });
+			totalLength += length;
+		}
+
+		value = { coordinates, segments, totalLength, departure, arrival };
+	}
+
+	preparedTrajectoryCache.set(traj, {
+		segmentsRef: traj.segments,
+		stopsRef: traj.stops,
+		value
+	});
+	return value;
+}
+
+// Interpolate coordinates and calculate bearing along a precomputed path.
+function interpolatePositionAndBearing(prepared: PreparedTrajectory, progress: number) {
+	const { coordinates, segments, totalLength } = prepared;
+	if (coordinates.length === 1 || totalLength === 0 || segments.length === 0) {
 		return { coords: coordinates[0], bearing: 0 };
 	}
 
@@ -150,11 +201,6 @@ export function startTrajectoryManager(map: Map) {
 		const now = Date.now();
 		const darkMode = determineDarkModeToBool();
 
-		let activeCount = 0;
-		for (const key in activeTrajectoriesData) {
-			activeCount += activeTrajectoriesData[key].content?.length || 0;
-		}
-
 		const busesFeatures: any[] = [];
 		const localrailFeatures: any[] = [];
 		const intercityrailFeatures: any[] = [];
@@ -170,30 +216,18 @@ export function startTrajectoryManager(map: Map) {
 					continue;
 				}
 
-				const departureStr = traj.stops[0].departure;
-				const arrivalStr = traj.stops[traj.stops.length - 1].arrival;
-				const departure = new Date(departureStr).getTime();
-				const arrival = new Date(arrivalStr).getTime();
+				const prepared = prepareTrajectory(traj);
+				if (!prepared) continue;
+				const { departure, arrival } = prepared;
 
 				// Only show vehicle if current time is within trip duration bounds (with 30-second padding)
 				if (clientNow < departure - 30000 || clientNow > arrival + 30000) {
 					continue;
 				}
 
-				let coordinates: number[][] = [];
-				for (const segment of traj.segments) {
-					if (segment.coordinates) {
-						coordinates = coordinates.concat(segment.coordinates);
-					}
-				}
-
-				if (coordinates.length === 0) {
-					continue;
-				}
-
 				// Clamp progress to [0, 1]
 				const progress = Math.max(0, Math.min(1, (clientNow - departure) / (arrival - departure)));
-				const interpolationResult = interpolatePositionAndBearing(coordinates, progress);
+				const interpolationResult = interpolatePositionAndBearing(prepared, progress);
 				if (!interpolationResult) continue;
 
 				const { coords, bearing } = interpolationResult;

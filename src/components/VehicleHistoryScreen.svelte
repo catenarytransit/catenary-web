@@ -41,7 +41,8 @@
 	let current_trip_row: RouteHistoryRow | null = null;
 	let realtime_lookup_key = '';
 	let realtime_request_sequence = 0;
-	let realtime_interval: ReturnType<typeof setInterval> | null = null;
+	let realtime_timeout: ReturnType<typeof setTimeout> | null = null;
+	let realtime_loop_generation = 0;
 	let map_context_key = '';
 
 	const empty_feature_collection = () => ({ type: 'FeatureCollection', features: [] });
@@ -218,12 +219,19 @@
 		const rows = history_data?.trip_history || [];
 		if (rows.length === 0) return null;
 
-		return [...rows].sort((left, right) => {
-			const left_time = left.unix_start_time ?? Number.NEGATIVE_INFINITY;
-			const right_time = right.unix_start_time ?? Number.NEGATIVE_INFINITY;
-			if (left_time !== right_time) return right_time - left_time;
-			return right.operation_date.localeCompare(left.operation_date);
-		})[0];
+		let latest = rows[0];
+		for (let i = 1; i < rows.length; i += 1) {
+			const candidate = rows[i];
+			const latest_time = latest.unix_start_time ?? Number.NEGATIVE_INFINITY;
+			const candidate_time = candidate.unix_start_time ?? Number.NEGATIVE_INFINITY;
+			if (
+				candidate_time > latest_time ||
+				(candidate_time === latest_time && candidate.operation_date > latest.operation_date)
+			) {
+				latest = candidate;
+			}
+		}
+		return latest;
 	}
 
 	function clear_vehicle_context(map: any) {
@@ -443,10 +451,17 @@
 		}
 	}
 
+	async function run_realtime_update_loop(generation: number) {
+		await load_realtime_vehicle();
+		if (generation !== realtime_loop_generation || !vehicle_info_chateau || !vehicle) return;
+		realtime_timeout = setTimeout(() => void run_realtime_update_loop(generation), 5_000);
+	}
+
 	function start_realtime_updates() {
-		if (realtime_interval != null) clearInterval(realtime_interval);
-		void load_realtime_vehicle();
-		realtime_interval = setInterval(() => void load_realtime_vehicle(), 1_000);
+		if (realtime_timeout != null) clearTimeout(realtime_timeout);
+		realtime_request_sequence += 1;
+		const generation = ++realtime_loop_generation;
+		void run_realtime_update_loop(generation);
 	}
 
 	async function load_history() {
@@ -515,13 +530,14 @@
 	}
 
 	$: grouped_history = group_history(history_data?.trip_history || [], sort_descending);
-	$: vehicle_info_chateau =
-		chateau ||
-		(latest_history_row()
-			? history_data?.routes?.[latest_history_row()!.route_id]?.chateau
-			: null) ||
-		Object.values(history_data?.routes || {}).find((route) => Boolean(route.chateau))?.chateau ||
-		null;
+	$: {
+		const latest_row = latest_history_row();
+		vehicle_info_chateau =
+			chateau ||
+			(latest_row ? history_data?.routes?.[latest_row.route_id]?.chateau : null) ||
+			Object.values(history_data?.routes || {}).find((route) => Boolean(route.chateau))?.chateau ||
+			null;
+	}
 
 	$: current_trip_id = current_vehicle?.trip?.trip_id ?? null;
 	$: {
@@ -551,7 +567,8 @@
 	onDestroy(() => {
 		request_sequence += 1;
 		realtime_request_sequence += 1;
-		if (realtime_interval != null) clearInterval(realtime_interval);
+		realtime_loop_generation += 1;
+		if (realtime_timeout != null) clearTimeout(realtime_timeout);
 		const map = get(map_pointer_store) as any;
 		try {
 			clear_vehicle_context(map);

@@ -49,11 +49,13 @@ export async function setupMap(
 	initSpruceWebSocket();
 	initRamondaWebSocket();
 	startTrajectoryManager(map);
-	fetch_trajectories(layersettings, map);
+	const refreshTrajectories = () => fetch_trajectories(layersettings, map);
+	refreshTrajectories();
 
-	const updateInterval = window.setInterval(() => {
-		fetch_trajectories(layersettings, map);
-	}, 700);
+	// Viewport changes need an immediate subscription refresh. The periodic
+	// refresh is only a keepalive for unchanged viewports/layer settings.
+	map.on('moveend', refreshTrajectories);
+	const updateInterval = window.setInterval(refreshTrajectories, 15_000);
 
 	map.on('load', async () => {
 		recompute_map_padding();
@@ -145,6 +147,7 @@ export async function setupMap(
 
 	map.on('remove', () => {
 		window.clearInterval(updateInterval);
+		map.off('moveend', refreshTrajectories);
 		settingsTimeouts.forEach((timeout) => window.clearTimeout(timeout));
 		unsubscribeSpruce?.();
 		unsubscribeSpruce = null;

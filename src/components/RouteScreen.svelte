@@ -760,28 +760,30 @@
 	}
 
 	$: if (routestack) {
-		fetch_route_selected();
+		if (vehicle_interval) {
+			clearInterval(vehicle_interval);
+			vehicle_interval = null;
+		}
 
-		fetch_vehicles_for_route();
+		// A last-updated token belongs to one route only.
+		route_rt_last_updated = null;
+		void fetch_route_selected();
+		void fetch_vehicles_for_route();
 
 		vehicle_interval = setInterval(() => {
-			fetch_vehicles_for_route();
+			void fetch_vehicles_for_route();
 		}, 1000);
 	}
 
 	onDestroy(() => {
 		if (fetchtimeout) {clearTimeout(fetchtimeout)};
 		resetAdditionalVehicleFilter();
-		clearInterval(vehicle_interval);
+		if (vehicle_interval) clearInterval(vehicle_interval);
 		delete_filter_stops_background();
 	})
 
 	onMount(() => {
 		console.log('component mounted');
-
-		fetch_route_selected();
-
-		fetch_vehicles_for_route();
 
 		refreshPinnedState();
 		const onStorage = (e: StorageEvent) => {

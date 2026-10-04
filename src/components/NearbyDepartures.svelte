@@ -475,10 +475,8 @@
 		return item.data.short_name ?? item.data.long_name ?? '';
 	}
 
-	let current_time: number = 0;
-	setInterval(() => {
-		current_time = Date.now();
-	}, 500);
+	let current_time: number = Date.now();
+	let clock_interval: ReturnType<typeof setInterval> | null = null;
 
 	// Reference time for countdowns: always the actual current time
 	let reference_time_sec: number = Date.now() / 1000;
@@ -486,7 +484,8 @@
 
 	let first_load = false;
 	let first_attempt_sent = false;
-	let timeout_first_attempt: NodeJS.Timeout | null = null;
+	let timeout_first_attempt: ReturnType<typeof setInterval> | null = null;
+	let delayed_refresh_timeout: ReturnType<typeof setTimeout> | null = null;
 	let loading = false;
 	let marker_reference: maplibregl.Marker | null = null;
 	let amount_of_ms_total_server_side: number | null = null;
@@ -499,6 +498,10 @@
 			sortMode = storedSort;
 
 			current_time = Date.now();
+			clock_interval = window.setInterval(() => {
+				current_time = Date.now();
+			}, 1_000);
+
 			refreshPinnedSet();
 			const onStorage = (e: StorageEvent) => {
 				if (e.key === LS_KEY) {
@@ -506,7 +509,11 @@
 					refilter();
 				}
 			};
+			const onResize = () => {
+				window_height_known = window.innerHeight;
+			};
 			window.addEventListener('storage', onStorage);
+			window.addEventListener('resize', onResize);
 
 			fetch('/eurostyle-ui-rail.geojson')
 				.then((res) => res.json())
@@ -543,9 +550,6 @@
 				}
 			}
 
-			window.addEventListener('resize', () => {
-				window_height_known = window.innerHeight;
-			});
 			window_height_known = window.innerHeight;
 
 			if (current_nearby_pick_state == 0) {
@@ -553,28 +557,32 @@
 			}
 
 			getNearbyDepartures();
-			let interval = setInterval(() => {
+			const interval = window.setInterval(() => {
 				getNearbyDepartures();
 			}, 30_000);
 
-			setTimeout(() => {
+			delayed_refresh_timeout = window.setTimeout(() => {
 				getNearbyDepartures();
 				first_load = true;
 			}, 1500);
 
-			timeout_first_attempt = setInterval(() => {
+			timeout_first_attempt = window.setInterval(() => {
 				if (!first_attempt_sent) {
 					getNearbyDepartures();
-				} else {
-					if (timeout_first_attempt) clearInterval(timeout_first_attempt);
+				} else if (timeout_first_attempt) {
+					clearInterval(timeout_first_attempt);
+					timeout_first_attempt = null;
 				}
 			}, 300);
 
 			return () => {
 				clearInterval(interval);
+				if (clock_interval) clearInterval(clock_interval);
 				if (timeout_first_attempt) clearInterval(timeout_first_attempt);
+				if (delayed_refresh_timeout) clearTimeout(delayed_refresh_timeout);
 				if (marker_reference) marker_reference.remove();
 				window.removeEventListener('storage', onStorage);
+				window.removeEventListener('resize', onResize);
 			};
 		}
 	});

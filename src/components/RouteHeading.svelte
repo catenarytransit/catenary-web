@@ -135,22 +135,20 @@
 	}
 
 	onMount(() => {
-		window.addEventListener('resize', () => {
+		const onResize = () => {
 			window_height_known = window.innerHeight;
-		});
+		};
 
 		refreshPinnedState();
 		const onStorage = (e: StorageEvent) => {
 			if (e.key === LS_KEY) refreshPinnedState();
 		};
 		window.addEventListener('storage', onStorage);
-
-		window.addEventListener('resize', () => {
-			window_height_known = window.innerHeight;
-		});
+		window.addEventListener('resize', onResize);
 
 		return () => {
 			window.removeEventListener('storage', onStorage);
+			window.removeEventListener('resize', onResize);
 		};
 	});
 	let pdf_url: string | undefined;
