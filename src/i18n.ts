@@ -1,4 +1,5 @@
-import { addMessages, getLocaleFromNavigator, init, register } from 'svelte-i18n';
+import { get } from 'svelte/store';
+import { addMessages, getLocaleFromNavigator, init, locale, register } from 'svelte-i18n';
 import en from './locales/en.json';
 
 //sort like Google / YouTube
@@ -94,6 +95,10 @@ export function getLocaleStorageOrNav(): string {
 }
 
 export function init_locales() {
+	if (get(locale)) {
+		return;
+	}
+
 	init({
 		fallbackLocale: 'en',
 		initialLocale: getLocaleStorageOrNav()

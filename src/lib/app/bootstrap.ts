@@ -19,12 +19,16 @@ import { initializeOverlayState } from './state/overlays';
 let modulesInitialized = false;
 
 export function initializeApplicationModules(): void {
+	// The svelte-i18n locale store can be reset independently during client/HMR
+	// remounts. Re-check it before the one-time application bootstrap guard so
+	// translated children never render while the locale is null.
+	init_locales();
+
 	if (modulesInitialized) {
 		return;
 	}
 
 	modulesInitialized = true;
-	init_locales();
 	init_stores();
 
 	if (typeof window !== 'undefined') {
