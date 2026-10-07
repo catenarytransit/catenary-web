@@ -1,5 +1,6 @@
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import { get, writable, type Readable, type Writable } from 'svelte/store';
 import { getOptimalPixelRatio } from '$components/maplibre_starter';
 import { setupMap } from './setupMap';
@@ -64,6 +65,13 @@ function replaceObject(target: Record<string, any>, source: Record<string, any>)
 }
 
 function configureWorkers(): void {
+	// MapLibre GL JS v6 requires bundler users to provide the worker URL.
+	// `?worker&url` is important here: plain `?url` would emit
+	// maplibre-gl-worker.mjs without bundling its maplibre-gl-shared.mjs
+	// dependency, which works in dev but fails after a production build.
+	// Let Vite turn it into a self-contained, hashed same-origin worker asset.
+	maplibregl.setWorkerUrl(maplibreWorkerUrl);
+
 	maplibregl.setWorkerCount(navigator.hardwareConcurrency > 10 ? navigator.hardwareConcurrency : 4);
 }
 
