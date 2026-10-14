@@ -2582,33 +2582,18 @@
       }
     },
     {
-      "id": "poi_r20",
+      "id": "poi_named",
       "type": "symbol",
       "source": "openmaptiles",
       "source-layer": "poi",
-      "minzoom": 16,
-      "filter": [
-        "all",
-        ["match", ["geometry-type"], ["Point", "MultiPoint"], true, false],
-        [">=", ["get", "rank"], 20],
-        ["!=", ["get", "class"], "bus"],
-        ["!=", ["get", "class"], "parking"],
-        ["!=", ["get", "class"], "information"]
-      ],
+      "minzoom": 17,
+      "filter": ["all",["match",["geometry-type"],["Point","MultiPoint"],true,false],["any",["!=",["coalesce",["get","name"],""],""],["!=",["coalesce",["get","name_en"],""],""],["!=",["coalesce",["get","name_int"],""],""],["!=",["coalesce",["get","name:latin"],""],""],["!=",["coalesce",["get","name:nonlatin"],""],""],["!=",["coalesce",["get","name_de"],""],""]]],
       "layout": {
         "text-anchor": "top",
-        "text-field": [
-          "step",
-          ["zoom"],
-          "",
-          17,
-          [
-            "case",
-            ["has", "name:nonlatin"],
-            ["get", "name"],
-            ["coalesce", ["get", "name"], ["get", "name_en"]]
-          ]
-        ],
+        "icon-optional": true,
+        "text-allow-overlap": true,
+        "text-ignore-placement": true,
+        "text-field": ["coalesce",["get","name"],["get","name_en"],["get","name_int"],["get","name:latin"],["get","name:nonlatin"],["get","name_de"],""],
         "text-font": ["Arimo-Regular"],
         "text-max-width": 9,
         "text-offset": [0, 0.6],
@@ -2687,11 +2672,12 @@
       "type": "symbol",
       "source": "openmaptiles",
       "source-layer": "poi",
-      "minzoom": 17,
+      "minzoom": 16,
+      "maxzoom": 17,
       "filter": [
         "all",
         ["match", ["geometry-type"], ["Point", "MultiPoint"], true, false],
-        [">=", ["get", "rank"], 7],
+        [">=", ["get", "rank"], 2],
         ["<", ["get", "rank"], 20],
         ["!=", ["get", "class"], "bus"],
         ["!=", ["get", "class"], "parking"],
@@ -2699,19 +2685,8 @@
       ],
       "layout": {
         "text-anchor": "top",
-        "text-field": [
-          "step",
-          ["zoom"],
-          "",
-          18,
-          [
-            "case",
-            ["has", "name:nonlatin"],
-            ["get", "name"],
-            ["coalesce", ["get", "name"], ["get", "name_en"]]
-          ]
-        ],
-        "text-font": ["Arimo"],
+        "text-field": ["coalesce",["get","name"],["get","name_en"],["get","name_int"],["get","name:latin"],["get","name:nonlatin"],["get","name_de"],""],
+        "text-font": ["Arimo-Regular"],
         "text-max-width": 9,
         "text-offset": [0, 0.6],
         "text-size": 12,
@@ -2790,6 +2765,7 @@
       "source": "openmaptiles",
       "source-layer": "poi",
       "minzoom": 14,
+      "maxzoom": 17,
       "filter": [
         "all",
         ["match", ["geometry-type"], ["Point", "MultiPoint"], true, false],
@@ -2869,6 +2845,7 @@
       "type": "symbol",
       "source": "openmaptiles",
       "source-layer": "poi",
+      "maxzoom": 17,
       "filter": ["match", ["get", "class"], ["airport"], true, false],
       "layout": {
         "icon-image": ["to-string", ["get", "class"]],

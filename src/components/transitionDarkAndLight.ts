@@ -88,6 +88,14 @@ export function refreshUIMaplibre() {
 				const targetLayer = targetById[currentLayer.id];
 
 				if (targetLayer) {
+					// Updating paint/layout alone leaves stale POI rank filters and zoom ranges
+					// after switching between light and dark basemap styles.
+					map.setFilter(currentLayer.id, targetLayer.filter ?? null);
+					map.setLayerZoomRange(
+						currentLayer.id,
+						targetLayer.minzoom ?? 0,
+						targetLayer.maxzoom ?? 24
+					);
 					const targetLayout = targetLayer.layout ?? {};
 					const targetPaint = targetLayer.paint ?? {};
 
