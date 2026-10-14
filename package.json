@@ -8,6 +8,7 @@
 		"preview": "vite preview --port 16172",
 		"betapreview": "vite preview --port 16173",
 		"test": "playwright test",
+		"test:styles": "node --test tests/poi-style-visibility.test.mjs",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"test:unit": "vitest",
