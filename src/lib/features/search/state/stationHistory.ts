@@ -134,7 +134,10 @@ export function recordStationVisit(
 export function getTopHistory(limit: number = 10): SearchResultItem[] {
 	if (typeof window === 'undefined') return [];
 	try {
-		const history: HistoryEntry[] = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+		const raw = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+		const history: HistoryEntry[] = Array.isArray(raw)
+			? raw.filter((h) => h?.item && Array.isArray(h.visits) && h.visits.length > 0)
+			: [];
 		const now = Date.now();
 		const DECAY_MS = 1000 * 60 * 60 * 24 * 14;
 
@@ -153,5 +156,44 @@ export function getTopHistory(limit: number = 10): SearchResultItem[] {
 	} catch (e) {
 		console.error('Failed to load station history', e);
 		return [];
+	}
+}
+
+/** Keep regular OSM POIs separate from station IDs in the shared history. */
+export function recordOsmItemVisit(place: {
+	osm_id: string; osm_class: string; osm_type: string | null;
+	name: string; address: string; lat: number; lon: number;
+}): void {
+	if (typeof window === 'undefined' || !/^[1-9][0-9]*$/.test(place.osm_id)) return;
+	try {
+		const raw = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+		const history: HistoryEntry[] = Array.isArray(raw) ? raw : [];
+		const item: SearchResultItem = { type: 'osm_item', data: {
+			osm_id: place.osm_id,
+			osm_class: place.osm_class,
+			osm_type: place.osm_type,
+			name: place.name,
+			address: place.address,
+			lat: Number.isFinite(place.lat) ? place.lat : null,
+			lon: Number.isFinite(place.lon) ? place.lon : null
+		}};
+		const key = place.osm_class + '/' + place.osm_id;
+		const now = Date.now();
+		const existing = history.find((entry) =>
+			entry.item?.type === 'osm_item' &&
+			entry.item.data?.osm_class + '/' + entry.item.data?.osm_id === key
+		);
+		if (existing) {
+			const visits = Array.isArray(existing.visits) ? existing.visits : [];
+			if (now - (visits[visits.length - 1] ?? 0) >= 30000) visits.push(now);
+			existing.visits = visits.slice(-20);
+			existing.item = item;
+		} else {
+			history.push({ item, visits: [now] });
+		}
+		history.sort((a, b) => (b.visits?.at(-1) ?? 0) - (a.visits?.at(-1) ?? 0));
+		localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, MAX_HISTORY_ITEMS)));
+	} catch (error) {
+		console.warn('Unable to save OSM item history', error);
 	}
 }

@@ -2,6 +2,8 @@ import * as maplibregl from 'maplibre-gl';
 import type { Writable } from 'svelte/store';
 import { writable, get } from 'svelte/store';
 import { data_stack_store, on_sidebar_trigger_store } from '../globalstores';
+import { decodeOpenMapTilesPoiId } from '$lib/features/osm/osmPoiId';
+import { recordOsmItemVisit } from '$lib/features/search/state/stationHistory';
 import {
 	MapSelectionScreen,
 	StackInterface,
@@ -14,7 +16,8 @@ import {
 	StopMapSelector,
 	OsmStationMapSelector,
 	VehicleSelectedStack,
-	OsmStationStack
+	OsmStationStack,
+	OsmSearchResultStack
 } from './stackenum';
 
 export function setup_click_handler(
@@ -29,7 +32,25 @@ export function setup_click_handler(
 			.flatMap((category) => Object.values(category))
 			.filter(Boolean);
 
-		console.log('interactiveLayers', interactiveLayers);
+
+		// Query only layers that are actually rendered. POIs come from the base map
+		// style rather than the transit layers installed by setupMap.
+		const styleLayers = map.getStyle()?.layers ?? [];
+		const zoom = map.getZoom();
+		const poiLayers = styleLayers.filter((layer) =>
+			layer.source === 'openmaptiles' &&
+			(layer as { 'source-layer'?: string })['source-layer'] === 'poi' &&
+			(layer.minzoom == null || zoom >= layer.minzoom) &&
+			(layer.maxzoom == null || zoom < layer.maxzoom) &&
+			map.getLayoutProperty(layer.id, 'visibility') !== 'none'
+		).map((layer) => layer.id);
+		interactiveLayers.push(...poiLayers);
+		// The trajectory layer names differ between modes; use source IDs, not
+		// hard-coded layer names, so all actively drawn vehicles are clickable.
+		interactiveLayers.push(...styleLayers.filter((layer) =>
+			typeof layer.source === 'string' &&
+			(layer.source.startsWith('trajectory_') || layer.source === 'livedots_context')
+		).map((layer) => layer.id));
 
 		interactiveLayers.push(
 			'ferryshapes',
@@ -42,7 +63,12 @@ export function setup_click_handler(
 
 		let current_layers = map.getStyle().layers;
 
-		console.log('current_layers', current_layers);
+
+		// Filter missing and hidden layers before the hit test. A nonexistent
+		// layer throws and used to prevent every other selection from working.
+		interactiveLayers = [...new Set(interactiveLayers)]
+			.filter((id): id is string => typeof id === 'string' && !!map.getLayer(id))
+			.filter((id) => map.getLayoutProperty(id, 'visibility') !== 'none');
 
 		for (const layer of current_layers) {
 			if (layer.source == 'stops_context') {
@@ -58,7 +84,7 @@ export function setup_click_handler(
 
 		try {
 			const selectedFeatures = map.queryRenderedFeatures(clickBbox, { layers: interactiveLayers });
-			console.log('selectedFeatures', map.queryRenderedFeatures(clickBbox));
+
 
 			const selected_vehicles_raw = selectedFeatures.filter(
 				(x: Record<string, any>) =>
@@ -77,7 +103,8 @@ export function setup_click_handler(
 
 			const selected_vehicles: MapSelectionOption[] = selected_vehicles_raw
 				.map((x: any) => {
-					let key = x.properties.vehicleIdLabel + x.properties.chateau;
+					const key = (x.properties.vehicleIdLabel || x.properties.trip_id || x.id) +
+						':' + x.properties.chateau;
 
 					if (selected_vehicles_key_unique.has(key)) {
 						return null;
@@ -88,7 +115,7 @@ export function setup_click_handler(
 					return new MapSelectionOption(
 						new VehicleMapSelector(
 							x.properties.chateau,
-							x.properties.vehicleIdLabel,
+							x.properties.vehicleIdLabel || x.properties.trip_id || String(x.id ?? ''),
 							x.properties.routeId,
 							x.properties.headsign,
 							x.properties.trip_short_name || x.properties.tripIdLabel,
@@ -293,6 +320,34 @@ export function setup_click_handler(
 			MapSelectionOptions = MapSelectionOptions.concat(selected_routes);
 			MapSelectionOptions = MapSelectionOptions.concat(selected_stops);
 			MapSelectionOptions = MapSelectionOptions.concat(selected_osm_stations);
+
+			// Transit/vehicle hits have priority over decorative POI symbols.
+			// Only decode feature IDs originating from openmaptiles/poi.
+			if (MapSelectionOptions.length === 0) {
+				const poi = selectedFeatures.find((feature) =>
+					feature.source === 'openmaptiles' &&
+					feature.sourceLayer === 'poi' &&
+					decodeOpenMapTilesPoiId(feature.id ?? feature.properties?.id) !== null
+				);
+				if (poi) {
+					const id = decodeOpenMapTilesPoiId(poi.id ?? poi.properties?.id)!;
+					const coordinates = poi.geometry.type === 'Point'
+						? poi.geometry.coordinates as number[]
+						: [e.lngLat.lng, e.lngLat.lat];
+					const lon = coordinates[0];
+					const lat = coordinates[1];
+					const name = String(poi.properties?.name || poi.properties?.name_en || '');
+					const address = String(poi.properties?.address || '');
+					const stack = new OsmSearchResultStack(
+						id.osmId, id.osmClass, id.osmType, name, address, lat, lon
+					);
+					recordOsmItemVisit(stack);
+					data_stack_store.update((items) => [...items, new StackInterface(stack)].slice(-25));
+					on_sidebar_trigger_store.update((x) => x + 1);
+					setSidebarOpen();
+					return;
+				}
+			}
 
 			if (MapSelectionOptions.length > 0) {
 				const data_stack = get(data_stack_store);

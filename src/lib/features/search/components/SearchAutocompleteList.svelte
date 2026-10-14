@@ -89,7 +89,16 @@
 <div id="search-autocomplete" class="flex flex-col">
 	{#if visibleItems.length > 0}
 		{#each visibleItems as item, index}
-			{#if item.type === 'cypress'}
+			{#if item.type === 'osm_item'}
+				<button
+					type="button"
+					on:click={() => selectResult(item)}
+					class="w-full cursor-pointer px-3 py-2 text-left hover:bg-gray-200 dark:hover:bg-gray-700"
+				>
+					<p class="font-medium dark:text-white">{item.data.name || item.data.osm_class + ' ' + item.data.osm_id}</p>
+					<p class="text-xs text-gray-600 dark:text-gray-400">{item.data.address || 'OpenStreetMap'}</p>
+				</button>
+			{:else if item.type === 'cypress'}
 				<button
 					on:click={() => selectResult(item)}
 					class="px-3 cursor-pointer w-full {index === $selectedResultIndex
