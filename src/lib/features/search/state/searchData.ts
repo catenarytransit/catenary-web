@@ -1,8 +1,11 @@
 import type { GeoJSONSource, Map } from 'maplibre-gl';
+import { parseCypressOsmId } from '$lib/features/osm/osmPoiId';
+import { recordOsmItemVisit } from './stationHistory';
 import { get, writable, type Writable } from 'svelte/store';
 import { data_stack_store, geolocation_store, map_pointer_store } from '$root/globalstores';
 import {
 	OsmItemStack,
+	OsmSearchResultStack,
 	OsmStationStack,
 	RouteStack,
 	StackInterface,
@@ -70,7 +73,7 @@ interface CypressFeatureCollection {
 }
 
 export interface SearchResultItem {
-	type: 'cypress' | 'route' | 'stop' | 'osm_station';
+	type: 'cypress' | 'route' | 'stop' | 'osm_station' | 'osm_item';
 	data: any;
 	chateau?: string;
 	gtfs_id?: string;
@@ -149,13 +152,31 @@ export function selectResult(item: SearchResultItem): void {
 	switch (item.type) {
 		case 'cypress': {
 			const feature = item.data as CypressFeature;
-			const [osmKind, osmId = '0'] = String(feature.properties.id ?? '').split('/');
-			const osmType = osmKind === 'relation' ? 'R' : osmKind === 'way' ? 'W' : 'N';
-			const category = feature.properties.categories?.[0] ?? feature.properties.layer;
-			pushScreen(new OsmItemStack(osmId, category, osmType));
-
-			if (feature.geometry?.coordinates) {
-				map?.flyTo({ center: feature.geometry.coordinates, zoom: 16 });
+			const osm = parseCypressOsmId(feature.properties.id);
+			if (!osm) break;
+			const [lon, lat] = feature.geometry?.coordinates ?? [NaN, NaN];
+			const place = new OsmSearchResultStack(
+				osm.osmId, osm.osmClass, osm.osmType, feature.properties.name ?? '',
+				'', lat, lon
+			);
+			recordOsmItemVisit(place);
+			pushScreen(place);
+			if (Number.isFinite(lon) && Number.isFinite(lat)) {
+				map?.flyTo({ center: [lon, lat], zoom: 16 });
+			}
+			break;
+		}
+		case 'osm_item': {
+			const place = item.data as OsmSearchResultStack;
+			if (!place?.osm_id) break;
+			const screen = new OsmSearchResultStack(
+				place.osm_id, place.osm_class, place.osm_type,
+				place.name, place.address, place.lat, place.lon
+			);
+			recordOsmItemVisit(screen);
+			pushScreen(screen);
+			if (Number.isFinite(place.lon) && Number.isFinite(place.lat)) {
+				map?.flyTo({ center: [place.lon, place.lat], zoom: 16 });
 			}
 			break;
 		}

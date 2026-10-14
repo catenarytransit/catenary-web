@@ -130,21 +130,19 @@
 		/>
 	{/if}
 
-	{#if latest_item_on_stack.data instanceof OsmSearchResultStack}
+	{#if latest_item_on_stack.data instanceof OsmItemStack}
 		<HomeButton />
-		<OsmSearchResultInfo
-			name={latest_item_on_stack.data.name}
-			address={latest_item_on_stack.data.address}
-			lat={latest_item_on_stack.data.lat}
-			lon={latest_item_on_stack.data.lon}
-		/>
-	{:else if latest_item_on_stack.data instanceof OsmItemStack}
-		<HomeButton />
-		<OsmItemInfo
-			osm_class={latest_item_on_stack.data.osm_class}
-			osm_id={latest_item_on_stack.data.osm_id}
-			osm_type={latest_item_on_stack.data.osm_type}
-		/>
+		{#key latest_item_on_stack.data.osm_class + '/' + latest_item_on_stack.data.osm_id}
+			<OsmItemInfo
+				osm_class={latest_item_on_stack.data.osm_class}
+				osm_id={latest_item_on_stack.data.osm_id}
+				osm_type={latest_item_on_stack.data.osm_type}
+				initial_name={latest_item_on_stack.data instanceof OsmSearchResultStack ? latest_item_on_stack.data.name : ''}
+				initial_address={latest_item_on_stack.data instanceof OsmSearchResultStack ? latest_item_on_stack.data.address : ''}
+				initial_lat={latest_item_on_stack.data instanceof OsmSearchResultStack ? latest_item_on_stack.data.lat : null}
+				initial_lon={latest_item_on_stack.data instanceof OsmSearchResultStack ? latest_item_on_stack.data.lon : null}
+			/>
+		{/key}
 	{/if}
 
 	{#if latest_item_on_stack.data instanceof RouteStack}
