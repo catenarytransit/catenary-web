@@ -3379,7 +3379,7 @@
       "source": "openmaptiles",
       "source-layer": "poi",
       "minzoom": 17,
-      "filter": ["all",["match",["geometry-type"],["Point","MultiPoint"],true,false],["any",["!=",["coalesce",["get","name"],""],""],["!=",["coalesce",["get","name_en"],""],""],["!=",["coalesce",["get","name_int"],""],""],["!=",["coalesce",["get","name:latin"],""],""],["!=",["coalesce",["get","name:nonlatin"],""],""],["!=",["coalesce",["get","name_de"],""],""]]],
+      "filter": ["all",["!",["all",["==",["get","class"],"poi"],["==",["get","subclass"],"bus_stop"]]],["match",["geometry-type"],["Point","MultiPoint"],true,false],["any",["!=",["coalesce",["get","name"],""],""],["!=",["coalesce",["get","name_en"],""],""],["!=",["coalesce",["get","name_int"],""],""],["!=",["coalesce",["get","name:latin"],""],""],["!=",["coalesce",["get","name:nonlatin"],""],""],["!=",["coalesce",["get","name_de"],""],""]]],
       "layout": {
         "icon-image": [
           "coalesce",
@@ -3445,6 +3445,7 @@
       "maxzoom": 17,
       "filter": [
         "all",
+        ["!",["all",["==",["get","class"],"poi"],["==",["get","subclass"],"bus_stop"]]],
         ["match", ["geometry-type"], ["Point", "MultiPoint"], true, false],
         [">=", ["get", "rank"], 2],
         ["<", ["get", "rank"], 20],
@@ -3515,6 +3516,7 @@
       "maxzoom": 17,
       "filter": [
         "all",
+        ["!",["all",["==",["get","class"],"poi"],["==",["get","subclass"],"bus_stop"]]],
         ["match", ["geometry-type"], ["Point", "MultiPoint"], true, false],
         ["==", ["get", "rank"], 1],
         ["!=", ["get", "class"], "bus"],
