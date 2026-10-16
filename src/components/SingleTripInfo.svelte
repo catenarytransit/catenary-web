@@ -1577,7 +1577,9 @@
 									>
 										<!-- Continuous Line -->
 										<div
-											class="bg-gray-700 dark:bg-gray-300 w-0.5 h-full"
+											class={trip_data.is_cancelled
+											? 'w-0.5 h-full border-l-2 border-dashed border-red-600 dark:border-red-500'
+											: 'bg-gray-700 dark:bg-gray-300 w-0.5 h-full'}
 											style={` opacity: ${i <= last_inactive_stop_idx ? '0.4' : '1'};`}
 										></div>
 									</div>
@@ -1667,7 +1669,9 @@
 									<!-- Top Line -->
 									{#if i > 0 || isDoubleTime}
 										<div
-											class="bg-gray-800 dark:bg-gray-300 w-0.5 absolute top-0 bottom-1/2 bg-current"
+											class={trip_data.is_cancelled
+												? 'w-0.5 absolute top-0 bottom-1/2 border-l-2 border-dashed border-red-600 dark:border-red-500'
+												: 'bg-gray-800 dark:bg-gray-300 w-0.5 absolute top-0 bottom-1/2 bg-current'}
 											style={` opacity: ${i <= last_inactive_stop_idx - 1 ? '0.4' : '1'};`}
 										></div>
 									{/if}
@@ -1675,7 +1679,9 @@
 									<!-- Bottom Line -->
 									{#if !isLastStop}
 										<div
-											class="bg-gray-800 dark:bg-gray-300 w-0.5 absolute bottom-0 bg-current"
+											class={trip_data.is_cancelled
+												? 'w-0.5 absolute bottom-0 border-l-2 border-dashed border-red-600 dark:border-red-500'
+												: 'bg-gray-800 dark:bg-gray-300 w-0.5 absolute bottom-0 bg-current'}
 											style={` top: ${i === 0 && !isDoubleTime ? '0.5rem' : '50%'}; opacity: ${i <= last_inactive_stop_idx - 1 ? '0.4' : '1'};`}
 										></div>
 									{/if}
@@ -1684,11 +1690,13 @@
 									{#if is_at_station && i == current_at_stop_idx_store}
 										<div
 											class="z-20 w-3 h-3 mt-1 rounded-full animate-pulse"
-											style={`background-color: ${trip_data.color};`}
+											style={`background-color: ${trip_data.is_cancelled ? (darkMode ? '#ef4444' : '#dc2626') : trip_data.color};`}
 										></div>
 									{:else}
 										<div
-											class={`bg-gray-800 dark:bg-gray-300 z-10 w-2 h-2 mt-1 rounded-full border-1 bg-white dark:bg-gray-800 `}
+											class={trip_data.is_cancelled
+												? 'bg-red-600 dark:bg-red-500 z-10 w-2 h-2 mt-1 rounded-full border-1'
+												: 'bg-gray-800 dark:bg-gray-300 z-10 w-2 h-2 mt-1 rounded-full border-1 bg-white dark:bg-gray-800'}
 											style={` box-shadow: 0 0 0 2px ${darkMode ? '#114' : '#fff'};`}
 										></div>
 									{/if}
@@ -1697,7 +1705,7 @@
 									{#if !is_at_station && i == moving_dot_segment_idx}
 										<div
 											class="absolute z-50 w-3 h-3 rounded-full animate-pulse"
-											style={`background-color: ${trip_data.color}; top: calc(${moving_dot_progress * 100}% + 0.25rem); left: 50%; transform: translateX(-50%);`}
+											style={`background-color: ${trip_data.is_cancelled ? (darkMode ? '#ef4444' : '#dc2626') : trip_data.color}; top: calc(${moving_dot_progress * 100}% + 0.25rem); left: 50%; transform: translateX(-50%);`}
 										></div>
 									{/if}
 								</div>
