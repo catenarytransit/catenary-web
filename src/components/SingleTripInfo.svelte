@@ -48,6 +48,10 @@
 	let timezones: string[] = [];
 	let error: string | null = '';
 	let stoptimes_cleaned_dataset: Array<Record<string, any>> = [];
+	$: cancellationTimeline = getTripCancellationTimeline(
+		stoptimes_cleaned_dataset,
+		trip_data?.is_cancelled === true
+	);
 	let current_time: number = Date.now();
 	let fetchtimeout: NodeJS.Timeout | null = null;
 	let bigfetchtimeout: NodeJS.Timeout | null = null;
@@ -97,6 +101,7 @@
 	import { occupancy_to_symbol } from './occupancy_to_symbol';
 	import StopTimeNumber from './StopTimeNumber.svelte';
 	import Clock from './Clock.svelte';
+	import { getTripCancellationTimeline } from './tripCancellationTimeline';
 	import VehicleInfo from './vehicle_info.svelte';
 	import { VehicleHistoryStack } from './stackenum';
 	import ConsolidatedRouteList from './ConsolidatedRouteList.svelte';
@@ -346,6 +351,10 @@
 						let new_stop_time_data_to_use = new_stop_time_to_use_arr[0];
 
 						existing_stop_time.rt_platform_string = new_stop_time_data_to_use.rt_platform_string;
+						// Cancellation statuses can change while the trip is open.
+						if ('schedule_relationship' in new_stop_time_data_to_use) {
+							existing_stop_time.schedule_relationship = new_stop_time_data_to_use.schedule_relationship;
+						}
 
 						if (typeof new_stop_time_data_to_use.rt_arrival?.time == 'number') {
 							existing_stop_time.rt_arrival_time = new_stop_time_data_to_use.rt_arrival?.time;
@@ -1480,6 +1489,11 @@
 						{@const connectionKey = stop_connections[stoptime.stop_id] ? stoptime.stop_id : null}
 						{@const isDoubleTime = shouldShowDoubleTime(stoptime)}
 						{@const isLastStop = i === stoptimes_cleaned_dataset.length - 1}
+						{@const isCancelledStop = cancellationTimeline.cancelledStops[i] ?? false}
+						{@const isDashedArrivalLine =
+							i > 0 ? cancellationTimeline.dashedSegments[i - 1] : cancellationTimeline.truncatedStops[i]}
+						{@const isDashedTopLine = isDashedArrivalLine}
+						{@const isDashedBottomLine = cancellationTimeline.dashedSegments[i] ?? false}
 						{@const mainRealtimeTime =
 							stoptime.rt_departure_time ?? (!isDoubleTime ? stoptime.rt_arrival_time : null)}
 						{@const mainDisplayTime =
@@ -1577,7 +1591,7 @@
 									>
 										<!-- Continuous Line -->
 										<div
-											class={trip_data.is_cancelled
+											class={isDashedArrivalLine
 											? 'w-0.5 h-full border-l-2 border-dashed border-red-600 dark:border-red-500'
 											: 'bg-gray-700 dark:bg-gray-300 w-0.5 h-full'}
 											style={` opacity: ${i <= last_inactive_stop_idx ? '0.4' : '1'};`}
@@ -1669,7 +1683,7 @@
 									<!-- Top Line -->
 									{#if i > 0 || isDoubleTime}
 										<div
-											class={trip_data.is_cancelled
+											class={isDashedTopLine
 												? 'w-0.5 absolute top-0 bottom-1/2 border-l-2 border-dashed border-red-600 dark:border-red-500'
 												: 'bg-gray-800 dark:bg-gray-300 w-0.5 absolute top-0 bottom-1/2 bg-current'}
 											style={` opacity: ${i <= last_inactive_stop_idx - 1 ? '0.4' : '1'};`}
@@ -1679,7 +1693,7 @@
 									<!-- Bottom Line -->
 									{#if !isLastStop}
 										<div
-											class={trip_data.is_cancelled
+											class={isDashedBottomLine
 												? 'w-0.5 absolute bottom-0 border-l-2 border-dashed border-red-600 dark:border-red-500'
 												: 'bg-gray-800 dark:bg-gray-300 w-0.5 absolute bottom-0 bg-current'}
 											style={` top: ${i === 0 && !isDoubleTime ? '0.5rem' : '50%'}; opacity: ${i <= last_inactive_stop_idx - 1 ? '0.4' : '1'};`}
@@ -1690,11 +1704,11 @@
 									{#if is_at_station && i == current_at_stop_idx_store}
 										<div
 											class="z-20 w-3 h-3 mt-1 rounded-full animate-pulse"
-											style={`background-color: ${trip_data.is_cancelled ? (darkMode ? '#ef4444' : '#dc2626') : trip_data.color};`}
+											style={`background-color: ${isCancelledStop ? (darkMode ? '#ef4444' : '#dc2626') : trip_data.color};`}
 										></div>
 									{:else}
 										<div
-											class={trip_data.is_cancelled
+											class={isCancelledStop
 												? 'bg-red-600 dark:bg-red-500 z-10 w-2 h-2 mt-1 rounded-full border-1'
 												: 'bg-gray-800 dark:bg-gray-300 z-10 w-2 h-2 mt-1 rounded-full border-1 bg-white dark:bg-gray-800'}
 											style={` box-shadow: 0 0 0 2px ${darkMode ? '#114' : '#fff'};`}
@@ -1705,7 +1719,7 @@
 									{#if !is_at_station && i == moving_dot_segment_idx}
 										<div
 											class="absolute z-50 w-3 h-3 rounded-full animate-pulse"
-											style={`background-color: ${trip_data.is_cancelled ? (darkMode ? '#ef4444' : '#dc2626') : trip_data.color}; top: calc(${moving_dot_progress * 100}% + 0.25rem); left: 50%; transform: translateX(-50%);`}
+											style={`background-color: ${isDashedBottomLine ? (darkMode ? '#ef4444' : '#dc2626') : trip_data.color}; top: calc(${moving_dot_progress * 100}% + 0.25rem); left: 50%; transform: translateX(-50%);`}
 										></div>
 									{/if}
 								</div>
@@ -1763,6 +1777,12 @@
 											<div class="mb-1 text-[#EF3841] flex items-center gap-1">
 												<img src="/icons/cancellation.svg" alt="(i)" class="w-4 h-4" />
 												<span>{$_('cancelled')}</span>
+											</div>
+										{/if}
+
+										{#if cancellationTimeline.lastBoardableStopIndex === i}
+											<div class="mb-1 text-red-600 dark:text-red-400 font-semibold">
+												{$_('stop_only_to_exit')}
 											</div>
 										{/if}
 
