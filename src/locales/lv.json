@@ -64,6 +64,7 @@
   "departure": "Atiešana",
   "arrival": "Pienākšana",
   "cancelled": "Atcelts",
+  "stop_only_to_exit": "Pietura tikai izkāpšanai",
   "early": "Agrāk",
   "late": "Kavējas",
   "skipped": "Izlaists",

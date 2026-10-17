@@ -64,6 +64,7 @@
   "departure": "Éalú",
   "arrival": "Teacht",
   "cancelled": "Cealaithe",
+  "stop_only_to_exit": "Stad le tuirlingt amháin",
   "early": "Luath",
   "late": "Mórach",
   "skipped": "Fágtha thar",

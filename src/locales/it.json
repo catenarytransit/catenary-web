@@ -64,6 +64,7 @@
   "departure": "Partenza",
   "arrival": "Arrivo",
   "cancelled": "Cancellato",
+  "stop_only_to_exit": "Fermata solo per la discesa",
   "early": "In anticipo",
   "late": "In ritardo",
   "skipped": "Saltato",

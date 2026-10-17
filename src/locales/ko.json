@@ -64,6 +64,7 @@
   "departure": "출발",
   "itemsselected": "개 항목이 선택됨",
   "cancelled": "취소된",
+  "stop_only_to_exit": "하차 전용 정류장",
   "skipped": "건너뛰",
   "early": "초반",
   "late": "늦게",

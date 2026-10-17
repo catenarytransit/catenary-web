@@ -64,6 +64,7 @@
   "departure": "Depart",
   "arrival": "Arrivée",
   "cancelled": "Annuléiert",
+  "stop_only_to_exit": "Arrêt nëmme fir auszesteigen",
   "early": "Fréi",
   "late": "Spéit",
   "skipped": "Iwwersprongen",

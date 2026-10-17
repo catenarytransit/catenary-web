@@ -64,6 +64,7 @@
   "departure": "Vertrek",
   "arrival": "Aankomst",
   "cancelled": "Geannuleerd",
+  "stop_only_to_exit": "Halte alleen om uit te stappen",
   "early": "Vroeg",
   "late": "Laat",
   "skipped": "Overgeslagen",
