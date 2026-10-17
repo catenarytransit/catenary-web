@@ -1494,6 +1494,8 @@
 							i > 0 ? cancellationTimeline.dashedSegments[i - 1] : cancellationTimeline.truncatedStops[i]}
 						{@const isDashedTopLine = isDashedArrivalLine}
 						{@const isDashedBottomLine = cancellationTimeline.dashedSegments[i] ?? false}
+						<!-- Pearl centers are 4px margin + half of their rendered 8px/12px diameter. -->
+						{@const pearlCenter = is_at_station && i === current_at_stop_idx_store ? '0.625rem' : '0.5rem'}
 						{@const mainRealtimeTime =
 							stoptime.rt_departure_time ?? (!isDoubleTime ? stoptime.rt_arrival_time : null)}
 						{@const mainDisplayTime =
@@ -1589,6 +1591,8 @@
 									<div
 										class="absolute top-0 bottom-0 left-1/2 -ml-px w-full h-full flex flex-col items-center"
 									>
+										<!-- Do not draw a connector above the first pearl. -->
+										{#if i > 0}
 										<!-- Continuous Line -->
 										<div
 											class={isDashedArrivalLine
@@ -1596,6 +1600,7 @@
 											: 'bg-gray-700 dark:bg-gray-300 w-0.5 h-full'}
 											style={` opacity: ${i <= last_inactive_stop_idx ? '0.4' : '1'};`}
 										></div>
+										{/if}
 									</div>
 								</td>
 
@@ -1681,12 +1686,12 @@
 									class="absolute top-0 bottom-0 left-1/2 -ml-px w-full h-full flex flex-col items-center"
 								>
 									<!-- Top Line -->
-									{#if i > 0 || isDoubleTime}
+									{#if i > 0}
 										<div
 											class={isDashedTopLine
-												? 'w-0.5 absolute top-0 bottom-1/2 border-l-2 border-dashed border-red-600 dark:border-red-500'
-												: 'bg-gray-800 dark:bg-gray-300 w-0.5 absolute top-0 bottom-1/2 bg-current'}
-											style={` opacity: ${i <= last_inactive_stop_idx - 1 ? '0.4' : '1'};`}
+												? 'w-0.5 absolute top-0 border-l-2 border-dashed border-red-600 dark:border-red-500'
+												: 'bg-gray-800 dark:bg-gray-300 w-0.5 absolute top-0 bg-current'}
+											style={`height: ${pearlCenter}; opacity: ${i <= last_inactive_stop_idx - 1 ? '0.4' : '1'};`}
 										></div>
 									{/if}
 
@@ -1696,20 +1701,22 @@
 											class={isDashedBottomLine
 												? 'w-0.5 absolute bottom-0 border-l-2 border-dashed border-red-600 dark:border-red-500'
 												: 'bg-gray-800 dark:bg-gray-300 w-0.5 absolute bottom-0 bg-current'}
-											style={` top: ${i === 0 && !isDoubleTime ? '0.5rem' : '50%'}; opacity: ${i <= last_inactive_stop_idx - 1 ? '0.4' : '1'};`}
+											style={`top: ${pearlCenter}; opacity: ${i <= last_inactive_stop_idx - 1 ? '0.4' : '1'};`}
 										></div>
 									{/if}
 
 									<!-- Dot -->
 									{#if is_at_station && i == current_at_stop_idx_store}
 										<div
-											class="z-20 w-3 h-3 mt-1 rounded-full animate-pulse"
-											style={`background-color: ${isCancelledStop ? (darkMode ? '#ef4444' : '#dc2626') : trip_data.color};`}
+											class={isCancelledStop
+											? 'z-20 w-3 h-3 mt-1 rounded-full animate-pulse border-2 border-red-600 dark:border-red-500'
+											: 'z-20 w-3 h-3 mt-1 rounded-full animate-pulse'}
+											style={`background-color: ${trip_data.color};`}
 										></div>
 									{:else}
 										<div
 											class={isCancelledStop
-												? 'bg-red-600 dark:bg-red-500 z-10 w-2 h-2 mt-1 rounded-full border-1'
+												? 'z-10 w-2 h-2 mt-1 rounded-full border-2 border-red-600 dark:border-red-500 bg-white dark:bg-gray-800'
 												: 'bg-gray-800 dark:bg-gray-300 z-10 w-2 h-2 mt-1 rounded-full border-1 bg-white dark:bg-gray-800'}
 											style={` box-shadow: 0 0 0 2px ${darkMode ? '#114' : '#fff'};`}
 										></div>
