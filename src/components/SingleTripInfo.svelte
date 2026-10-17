@@ -1684,9 +1684,9 @@
 									{#if i > 0 || isDoubleTime}
 										<div
 											class={isDashedTopLine
-												? 'w-0.5 absolute top-0 bottom-1/2 border-l-2 border-dashed border-red-600 dark:border-red-500'
-												: 'bg-gray-800 dark:bg-gray-300 w-0.5 absolute top-0 bottom-1/2 bg-current'}
-											style={` opacity: ${i <= last_inactive_stop_idx - 1 ? '0.4' : '1'};`}
+												? 'w-0.5 absolute top-0 border-l-2 border-dashed border-red-600 dark:border-red-500'
+												: 'bg-gray-800 dark:bg-gray-300 w-0.5 absolute top-0 bg-current'}
+											style={`bottom: ${isLastStop ? `calc(100% - ${is_at_station && i === current_at_stop_idx_store ? '0.625rem' : '0.5rem'})` : '50%'}; opacity: ${i <= last_inactive_stop_idx - 1 ? '0.4' : '1'};` }
 										></div>
 									{/if}
 
