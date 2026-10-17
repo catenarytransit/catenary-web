@@ -1703,13 +1703,15 @@
 									<!-- Dot -->
 									{#if is_at_station && i == current_at_stop_idx_store}
 										<div
-											class="z-20 w-3 h-3 mt-1 rounded-full animate-pulse"
-											style={`background-color: ${isCancelledStop ? (darkMode ? '#ef4444' : '#dc2626') : trip_data.color};`}
+											class={isCancelledStop
+											? 'z-20 w-3 h-3 mt-1 rounded-full animate-pulse border-2 border-red-600 dark:border-red-500'
+											: 'z-20 w-3 h-3 mt-1 rounded-full animate-pulse'}
+											style={`background-color: ${trip_data.color};`}
 										></div>
 									{:else}
 										<div
 											class={isCancelledStop
-												? 'bg-red-600 dark:bg-red-500 z-10 w-2 h-2 mt-1 rounded-full border-1'
+												? 'z-10 w-2 h-2 mt-1 rounded-full border-2 border-red-600 dark:border-red-500 bg-white dark:bg-gray-800'
 												: 'bg-gray-800 dark:bg-gray-300 z-10 w-2 h-2 mt-1 rounded-full border-1 bg-white dark:bg-gray-800'}
 											style={` box-shadow: 0 0 0 2px ${darkMode ? '#114' : '#fff'};`}
 										></div>
