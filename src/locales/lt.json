@@ -64,6 +64,7 @@
   "departure": "Išvykimas",
   "arrival": "Atvykimas",
   "cancelled": "Atšauktas",
+  "stop_only_to_exit": "Stotelė tik išlipimui",
   "early": "Ankstyvas",
   "late": "Vėluoja",
   "skipped": "Praleista",

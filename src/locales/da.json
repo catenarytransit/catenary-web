@@ -65,6 +65,7 @@
   "departure": "Afgang",
   "arrival": "Ankomst",
   "cancelled": "Afbestilt",
+  "stop_only_to_exit": "Kun afstigning",
   "early": "Tidlig",
   "late": "Forsinket",
   "skipped": "Springet over",

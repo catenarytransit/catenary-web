@@ -64,6 +64,7 @@
   "departure": "Polazak",
   "arrival": "Dolazak",
   "cancelled": "Otkazano",
+  "stop_only_to_exit": "Стајалиште само за излазак",
   "early": "Ranije",
   "late": "U kašnjenju",
   "skipped": "Preskočeno",

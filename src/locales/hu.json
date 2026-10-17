@@ -64,6 +64,7 @@
   "departure": "Indulás",
   "arrival": "Érkezés",
   "cancelled": "Törölve",
+  "stop_only_to_exit": "Megálló csak leszállásra",
   "early": "Korán",
   "late": "Késik",
   "skipped": "Kihagyva",

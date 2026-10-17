@@ -64,6 +64,7 @@
   "departure": "Odhod",
   "arrival": "Prihod",
   "cancelled": "Preklicano",
+  "stop_only_to_exit": "Postajališče samo za izstop",
   "early": "Zgodaj",
   "late": "Pozno",
   "skipped": "Preskočeno",

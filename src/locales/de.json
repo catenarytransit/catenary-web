@@ -63,6 +63,7 @@
   "arrival": "Ankunft",
   "itemsselected": "Artikel ausgewählt",
   "cancelled": "Abgesagt",
+  "stop_only_to_exit": "Halt nur zum Aussteigen",
   "skipped": "Übersprungen",
   "early": "Anfang",
   "late": "Spät",

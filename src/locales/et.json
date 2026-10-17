@@ -65,6 +65,7 @@
   "departure": "Väljumine",
   "arrival": "Saabumine",
   "cancelled": "Tühistatud",
+  "stop_only_to_exit": "Peatus ainult väljumiseks",
   "early": "Varajane",
   "late": "Hilinenud",
   "skipped": "Vahele jäetud",

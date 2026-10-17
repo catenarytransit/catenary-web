@@ -64,6 +64,7 @@
   "departure": "出発",
   "arrival": "到着",
   "cancelled": "が欠航",
+  "stop_only_to_exit": "降車専用停留所",
   "early": "早い",
   "late": "遅い",
   "skipped": "スキップ",
