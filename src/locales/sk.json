@@ -66,6 +66,7 @@
   "departure": "Odchod",
   "arrival": "Príchod",
   "cancelled": "Zrušené",
+  "stop_only_to_exit": "Zastávka len na vystupovanie",
   "early": "Skôr",
   "late": "Neskôr",
   "skipped": "Preskočené",

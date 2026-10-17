@@ -64,6 +64,7 @@
   "departure": "Plecare",
   "arrival": "Sosire",
   "cancelled": "Anulat",
+  "stop_only_to_exit": "Stație doar pentru coborâre",
   "early": "Devreme",
   "late": "Târziu",
   "skipped": "Omitere",

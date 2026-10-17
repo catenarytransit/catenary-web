@@ -64,6 +64,7 @@
   "departure": "Avgång",
   "arrival": "Ankomst",
   "cancelled": "Inställd",
+  "stop_only_to_exit": "Hållplats endast för avstigning",
   "early": "Tidigt",
   "late": "Sent",
   "skipped": "Skippad",

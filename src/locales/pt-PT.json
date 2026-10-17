@@ -64,6 +64,7 @@
   "departure": "Partida",
   "arrival": "Chegada",
   "cancelled": "Cancelado",
+  "stop_only_to_exit": "Paragem apenas para saída",
   "early": "Adiantado",
   "late": "Atrasado",
   "skipped": "Omitido",

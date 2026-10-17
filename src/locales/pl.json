@@ -64,6 +64,7 @@
   "departure": "Odjazd",
   "arrival": "Przyjazd",
   "cancelled": "Odwołany",
+  "stop_only_to_exit": "Przystanek tylko dla wysiadających",
   "early": "Wcześnie",
   "late": "Późno",
   "skipped": "Pominięty",

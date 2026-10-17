@@ -66,6 +66,7 @@
   "departure": "Partida",
   "arrival": "Arribada",
   "cancelled": "Anullat",
+  "stop_only_to_exit": "Arrèst sonque per davalar",
   "skipped": "Ignorat",
   "early": "En avança",
   "late": "En retard",
