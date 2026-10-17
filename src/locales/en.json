@@ -67,6 +67,7 @@
   "departure": "Departure",
   "arrival": "Arrival",
   "cancelled": "Cancelled",
+  "stop_only_to_exit": "Stop only to exit",
   "early": "Early",
   "late": "Late",
   "skipped": "Skipped",

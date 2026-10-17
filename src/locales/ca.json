@@ -65,6 +65,7 @@
   "departure": "Sortida",
   "arrival": "Arribada",
   "cancelled": "Cancel·lat",
+  "stop_only_to_exit": "Parada només per baixar",
   "early": "Avançat",
   "late": "Tard",
   "skipped": "Omesa",

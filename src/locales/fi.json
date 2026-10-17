@@ -65,6 +65,7 @@
   "departure": "Lähtö",
   "arrival": "Saapuminen",
   "cancelled": "Peruttu",
+  "stop_only_to_exit": "Pysäkki vain poistumista varten",
   "early": "Etuaikassa",
   "late": "Myöhässä",
   "skipped": "Ohitettu",
