@@ -1750,7 +1750,7 @@
 															return x;
 														});
 													}}
-													class={`cursor-pointer hover:underline ${stoptime.schedule_relationship == 1 ? 'text-[#EF3841]' : stop_id_to_alert_ids[stoptime.stop_id] ? 'text-[#F99C24]' : ''}`}
+													class={`cursor-pointer hover:underline ${stop_id_to_alert_ids[stoptime.stop_id] ? 'text-[#F99C24]' : ''}`}
 												>
 													{cleanStationName(fixStationName(stoptime.name))}
 												</span>
