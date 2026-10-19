@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { Map } from 'maplibre-gl';
+	import 'maplibre-gl/dist/maplibre-gl.css';
+	import { configureMapLibreWorkers } from '$lib/features/map/configureMapLibreWorkers';
 	import { onMount } from 'svelte';
 
 	let centerinit: [number, number] = [-118, 33.9];
@@ -8,6 +10,8 @@
 	onMount(() => {
 		const urlParams = new URLSearchParams(window.location.search);
 		const chateauFilter = urlParams.get('chateau');
+
+		configureMapLibreWorkers();
 
 		const map = new Map({
 			container: 'map',
@@ -120,6 +124,8 @@
 				}
 			});
 		});
+
+		return () => map.remove();
 	});
 </script>
 
