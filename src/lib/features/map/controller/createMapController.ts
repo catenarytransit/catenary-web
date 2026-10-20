@@ -30,13 +30,13 @@ import { addTerrainSourcesAndLayers, applySky, applyTopography } from './mapAppe
 import {
 	addOpenRailwayMapSources,
 	fetchChateaus,
-	getInitialCenter,
+	getInitialViewport,
 	getMapStyle,
-	getMarkedPoint,
-	updateCenterFromIp
+	getMarkedPoint
 } from './mapConfiguration';
 
 export interface MapControllerDependencies {
+	initialCenter?: [number, number] | null;
 	recomputeSidebarPadding(): void;
 	openSidebar(): void;
 }
@@ -219,6 +219,7 @@ export function createMapController(
 		configureMapLibreWorkers();
 
 		const isLowSpec = getOptimalPixelRatio() === 1;
+		const initialViewport = getInitialViewport(dependencies.initialCenter);
 
 		map = new maplibregl.Map({
 			canvasContextAttributes: {
@@ -226,6 +227,7 @@ export function createMapController(
 				powerPreference: 'high-performance'
 			},
 			container,
+			attributionControl: false,
 			localIdeographFontFamily: false,
 			light: { anchor: 'viewport', color: 'white', intensity: 0.4 },
 			hash: 'map',
@@ -234,11 +236,18 @@ export function createMapController(
 			validateStyle: true,
 			fadeDuration: 100,
 			style: getMapStyle(searchParams, currentDarkMode),
-			center: getInitialCenter(),
-			zoom: 10
+			center: initialViewport.center,
+			zoom: initialViewport.zoom
 		} as any);
 
 		const currentMap = map;
+		currentMap.addControl(
+			new maplibregl.AttributionControl({
+				customAttribution:
+					'IP geolocation by <a href="https://db-ip.com/" target="_blank" rel="noopener noreferrer">DB-IP</a>'
+			}),
+			'bottom-right'
+		);
 		map_pointer_store.set(currentMap);
 		subscribeToRuntimeState();
 		configureResolutionListener(currentMap);
@@ -256,7 +265,6 @@ export function createMapController(
 		}
 
 		void fetchChateaus(currentMap);
-		void updateCenterFromIp(currentMap);
 
 		void setupMap(
 			currentMap,

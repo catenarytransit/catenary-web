@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import type { MapCenter } from '$lib/server/geoip.cloudflare';
 	import { MapCanvas, MapControls, createMapController } from '$lib/features/map/public';
 	import { SearchOverlay } from '$lib/features/search/public';
 	import { LayerSettingsOverlay } from '$lib/features/settings/public';
@@ -10,10 +11,13 @@
 	import { initializeApplicationModules, startBrowserRuntime } from './bootstrap';
 	import { dismissDonationPopup, showDonationPopup } from './state/overlays';
 
+	export let initialCenter: MapCenter | null = null;
+
 	initializeApplicationModules();
 
 	const sidebarController = createSidebarController();
 	const mapController = createMapController({
+		initialCenter,
 		recomputeSidebarPadding: sidebarController.recomputeMapPadding,
 		openSidebar: sidebarController.open
 	});

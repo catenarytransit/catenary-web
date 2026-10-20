@@ -36,6 +36,7 @@ const config = {
 		// See https://kit.svelte.dev/docs/adapters for more information about adapters.
 		adapter: adapter(),
 		alias: {
+			'$lib/server/geoip': 'src/lib/server/geoip.cloudflare.ts',
 			'$components': 'src/components',
 			'$root': 'src'
 		}

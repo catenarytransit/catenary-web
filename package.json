@@ -3,7 +3,7 @@
 	"version": "0.1.0",
 	"scripts": {
 		"dev": "vite dev",
-		"build": "vite build",
+		"build": "bash scripts/update-geoip.sh && vite build",
 		"cloudflarebuild": "mv cloudflare-svelte.config.js svelte.config.js && svelte-kit sync && vite build",
 		"preview": "vite preview --port 16172",
 		"betapreview": "vite preview --port 16173",
@@ -12,6 +12,7 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"test:unit": "vitest",
+		"test:geoip": "vitest run src/lib/server/geoip.test.ts",
 		"lint": "prettier --plugin-search-dir . --check . && eslint .",
 		"format": "prettier --plugin-search-dir . --write ."
 	},

@@ -1,19 +1,26 @@
 FROM debian:latest
 
-# Install Bun
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl unzip git bash && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update && apt-get install -y curl unzip git
 RUN curl -fsSL https://bun.sh/install | bash
 
 WORKDIR /frontend
-
-# Copy the source code into the container
-
 COPY . .
 
-SHELL ["/bin/bash", "-c"]
-RUN source /root/.bashrc 
-RUN ~/.bun/bin/bun install
-RUN ~/.bun/bin/bun run build
+RUN /root/.bun/bin/bun install
 
-CMD ["~/.bun/bin/bun run preview"]
+# Increment on each CI image build even if the source files are unchanged.
+ARG GEOIP_REFRESH=local
+RUN echo "GeoIP refresh: $GEOIP_REFRESH" && \
+    /root/.bun/bin/bun run build
+
+# This image is served behind Cloudflare Tunnel. Do not expose an origin
+# configured to trust CF-Connecting-IP to direct, untrusted HTTP traffic.
+ENV ADDRESS_HEADER=CF-Connecting-IP
+ENV HOST=0.0.0.0
+ENV PORT=4173
+EXPOSE 4173
+
+CMD ["/root/.bun/bin/bun", "build/index.js"]

@@ -14,3 +14,6 @@ log.txt
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Generated build-time IP location indexes (not public assets)
+/geoip/

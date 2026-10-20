@@ -29,6 +29,8 @@ jobs:
           tags: ${{ github.sha }} latest
           containerfiles: |
             ./Dockerfile
+          build-args: |
+            GEOIP_REFRESH=${{ github.run_id }}
 
       - name: Push Frontend To ghcr.io
         id: push-to-ghcr-frontend

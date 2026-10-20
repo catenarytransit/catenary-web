@@ -2,48 +2,31 @@ import type maplibregl from 'maplibre-gl';
 import { getLocationFromLocalStorage } from '$components/previously_known_location';
 import { chateaus_store } from '$root/globalstores';
 
-const DEFAULT_CENTER: [number, number] = [10.46, 51.89];
-
-export function getInitialCenter(): [number, number] {
-	const previousLocation = getLocationFromLocalStorage();
-	if (previousLocation) {
-		return [previousLocation.longitude, previousLocation.latitude];
-	}
-
-	const cachedIpLocation = localStorage.getItem('cacheipgeolocation');
-	if (cachedIpLocation) {
-		const [longitude, latitude] = cachedIpLocation.split(',').map(Number);
-		if (Number.isFinite(longitude) && Number.isFinite(latitude)) {
-			return [longitude, latitude];
+export function getInitialViewport(serverCenter: [number, number] | null | undefined): {
+	center: [number, number];
+	zoom: number;
+} {
+	// A GPS position the user previously chose takes precedence over IP inference.
+	try {
+		const previous = getLocationFromLocalStorage();
+		if (previous && validCenter([previous.longitude, previous.latitude])) {
+			return { center: [previous.longitude, previous.latitude], zoom: 10 };
 		}
+	} catch {
+		// Ignore malformed legacy localStorage values.
 	}
 
-	return DEFAULT_CENTER;
+	if (validCenter(serverCenter)) {
+		return { center: serverCenter, zoom: 9 };
+	}
+
+	// Without a reliable location, show the globe rather than defaulting to Germany.
+	return { center: [0, 0], zoom: 1.5 };
 }
 
-export async function updateCenterFromIp(map: maplibregl.Map): Promise<void> {
-	if (getLocationFromLocalStorage() || localStorage.getItem('cacheipgeolocation')) {
-		return;
-	}
-
-	try {
-		const response = await fetch('https://birch.catenarymaps.org/ip_addr_to_geo/');
-		if (!response.ok) {
-			return;
-		}
-
-		const payload = await response.json();
-		const location = payload?.geo_resp;
-		if (!location || !Number.isFinite(location.longitude) || !Number.isFinite(location.latitude)) {
-			return;
-		}
-
-		const center: [number, number] = [location.longitude, location.latitude];
-		localStorage.setItem('cacheipgeolocation', center.join(','));
-		map.setCenter(center);
-	} catch (error) {
-		console.warn('Unable to determine an approximate map center from the IP address.', error);
-	}
+function validCenter(value: [number, number] | null | undefined): value is [number, number] {
+	return !!value && Number.isFinite(value[0]) && Number.isFinite(value[1]) &&
+		Math.abs(value[0]) <= 180 && Math.abs(value[1]) <= 90;
 }
 
 export function getMapStyle(searchParams: URLSearchParams, darkMode: boolean): string {
