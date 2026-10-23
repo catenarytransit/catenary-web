@@ -3,6 +3,7 @@ import {
 	OsmItemStack,
 	OsmStationStack,
 	RouteStack,
+	TripPlannerStack,
 	SingleTrip,
 	StackInterface,
 	StopStack,
@@ -60,6 +61,18 @@ export function deep_link_url_reader(urlParams?: URLSearchParams) {
 	}
 
 	let nextStack: StackInterface | null = null;
+
+	if (page === 'directions') {
+		const fromLat = getOptionalNumber(urlParams, 'from_lat');
+		const fromLon = getOptionalNumber(urlParams, 'from_lon');
+		const toLat = getOptionalNumber(urlParams, 'to_lat');
+		const toLon = getOptionalNumber(urlParams, 'to_lon');
+		const departure = getOptionalNumber(urlParams, 'departure');
+		nextStack = new StackInterface(new TripPlannerStack(
+			fromLat, fromLon, getFirstParam(urlParams, 'from_name'),
+			toLat, toLon, getFirstParam(urlParams, 'to_name'), departure
+		));
+	}
 
 	if (page === 'route') {
 		const chateau = getFirstParam(urlParams, 'chateau');

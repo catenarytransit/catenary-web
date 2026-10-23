@@ -275,7 +275,15 @@ export class VehicleSelectedStack {
 }
 
 export class TripPlannerStack {
-	constructor() {}
+	constructor(
+		public fromLat: number | null = null,
+		public fromLon: number | null = null,
+		public fromName: string | null = null,
+		public toLat: number | null = null,
+		public toLon: number | null = null,
+		public toName: string | null = null,
+		public departure: number | null = null
+	) {}
 }
 
 export class SettingsStack {
@@ -359,6 +367,7 @@ const PAGE_QUERY_KEYS = [
 	'start_date',
 	'vehicle',
 	'route_type',
+	'from_lat', 'from_lon', 'from_name', 'to_lat', 'to_lon', 'to_name', 'departure',
 	'is_now',
 	'time'
 ];
@@ -385,6 +394,11 @@ function replacePageQuery(params: Record<string, PageQueryValue>): void {
 }
 
 function stackDataToPageQuery(data: StackInterface['data']): Record<string, PageQueryValue> | null {
+	if (data instanceof TripPlannerStack) return {
+		page: 'directions', from_lat: data.fromLat, from_lon: data.fromLon,
+		from_name: data.fromName, to_lat: data.toLat, to_lon: data.toLon,
+		to_name: data.toName, departure: data.departure
+	};
 	if (data instanceof SingleTrip) {
 		return {
 			page: 'trip',

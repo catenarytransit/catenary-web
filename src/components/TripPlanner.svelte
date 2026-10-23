@@ -3,6 +3,8 @@
 	import { get } from 'svelte/store';
 	import { data_stack_store, geolocation_store, map_pointer_store } from '$root/globalstores';
 	import { TripPlannerStack } from '$components/stackenum';
+	import { queryEdelweiss, itinerarySegments, formatJourneyTime, type EdelweissItinerary, isValidPoint } from '$lib/features/directions/edelweiss';
+	import { activeItineraries, activeItineraryIndex, fitDirectionsItinerary } from '$lib/features/directions/mapRoutes';
 	import {
 		streamDirectionsLocations,
 		type DirectionsLocation,
@@ -21,6 +23,87 @@
 	let searchError = false;
 	let controller: AbortController | null = null;
 	let requestId = 0;
+	let routeController: AbortController | null = null;
+	let routeRequestId = 0;
+	let routingLoading = false;
+	let routingError = '';
+	let routes: EdelweissItinerary[] = [];
+	let selectedRoute = 0;
+	let departure = Math.floor(Date.now() / 1000);
+	const stackData = get(data_stack_store).at(-1)?.data;
+	if (stackData instanceof TripPlannerStack) {
+		departure = stackData.departure ?? departure;
+		if (stackData.fromLat != null && stackData.fromLon != null && isValidPoint({lat:stackData.fromLat, lon:stackData.fromLon})) {
+			originSelection = { key:'url:from', kind:'place', name:stackData.fromName || 'Start', address:'', lat:stackData.fromLat, lon:stackData.fromLon };
+			origin = originSelection.name;
+		}
+		if (stackData.toLat != null && stackData.toLon != null && isValidPoint({lat:stackData.toLat, lon:stackData.toLon})) {
+			destinationSelection = { key:'url:to', kind:'place', name:stackData.toName || 'Destination', address:'', lat:stackData.toLat, lon:stackData.toLon };
+			destination = destinationSelection.name;
+		}
+	}
+
+	function updateUrl(): void {
+		data_stack_store.update((stack) => {
+			const top = stack.at(-1);
+			if (top?.data instanceof TripPlannerStack) {
+				const data = top.data;
+				data.fromLat = originSelection?.lat ?? null;
+				data.fromLon = originSelection?.lon ?? null;
+				data.fromName = originSelection?.name ?? null;
+				data.toLat = destinationSelection?.lat ?? null;
+				data.toLon = destinationSelection?.lon ?? null;
+				data.toName = destinationSelection?.name ?? null;
+				data.departure = departure;
+				return [...stack];
+			}
+			return stack;
+		});
+	}
+
+	function clearRoutes(): void {
+		routeRequestId++;
+		routeController?.abort();
+		routeController = null;
+		routingLoading = false;
+		routingError = '';
+		routes = [];
+		selectedRoute = 0;
+		activeItineraries.set([]);
+		activeItineraryIndex.set(0);
+	}
+
+	async function routeSelectedCoordinates(): Promise<void> {
+		clearRoutes();
+		if (!originSelection || !destinationSelection) return;
+		const id = ++routeRequestId;
+		const current = new AbortController();
+		routeController = current;
+		routingLoading = true;
+		try {
+			const found = await queryEdelweiss(originSelection, destinationSelection, departure, current.signal);
+			if (current.signal.aborted || id !== routeRequestId) return;
+			routes = found;
+			activeItineraries.set(found);
+			if (found.length) {
+				activeItineraryIndex.set(0);
+				const map = get(map_pointer_store);
+				if (map) fitDirectionsItinerary(map, found[0]);
+			}
+		} catch (error) {
+			if (!current.signal.aborted && id === routeRequestId) routingError = error instanceof Error ? error.message : 'Routing request failed';
+		} finally {
+			if (id === routeRequestId) routingLoading = false;
+		}
+	}
+
+	function showRoute(index: number): void {
+		selectedRoute = index;
+		activeItineraryIndex.set(index);
+		const map = get(map_pointer_store);
+		if (map && routes[index]) fitDirectionsItinerary(map, routes[index]);
+	}
+
 
 	function cancelSearch(): void {
 		controller?.abort();
@@ -78,6 +161,8 @@
 			destination = value;
 			destinationSelection = null;
 		}
+		clearRoutes();
+		updateUrl();
 		querySuggestions(field);
 	}
 
@@ -94,7 +179,8 @@
 		activeField = null;
 		suggestions = [];
 		highlighted = -1;
-		// Retain both choices and coordinates for a subsequent routing integration.
+		updateUrl();
+		void routeSelectedCoordinates();
 	}
 
 	function handleKeydown(event: KeyboardEvent, field: Field): void {
@@ -118,6 +204,7 @@
 	}
 
 	function closeDirections(): void {
+		clearRoutes();
 		requestId++;
 		cancelSearch();
 		data_stack_store.update((stack) =>
@@ -126,9 +213,11 @@
 	}
 
 	onDestroy(() => {
+		clearRoutes();
 		requestId++;
 		cancelSearch();
 	});
+	if (originSelection && destinationSelection) void routeSelectedCoordinates();
 </script>
 
 <section aria-label="Directions / Trip Planner" class="flex h-full flex-col overflow-visible px-4 py-4">
@@ -213,5 +302,21 @@
 				{#if searchError}<p class="px-3 py-2 text-xs text-red-600" role="status">Unable to load location suggestions.</p>{/if}
 			</div>
 		{/if}
+	</div>
+	<div class="mt-5 flex flex-col gap-3 pb-8" aria-label="Available routes">
+		{#if routingLoading}<p role="status" class="text-sm text-gray-500">Finding routes…</p>{/if}
+		{#if routingError}<p role="alert" class="text-sm text-red-600">{routingError}</p>{/if}
+		{#if !routingLoading && !routingError && originSelection && destinationSelection && routes.length === 0}<p class="text-sm text-gray-500">No routes found for this journey.</p>{/if}
+		{#each routes as itinerary, index}
+			<button type="button" on:click={() => showRoute(index)} aria-pressed={selectedRoute === index} class="w-full rounded-xl border bg-white p-3 text-left shadow-sm dark:bg-gray-800 {selectedRoute === index ? 'border-cyan-700 ring-1 ring-cyan-700' : 'border-gray-200 dark:border-gray-700'}">
+				<div class="flex justify-between text-base font-semibold"><time datetime={itinerary.startTime}>{formatJourneyTime(itinerary.startTime)}</time><time datetime={itinerary.endTime}>{formatJourneyTime(itinerary.endTime)}</time></div>
+				<div class="mt-3 flex h-2 w-full items-center gap-1 overflow-hidden rounded-full" aria-label="Journey segments">
+					{#each itinerarySegments(itinerary) as segment}
+						<div class="h-full min-w-[3px] rounded-sm" style:background-color={segment.walking ? 'transparent' : segment.color} style:background-image={segment.walking ? 'radial-gradient(circle, #64748b 48%, transparent 53%)' : 'none'} style:background-size={segment.walking ? '7px 7px' : 'auto'} style:flex-grow={segment.duration} style:flex-basis="0" title={segment.mode}></div>
+					{/each}
+				</div>
+				<div class="mt-2 flex items-center justify-between text-xs text-gray-500"><span>{Math.round((itinerary.duration ?? (Date.parse(itinerary.endTime) - Date.parse(itinerary.startTime)) / 1000) / 60)} min · {itinerary.transfers ?? 0} transfers</span></div>
+			</button>
+		{/each}
 	</div>
 </section>

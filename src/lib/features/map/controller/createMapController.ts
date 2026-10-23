@@ -1,4 +1,5 @@
 import * as maplibregl from 'maplibre-gl';
+import { activeItineraries, activeItineraryIndex, refreshDirectionsSource } from '$lib/features/directions/mapRoutes';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { configureMapLibreWorkers } from '../configureMapLibreWorkers';
 import { get, writable, type Readable, type Writable } from 'svelte/store';
@@ -161,6 +162,7 @@ export function createMapController(
 	function configureMapLoad(currentMap: maplibregl.Map): void {
 		currentMap.on('load', async () => {
 			loaded = true;
+			refreshDirectionsSource(currentMap, get(activeItineraries), get(activeItineraryIndex));
 			checkClockSync();
 			add_image_pedestrian_pattern(currentMap);
 
@@ -240,6 +242,10 @@ export function createMapController(
 
 		const currentMap = map;
 		map_pointer_store.set(currentMap);
+		subscriptions.push(activeItineraries.subscribe((items) => refreshDirectionsSource(currentMap, items, get(activeItineraryIndex))));
+		subscriptions.push(activeItineraryIndex.subscribe((index) => refreshDirectionsSource(currentMap, get(activeItineraries), index)));
+		currentMap.on('style.load', () => refreshDirectionsSource(currentMap, get(activeItineraries), get(activeItineraryIndex)));
+
 		subscribeToRuntimeState();
 		configureResolutionListener(currentMap);
 		configureMapLoad(currentMap);
