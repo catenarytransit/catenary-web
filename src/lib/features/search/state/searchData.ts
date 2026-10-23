@@ -1,3 +1,4 @@
+import { buildPhotonSearchUrl, photonToGeocodedFeatures, type PhotonResponse } from './searchProviders';
 import type { GeoJSONSource, Map } from 'maplibre-gl';
 import { parseCypressOsmId } from '$lib/features/osm/osmPoiId';
 import { recordOsmItemVisit } from './stationHistory';
@@ -222,9 +223,11 @@ export function performAutocompleteQuery(rawText: string): void {
 	const map = get(map_pointer_store) as Map | null;
 	if (!map) {
 		searchResultsLoading.set(false);
+		resetResults();
 		return;
 	}
 
+	resetResults();
 	searchResultsLoading.set(true);
 
 	const center = map.getCenter();
@@ -243,13 +246,7 @@ export function performAutocompleteQuery(rawText: string): void {
 		transitUrl.searchParams.set('user_lon', String(geolocation.coords.longitude));
 	}
 
-	const cypressSubdomains = ['cypress', 'cypress1', 'cypress2'];
-	const cypressHost = cypressSubdomains[Math.floor(Math.random() * cypressSubdomains.length)];
-	const cypressUrl = new URL(`https://${cypressHost}.catenarymaps.org/v2/search`);
-	cypressUrl.searchParams.set('text', text);
-	cypressUrl.searchParams.set('focus.point.lat', String(center.lat));
-	cypressUrl.searchParams.set('focus.point.lon', String(center.lng));
-	cypressUrl.searchParams.set('focus.point.weight', String(focusWeight));
+	const photonUrl = buildPhotonSearchUrl(text, { lat: center.lat, lon: center.lng, zoom });
 
 	const osmStationUrl = new URL('https://birch_search.catenarymaps.org/osm_station_search');
 	osmStationUrl.searchParams.set('text', text);
@@ -266,17 +263,18 @@ export function performAutocompleteQuery(rawText: string): void {
 		updateCypressSource(map, cachedCypress);
 	}
 
-	const cypressRequest = fetchJson<CypressFeatureCollection>(cypressUrl.toString(), query.signal);
-	void cypressRequest
+	const photonRequest = fetchJson<PhotonResponse>(photonUrl, query.signal);
+	void photonRequest
 		.then((data) => {
-			cypressQueryCache.update((cache) => ({ ...cache, [text]: data }));
-			if (get(searchText).trim() === text) {
-				latestCypressResults.set(data);
+			const adapted = photonToGeocodedFeatures(data);
+			cypressQueryCache.update((cache) => ({ ...cache, [text]: adapted }));
+			if (activeQuery === query && !query.signal.aborted && get(searchText).trim() === text) {
+				latestCypressResults.set(adapted);
 				selectedResultIndex.set(-1);
-				updateCypressSource(map, data);
+				updateCypressSource(map, adapted);
 			}
 		})
-		.catch((error) => reportSearchError('Cypress', error));
+		.catch((error) => reportSearchError('Photon', error));
 
 	const cachedStations = get(osmStationQueryCache)[text];
 	let osmStationRequest: Promise<OsmStationSearchResponse> | null = null;
@@ -310,7 +308,7 @@ export function performAutocompleteQuery(rawText: string): void {
 		})
 		.catch((error) => reportSearchError('Transit', error));
 
-	const pendingRequests: Promise<unknown>[] = [cypressRequest, transitRequest];
+	const pendingRequests: Promise<unknown>[] = [photonRequest, transitRequest];
 	if (osmStationRequest) {
 		pendingRequests.push(osmStationRequest);
 	}
