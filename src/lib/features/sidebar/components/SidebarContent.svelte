@@ -32,7 +32,9 @@
 	export let dismissDonationPopup: () => void = () => {};
 </script>
 
-<div class="md:mt-12"></div>
+{#if !(latest_item_on_stack?.data instanceof TripPlannerStack)}
+	<div class="md:mt-12"></div>
+{/if}
 
 {#if latest_item_on_stack != null}
 	{#if latest_item_on_stack.data instanceof MapSelectionScreen}
