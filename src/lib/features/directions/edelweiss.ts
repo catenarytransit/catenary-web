@@ -140,6 +140,6 @@ export async function queryEdelweiss(
 }
 
 export function formatJourneyTime(iso: string): string {
-	return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' })
+	return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit', hour12: false })
 		.format(new Date(iso));
 }

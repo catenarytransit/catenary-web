@@ -315,7 +315,7 @@
 						<div class="h-full min-w-[3px] rounded-sm" style:background-color={segment.walking ? 'transparent' : segment.color} style:background-image={segment.walking ? 'radial-gradient(circle, #64748b 48%, transparent 53%)' : 'none'} style:background-size={segment.walking ? '7px 7px' : 'auto'} style:flex-grow={segment.duration} style:flex-basis="0" title={segment.mode}></div>
 					{/each}
 				</div>
-				<div class="mt-2 flex items-center justify-between text-xs text-gray-500"><span>{Math.round((itinerary.duration ?? (Date.parse(itinerary.endTime) - Date.parse(itinerary.startTime)) / 1000) / 60)} min · {itinerary.transfers ?? 0} transfers</span><span>View on map</span></div>
+				<div class="mt-2 flex items-center justify-between text-xs text-gray-500"><span>{Math.round((itinerary.duration ?? (Date.parse(itinerary.endTime) - Date.parse(itinerary.startTime)) / 1000) / 60)} min · {itinerary.transfers ?? 0} transfers</span></div>
 			</button>
 		{/each}
 	</div>
