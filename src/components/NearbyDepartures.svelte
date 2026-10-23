@@ -825,6 +825,8 @@
 		{/if}
 
 		<div class="ml-auto pr-2 flex items-center gap-2">
+			
+		<!--
 			<div class="flex rounded-full overflow-hidden border-2 border-gray-400 dark:border-gray-600">
 				<button
 					class={`px-2 py-1 text-sm flex items-center gap-1
@@ -851,12 +853,13 @@
 					>
 				</button>
 			</div>
+			-->
 
 			<button
 				on:click={() => {
 					show_filter_menu = !show_filter_menu;
 				}}
-				class="px-1 py-1 rounded-full bg-gray-300 dark:bg-gray-800 text-gray-800 dark:text-gray-300"
+				class="select-none px-1 py-1 rounded-full bg-gray-300 dark:bg-gray-800 text-gray-800 dark:text-gray-300"
 			>
 				<span class="material-symbols-outlined translate-y-1">filter_alt</span>
 			</button>
