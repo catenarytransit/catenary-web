@@ -2,7 +2,7 @@
 	import { get } from 'svelte/store';
 	import { _ } from 'svelte-i18n';
 	import { data_stack_store } from '$root/globalstores';
-	import { DirectionsStack, SettingsStack, StackInterface } from '$components/stackenum';
+	import { TripPlannerStack, SettingsStack, StackInterface } from '$components/stackenum';
 	import {
 		autocompleteFocus,
 		displayedResults,
@@ -25,7 +25,7 @@
 		menuOpen = false;
 		autocompleteFocus.set(false);
 		recalculateBackButton();
-		data_stack_store.update((stack) => [...stack, new StackInterface(new DirectionsStack())]);
+		data_stack_store.update((stack) => [...stack, new StackInterface(new TripPlannerStack())]);
 	}
 
 	function closePanels(): void {

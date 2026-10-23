@@ -1,7 +1,7 @@
 <script lang="ts">
 	import {
 		BlockStack,
-		DirectionsStack,
+		TripPlannerStack,
 		MapSelectionScreen,
 		OsmItemStack,
 		OsmSearchResultStack,
@@ -15,7 +15,7 @@
 		type StackInterface
 	} from '$components/stackenum';
 	import HomeButton from '$components/SidebarParts/home_button.svelte';
-	import DirectionsPlanner from '$components/DirectionsPlanner.svelte';
+	import TripPlanner from '$components/TripPlanner.svelte';
 	import SettingsMenu from '$components/SettingsMenu.svelte';
 	import NearbyDepartures from '$components/NearbyDepartures.svelte';
 	import SingleTripInfo from '$components/SingleTripInfo.svelte';
@@ -43,8 +43,8 @@
 		{/await}
 	{/if}
 
-	{#if latest_item_on_stack.data instanceof DirectionsStack}
-		<DirectionsPlanner />
+	{#if latest_item_on_stack.data instanceof TripPlannerStack}
+		<TripPlanner />
 	{/if}
 
 	{#if latest_item_on_stack.data instanceof SettingsStack}

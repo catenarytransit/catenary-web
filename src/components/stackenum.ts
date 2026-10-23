@@ -7,7 +7,7 @@ export class StackInterface {
 		| NearbyDeparturesStack
 		| MapSelectionScreen
 		| SettingsStack
-		| DirectionsStack
+		| TripPlannerStack
 		| BlockStack
 		| VehicleHistoryStack
 		| OsmItemStack
@@ -22,7 +22,7 @@ export class StackInterface {
 			| NearbyDeparturesStack
 			| MapSelectionScreen
 			| SettingsStack
-		| DirectionsStack
+		| TripPlannerStack
 			| BlockStack
 			| VehicleHistoryStack
 			| OsmItemStack
@@ -274,7 +274,7 @@ export class VehicleSelectedStack {
 	}
 }
 
-export class DirectionsStack {
+export class TripPlannerStack {
 	constructor() {}
 }
 
