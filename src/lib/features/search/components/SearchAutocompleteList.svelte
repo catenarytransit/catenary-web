@@ -146,7 +146,8 @@
 								</p>
 							{/if}
 						{/if}
-	button>
+					</div>
+				</button>
 			{/if}
 		{/each}
 	{/if}
