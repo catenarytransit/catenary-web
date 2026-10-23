@@ -1,7 +1,5 @@
 <script lang="ts">
 	import { _, locale } from 'svelte-i18n';
-	import RouteResultItem from './RouteResultItem.svelte';
-	import StopRankingInfo from './StopRankingInfo.svelte';
 	import { getTopHistory } from '../state/stationHistory';
 	import {
 		displayedResults,
@@ -52,18 +50,6 @@
 				items.push({ type: 'cypress', data: feature });
 			}
 
-			const routeSection = $latestTransitResults?.routes_section;
-			for (const rankedRoute of routeSection?.ranking.slice(0, length) ?? []) {
-				const route = routeSection?.routes[rankedRoute.chateau]?.[rankedRoute.gtfs_id];
-				if (route) {
-					items.push({
-						type: 'route',
-						data: route,
-						chateau: rankedRoute.chateau,
-						gtfs_id: rankedRoute.gtfs_id
-					});
-				}
-			}
 
 			const stopSection = $latestTransitResults?.stops_section;
 			for (const rankedStop of stopSection?.ranking.slice(0, length) ?? []) {
@@ -122,19 +108,6 @@
 						</p>
 					</div>
 				</button>
-			{:else if item.type === 'route'}
-				<div
-					class={index === $selectedResultIndex
-						? 'bg-gray-200 dark:bg-gray-700'
-						: 'hover:bg-gray-200 dark:hover:bg-gray-700'}
-				>
-					<RouteResultItem
-						chateau={item.chateau ?? ''}
-						route_id={item.gtfs_id ?? ''}
-						routeInfo={item.data}
-						onClick={() => selectResult(item)}
-					/>
-				</div>
 			{:else if item.type === 'stop'}
 				<button
 					class="px-3 cursor-pointer w-full flex flex-col content-start items-start align-left {index ===
@@ -143,19 +116,8 @@
 						: 'hover:bg-gray-200 dark:hover:bg-gray-700'}"
 					on:click={() => selectResult(item)}
 				>
-					{#key item.gtfs_id}
-						{#if item.data.osm_station_id == null}
-							<StopRankingInfo
-								stop={item.data}
-								stops_section={$latestTransitResults?.stops_section ||
-									((item as any).saved_routes ? { routes: (item as any).saved_routes } : null)}
-								stop_ranked={{
-									chateau: item.chateau,
-									gtfs_id: item.gtfs_id,
-									score: 0 // Score not strictly needed for display here
-								}}
-							/>{/if}
-					{/key}
+					<span class="font-medium dark:text-white">{item.data.name}</span>
+					{#if item.data.code}<span class="text-xs text-gray-500">{item.data.code}</span>{/if}
 				</button>
 			{:else if item.type === 'osm_station'}
 				<button
@@ -184,19 +146,6 @@
 								</p>
 							{/if}
 						{/if}
-						<div class="flex flex-row flex-wrap gap-1 mt-1">
-							{#if item.data.routes && item.data.routes.length > 0}
-								{#each item.data.routes as route}
-									<div
-										class="px-1.5 py-0.5 text-[10px] font-bold rounded"
-										style="background-color: {route.color || '#cccccc'}; color: {route.text_color ||
-											'#000000'};"
-									>
-										{route.short_name || route.route_id}
-									</div>
-								{/each}
-							{/if}
-						</div>
 					</div>
 				</button>
 			{/if}

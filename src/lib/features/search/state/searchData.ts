@@ -1,4 +1,5 @@
 import type { GeoJSONSource, Map } from 'maplibre-gl';
+import { buildPhotonSearchUrl, buildTransitSearchUrl, buildStationSearchUrl, photonToGeocodedFeatures, type PhotonResponse } from './searchProviders';
 import { parseCypressOsmId } from '$lib/features/osm/osmPoiId';
 import { recordOsmItemVisit } from './stationHistory';
 import { get, writable, type Writable } from 'svelte/store';
@@ -222,42 +223,30 @@ export function performAutocompleteQuery(rawText: string): void {
 	const map = get(map_pointer_store) as Map | null;
 	if (!map) {
 		searchResultsLoading.set(false);
+		resetResults();
 		return;
 	}
 
+	resetResults();
 	searchResultsLoading.set(true);
 
 	const center = map.getCenter();
 	const zoom = Math.round(map.getZoom());
 	const geolocation = get(geolocation_store);
 	const hasGeolocation = typeof geolocation?.coords?.latitude === 'number';
-	const focusWeight = zoom > 13 ? 5 : zoom > 10 ? 4 : zoom < 7 ? 2 : 3;
 
-	const transitUrl = new URL('https://birch_search.catenarymaps.org/text_search_v1');
-	transitUrl.searchParams.set('text', text);
-	transitUrl.searchParams.set('map_lat', String(center.lat));
-	transitUrl.searchParams.set('map_lon', String(center.lng));
-	transitUrl.searchParams.set('map_z', String(zoom));
-	if (hasGeolocation && geolocation) {
-		transitUrl.searchParams.set('user_lat', String(geolocation.coords.latitude));
-		transitUrl.searchParams.set('user_lon', String(geolocation.coords.longitude));
-	}
-
-	const cypressSubdomains = ['cypress', 'cypress1', 'cypress2'];
-	const cypressHost = cypressSubdomains[Math.floor(Math.random() * cypressSubdomains.length)];
-	const cypressUrl = new URL(`https://${cypressHost}.catenarymaps.org/v2/search`);
-	cypressUrl.searchParams.set('text', text);
-	cypressUrl.searchParams.set('focus.point.lat', String(center.lat));
-	cypressUrl.searchParams.set('focus.point.lon', String(center.lng));
-	cypressUrl.searchParams.set('focus.point.weight', String(focusWeight));
-
-	const osmStationUrl = new URL('https://birch_search.catenarymaps.org/osm_station_search');
-	osmStationUrl.searchParams.set('text', text);
-	if (hasGeolocation) {
-		osmStationUrl.searchParams.set('focus_lat', String(center.lat));
-		osmStationUrl.searchParams.set('focus_lon', String(center.lng));
-		osmStationUrl.searchParams.set('focus_weight', String(focusWeight));
-	}
+	const focus = {
+		lat: center.lat,
+		lon: center.lng,
+		zoom,
+		...(hasGeolocation && geolocation ? {
+			userLat: geolocation.coords.latitude,
+			userLon: geolocation.coords.longitude
+		} : {})
+	};
+	const transitUrl = buildTransitSearchUrl(text, focus);
+	const photonUrl = buildPhotonSearchUrl(text, focus);
+	const osmStationUrl = buildStationSearchUrl(text, focus);
 
 	const cachedCypress = get(cypressQueryCache)[text];
 	if (cachedCypress) {
@@ -266,24 +255,25 @@ export function performAutocompleteQuery(rawText: string): void {
 		updateCypressSource(map, cachedCypress);
 	}
 
-	const cypressRequest = fetchJson<CypressFeatureCollection>(cypressUrl.toString(), query.signal);
+	const cypressRequest = fetchJson<PhotonResponse>(photonUrl, query.signal);
 	void cypressRequest
 		.then((data) => {
-			cypressQueryCache.update((cache) => ({ ...cache, [text]: data }));
+			const adapted = photonToGeocodedFeatures(data);
+			cypressQueryCache.update((cache) => ({ ...cache, [text]: adapted }));
 			if (get(searchText).trim() === text) {
-				latestCypressResults.set(data);
+				latestCypressResults.set(adapted);
 				selectedResultIndex.set(-1);
-				updateCypressSource(map, data);
+				updateCypressSource(map, adapted);
 			}
 		})
-		.catch((error) => reportSearchError('Cypress', error));
+		.catch((error) => reportSearchError('Photon', error));
 
 	const cachedStations = get(osmStationQueryCache)[text];
 	let osmStationRequest: Promise<OsmStationSearchResponse> | null = null;
 	if (cachedStations) {
 		latestOsmStationResults.set(cachedStations);
 	} else {
-		osmStationRequest = fetchJson<OsmStationSearchResponse>(osmStationUrl.toString(), query.signal);
+		osmStationRequest = fetchJson<OsmStationSearchResponse>(osmStationUrl, query.signal);
 		void osmStationRequest
 			.then((data) => {
 				osmStationQueryCache.update((cache) => ({ ...cache, [text]: data }));
@@ -299,7 +289,7 @@ export function performAutocompleteQuery(rawText: string): void {
 		latestTransitResults.set(cachedTransit);
 	}
 
-	const transitRequest = fetchJson<SearchQueryResponse>(transitUrl.toString(), query.signal);
+	const transitRequest = fetchJson<SearchQueryResponse>(transitUrl, query.signal);
 	void transitRequest
 		.then((data) => {
 			transitQueryCache.update((cache) => ({ ...cache, [text]: data }));
