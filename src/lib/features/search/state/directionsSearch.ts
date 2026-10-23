@@ -199,8 +199,9 @@ export function mergeDirectionsLocations(
 ): DirectionsLocation[] {
 	const seen = new Set<string>();
 	const result: DirectionsLocation[] = [];
-	// Provider order is fixed. Slow arrivals cannot replace earlier Cypress rows.
-	for (const item of [...cypress, ...stations, ...stops]) {
+	// Prefer Birch station matches over general Cypress places and Birch GTFS stops,
+	// even if the station request finishes after another provider.
+	for (const item of [...stations, ...cypress, ...stops]) {
 		if (seen.has(item.key)) continue;
 		seen.add(item.key);
 		result.push(item);
