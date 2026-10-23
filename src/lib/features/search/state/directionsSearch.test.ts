@@ -51,8 +51,9 @@ describe('Directions Cypress/Birch search', () => {
 		});
 		await new Promise((resolve) => setTimeout(resolve, 0));
 		expect(updates.at(-1)).toEqual(['Zürich HB', 'Bus Stop']);
-		finishStations({ results: [] });
+		finishStations({ results: [{ osm_id: 88, name: 'Zürich Station', point: { x: 8.54, y: 47.37 } }] });
 		await running;
+		expect(updates.at(-1)).toEqual(['Zürich Station', 'Zürich HB', 'Bus Stop']);
 	});
 
 	it('does not publish late responses after cancellation', async () => {
@@ -73,9 +74,9 @@ describe('Directions Cypress/Birch search', () => {
 		expect(update).not.toHaveBeenCalled();
 	});
 
-	it('keeps unique entries in stable provider order', () => {
+	it('ranks Birch stations ahead of Cypress locations while deduplicating', () => {
 		const place = { key: 'cypress:node/1', kind: 'place' as const, name: 'City', address: '', lat: 34, lon: -118 };
 		const station = { ...place, key: 'station:123', kind: 'station' as const, name: 'Station' };
-		expect(mergeDirectionsLocations([place, place], [station], [])).toEqual([place, station]);
+		expect(mergeDirectionsLocations([place, place], [station], [])).toEqual([station, place]);
 	});
 });
