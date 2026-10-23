@@ -39,7 +39,7 @@
 		type="button"
 		aria-label="Layers"
 		on:click={() => controller.layerSettingsOpen.update((open) => !open)}
-		class="pointer-events-auto z-10 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white dark:bg-gray-900 dark:text-gray-50"
+		class="shadow-lg pointer-events-auto z-10 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white dark:bg-gray-900 dark:text-gray-50"
 	>
 		<span class="material-symbols-outlined select-none">layers</span>
 	</button>
@@ -48,7 +48,7 @@
 		type="button"
 		on:click={controller.resetNorth}
 		aria-label="Reset map to north"
-		class="pointer-events-auto z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-gray-900 dark:text-gray-50"
+		class="shadow-lg pointer-events-auto z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-gray-900 dark:text-gray-50"
 	>
 		<img
 			src={$heading < 7 && $heading > -7
@@ -82,7 +82,7 @@
 		on:click={controller.focusUserLocation}
 		style={`bottom: ${gpsBottomOffset}`}
 		aria-label={$lock_on_gps_store ? 'Map following my location' : 'Go to my location'}
-		class="clickable pointer-events-auto fixed right-4 z-50 flex h-16 w-16 select-none items-center justify-center rounded-full bg-white dark:bg-gray-900 {$lock_on_gps_store
+		class="shadow-lg clickable pointer-events-auto fixed right-4 z-50 flex h-16 w-16 select-none items-center justify-center rounded-full bg-white dark:bg-gray-900 {$lock_on_gps_store
 			? 'text-blue-500 dark:text-blue-300'
 			: 'text-gray-900 dark:text-gray-50'}"
 	>
