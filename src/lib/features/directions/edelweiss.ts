@@ -121,7 +121,7 @@ export async function queryEdelweiss(
 	if (!isValidPoint(origin) || !isValidPoint(destination)) {
 		throw new Error('Select valid starting and finishing locations');
 	}
-	const response = await fetch('/api/directions', {
+	const response = await fetch('https://edelweiss.catenarymaps.org/v1/route', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({
