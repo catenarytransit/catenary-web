@@ -2,7 +2,7 @@
 	import { get } from 'svelte/store';
 	import { _ } from 'svelte-i18n';
 	import { data_stack_store } from '$root/globalstores';
-	import { SettingsStack, StackInterface } from '$components/stackenum';
+	import { DirectionsStack, SettingsStack, StackInterface } from '$components/stackenum';
 	import {
 		autocompleteFocus,
 		displayedResults,
@@ -16,25 +16,20 @@
 
 	let textInput = get(searchText);
 	let menuOpen = false;
-	let directionsOpen = false;
-	let origin = '';
-	let destination = '';
 
 	function toggleMenu(): void {
 		menuOpen = !menuOpen;
-		if (menuOpen) directionsOpen = false;
 	}
 
 	function openDirections(): void {
-		directionsOpen = !directionsOpen;
 		menuOpen = false;
 		autocompleteFocus.set(false);
 		recalculateBackButton();
+		data_stack_store.update((stack) => [...stack, new StackInterface(new DirectionsStack())]);
 	}
 
 	function closePanels(): void {
 		menuOpen = false;
-		directionsOpen = false;
 	}
 
 
@@ -153,11 +148,10 @@
 				type="button"
 				class="mx-2 inline-block cursor-pointer align-middle text-sm text-black dark:text-white"
 				on:click={openDirections}
-				aria-label="Directions"
-				aria-expanded={directionsOpen}
-				aria-controls="search-directions-panel"
+				aria-label="Directions / Trip Planner"
+				title="Directions / Trip Planner"
 			>
-				<span class="material-symbols-outlined inline-block align-middle">directions</span>
+				<span class="material-symbols-outlined inline-block align-middle" style="color: rgb(0, 123, 139); font-variation-settings: 'FILL' 1;">directions</span>
 			</button>
 		{:else}
 			<button
@@ -181,18 +175,3 @@
 	</div>
 {/if}
 
-{#if directionsOpen}
-	<section id="search-directions-panel" aria-label="Directions" class="absolute left-0 top-full z-50 mt-2 w-full rounded-xl border border-gray-200 bg-white p-4 shadow-lg dark:border-gray-700 dark:bg-gray-900 dark:text-white">
-		<div class="mb-3 flex items-center justify-between">
-			<h2 class="font-semibold">Directions</h2>
-			<button type="button" on:click={() => (directionsOpen = false)} aria-label="Close directions" class="rounded-full p-1 hover:bg-gray-100 dark:hover:bg-gray-800"><span class="material-symbols-outlined">close</span></button>
-		</div>
-		<div class="flex flex-col gap-2">
-			<label for="routing-origin" class="text-sm">From</label>
-			<input id="routing-origin" type="text" bind:value={origin} placeholder="Choose a starting point" class="rounded-lg border border-gray-300 bg-transparent px-3 py-2 dark:border-gray-600" />
-			<label for="routing-destination" class="text-sm">To</label>
-			<input id="routing-destination" type="text" bind:value={destination} placeholder="Choose a destination" class="rounded-lg border border-gray-300 bg-transparent px-3 py-2 dark:border-gray-600" />
-			<p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Route search is not available yet.</p>
-		</div>
-	</section>
-{/if}
