@@ -7,6 +7,7 @@ export class StackInterface {
 		| NearbyDeparturesStack
 		| MapSelectionScreen
 		| SettingsStack
+		| DirectionsStack
 		| BlockStack
 		| VehicleHistoryStack
 		| OsmItemStack
@@ -21,6 +22,7 @@ export class StackInterface {
 			| NearbyDeparturesStack
 			| MapSelectionScreen
 			| SettingsStack
+		| DirectionsStack
 			| BlockStack
 			| VehicleHistoryStack
 			| OsmItemStack
@@ -270,6 +272,10 @@ export class VehicleSelectedStack {
 		this.vehicle_id = vehicle_id;
 		this.gtfs_id = gtfs_id;
 	}
+}
+
+export class DirectionsStack {
+	constructor() {}
 }
 
 export class SettingsStack {
