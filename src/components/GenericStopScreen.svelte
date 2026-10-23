@@ -1298,6 +1298,15 @@
 										<div
 											class={`${(event.realtime_departure || event.scheduled_departure) < current_time / 1000 && event.scheduled_departure < current_time / 1000 ? 'opacity-80' : ''} ${event.trip_cancelled ? 'opacity-60' : ''}`}
 										>
+										
+										<StopScreenRow
+											{event}
+											timezone={displayTimezone}
+											{current_time}
+											{show_seconds}
+											use_symbol_sign={true}
+											show_arrivals={event.last_stop}
+										/>
 											<p>
 												{#if isSubway && shortName}
 													<MtaBullet route_short_name={shortName} matchTextHeight={true} />
@@ -1338,17 +1347,9 @@
 											{/if}
 										</div>
 
-										<StopScreenRow
-											{event}
-											timezone={displayTimezone}
-											{current_time}
-											{show_seconds}
-											use_symbol_sign={true}
-											show_arrivals={event.last_stop}
-										/>
 
 										{#if show_gtfs_ids}
-											<p>trip id: {event.trip_id}</p>
+											<p class="font-mono">trip id: {event.trip_id}</p>
 										{/if}
 
 										{#if event.platform_string_realtime}
