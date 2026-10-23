@@ -56,10 +56,10 @@ describe('Directions Cypress/Birch search', () => {
 	});
 
 	it('does not publish late responses after cancellation', async () => {
-		let resolveResponse!: (value: unknown) => void;
+		const pending: Array<(value: unknown) => void> = [];
 		vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({
 			ok: true,
-			json: () => new Promise((resolve) => { resolveResponse = resolve; })
+			json: () => new Promise((resolve) => { pending.push(resolve); })
 		})));
 		const controller = new AbortController();
 		const update = vi.fn();
@@ -68,7 +68,7 @@ describe('Directions Cypress/Birch search', () => {
 		);
 		await Promise.resolve();
 		controller.abort();
-		resolveResponse({ features: [] });
+		for (const resolve of pending) resolve({ features: [], results: [], stops_section: { ranking: [] } });
 		await expect(running).rejects.toMatchObject({ name: 'AbortError' });
 		expect(update).not.toHaveBeenCalled();
 	});
