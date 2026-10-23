@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { data_stack_store } from '$root/globalstores';
+	import { TripPlannerStack } from '$components/stackenum';
 	import DonationPopup from '$components/DonationPopup.svelte';
 	import type { SidebarController } from '$lib/features/sidebar/public';
 	import SearchAutocompleteList from './SearchAutocompleteList.svelte';
@@ -12,8 +13,10 @@
 
 	const sidebarState = sidebar.state;
 	$: hasSidebarScreen = $data_stack_store.length > 0;
+	$: showingDirections = $data_stack_store[$data_stack_store.length - 1]?.data instanceof TripPlannerStack;
 </script>
 
+{#if !showingDirections}
 <div
 	class="fixed top-2 right-3 left-3 z-40 sm:right-auto"
 	id="search_bar_outer"
@@ -21,6 +24,7 @@
 >
 	<SearchBar />
 </div>
+{/if}
 
 {#if showDonationPopup && !hasSidebarScreen && !$autocompleteFocus}
 	<div
@@ -36,7 +40,7 @@
 	</div>
 {/if}
 
-{#if $autocompleteFocus}
+{#if !showingDirections && $autocompleteFocus}
 	<div
 		id="desktop_autocomplete_box"
 		class="fixed top-12 left-3 z-40 hidden w-[350px] rounded-sm border border-gray-500 bg-gray-100 md:block xl:w-[456px] dark:bg-gray-900"
