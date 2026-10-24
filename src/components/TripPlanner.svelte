@@ -311,7 +311,7 @@
 			<button type="button" on:click={() => showRoute(index)} aria-pressed={selectedRoute === index} class="w-full rounded-xl border bg-white p-3 text-left shadow-sm dark:bg-gray-800 {selectedRoute === index ? 'border-cyan-700 ring-1 ring-cyan-700' : 'border-gray-200 dark:border-gray-700'}">
 				<div class="flex items-center justify-between gap-2 text-base">
 					{#each itineraryTimeMarkers(itinerary) as marker}
-						<time datetime={marker.time} class:font-semibold={marker.transit} class:font-normal={!marker.transit} class:text-gray-500={!marker.transit} class:dark:text-gray-400={!marker.transit}>
+						<time datetime={marker.time} class={marker.transit ? 'font-semibold' : 'font-normal text-gray-500 dark:text-gray-400'}>
 							{formatJourneyTime(marker.time)}
 						</time>
 					{/each}
