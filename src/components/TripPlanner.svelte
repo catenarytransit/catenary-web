@@ -153,17 +153,6 @@
 				lon: focus.userLon!
 			});
 		}
-		// Allow choosing the visible map center without entering a search term.
-		if (get(map_pointer_store) && isValidPoint({ lat: focus.mapLat, lon: focus.mapLon })) {
-			result.push({
-				key: 'map:center',
-				kind: 'place',
-				name: 'Map center',
-				address: '',
-				lat: focus.mapLat,
-				lon: focus.mapLon
-			});
-		}
 		return result;
 	}
 
@@ -334,7 +323,7 @@
 						on:click={() => chooseSuggestion(suggestion)}
 					>
 						<span class="material-symbols-outlined shrink-0 {suggestion.key === 'user:location' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}" aria-hidden="true">
-							{suggestion.key === 'user:location' ? 'my_location' : suggestion.key === 'map:center' ? 'location_searching' : suggestion.kind === 'station' ? 'train' : suggestion.kind === 'stop' ? 'directions_bus' : 'place'}
+							{suggestion.key === 'user:location' ? 'my_location' : suggestion.kind === 'station' ? 'train' : suggestion.kind === 'stop' ? 'directions_bus' : 'place'}
 						</span>
 						<span class="min-w-0 flex-1 truncate">
 							<span class="font-medium">{suggestion.name}</span>
