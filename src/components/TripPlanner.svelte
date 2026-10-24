@@ -3,7 +3,7 @@
 	import { get } from 'svelte/store';
 	import { data_stack_store, geolocation_store, map_pointer_store } from '$root/globalstores';
 	import { TripPlannerStack } from '$components/stackenum';
-	import { queryEdelweiss, itinerarySegments, formatJourneyTime, type EdelweissItinerary, isValidPoint } from '$lib/features/directions/edelweiss';
+	import { queryEdelweiss, itinerarySegments, itineraryTimeMarkers, formatJourneyTime, type EdelweissItinerary, isValidPoint } from '$lib/features/directions/edelweiss';
 	import { activeItineraries, activeItineraryIndex, fitDirectionsItinerary } from '$lib/features/directions/mapRoutes';
 	import {
 		streamDirectionsLocations,
@@ -309,10 +309,33 @@
 		{#if !routingLoading && !routingError && originSelection && destinationSelection && routes.length === 0}<p class="text-sm text-gray-500">No routes found for this journey.</p>{/if}
 		{#each routes as itinerary, index}
 			<button type="button" on:click={() => showRoute(index)} aria-pressed={selectedRoute === index} class="w-full rounded-xl border bg-white p-3 text-left shadow-sm dark:bg-gray-800 {selectedRoute === index ? 'border-cyan-700 ring-1 ring-cyan-700' : 'border-gray-200 dark:border-gray-700'}">
-				<div class="flex justify-between text-base font-semibold"><time datetime={itinerary.startTime}>{formatJourneyTime(itinerary.startTime)}</time><time datetime={itinerary.endTime}>{formatJourneyTime(itinerary.endTime)}</time></div>
-				<div class="mt-3 flex h-2 w-full items-center gap-1 overflow-hidden rounded-full" aria-label="Journey segments">
+				<div class="flex items-center justify-between gap-2 text-base">
+					{#each itineraryTimeMarkers(itinerary) as marker}
+						<time datetime={marker.time} class:font-semibold={marker.transit} class:font-normal={!marker.transit} class:text-gray-500={!marker.transit} class:dark:text-gray-400={!marker.transit}>
+							{formatJourneyTime(marker.time)}
+						</time>
+					{/each}
+				</div>
+				<!-- The thin leg bars are interrupted by the icon for each leg.
+				     Route names sit centered directly below their pictograms. -->
+				<div class="mt-3 flex w-full items-start gap-1 overflow-x-auto pb-1" aria-label="Journey segments">
 					{#each itinerarySegments(itinerary) as segment}
-						<div class="h-full min-w-[3px] rounded-sm" style:background-color={segment.walking ? 'transparent' : segment.color} style:background-image={segment.walking ? 'radial-gradient(circle, #64748b 48%, transparent 53%)' : 'none'} style:background-size={segment.walking ? '7px 7px' : 'auto'} style:flex-grow={segment.duration} style:flex-basis="0" title={segment.mode}></div>
+						<div class="min-w-[44px] flex-1" style:flex-grow={segment.duration} style:flex-basis="0" role="group" aria-label={segment.walking ? 'Walking' : segment.routeName ? `${segment.mode} ${segment.routeName}` : segment.mode}>
+							<div class="flex h-6 items-center gap-1.5">
+								<span class="min-w-0 flex-1" style:border-top={segment.walking ? '2px dotted #64748b' : `3px solid ${segment.color}`}></span>
+								{#if segment.walking}
+									<span class="material-symbols-outlined shrink-0 text-slate-500" style:font-size="20px" aria-hidden="true">directions_walk</span>
+								{:else if segment.icon}
+									<span class="sbb-mode-icon" class:sbb-bus={segment.icon === 'bus'} class:sbb-metro={segment.icon === 'metro'} class:sbb-train={segment.icon === 'train'} class:sbb-tram={segment.icon === 'tram'} style:background-color={segment.color} aria-hidden="true"></span>
+								{:else}
+									<span class="material-symbols-outlined shrink-0" style:font-size="20px" style:color={segment.color} aria-hidden="true">directions_transit</span>
+								{/if}
+								<span class="min-w-0 flex-1" style:border-top={segment.walking ? '2px dotted #64748b' : `3px solid ${segment.color}`}></span>
+							</div>
+							<div class="mt-0.5 h-4 truncate text-center text-xs font-medium" title={segment.routeName ?? segment.mode}>
+								{segment.walking ? '' : segment.routeName ?? ''}
+							</div>
+						</div>
 					{/each}
 				</div>
 				<div class="mt-2 flex items-center justify-between text-xs text-gray-500"><span>{Math.round((itinerary.duration ?? (Date.parse(itinerary.endTime) - Date.parse(itinerary.startTime)) / 1000) / 60)} min · {itinerary.transfers ?? 0} transfers</span></div>
@@ -320,3 +343,34 @@
 		{/each}
 	</div>
 </section>
+
+<style>
+	.sbb-mode-icon {
+		display: inline-block;
+		width: 20px;
+		height: 20px;
+		flex-shrink: 0;
+		mask-position: center;
+		mask-size: contain;
+		mask-repeat: no-repeat;
+		-webkit-mask-position: center;
+		-webkit-mask-size: contain;
+		-webkit-mask-repeat: no-repeat;
+	}
+	.sbb-bus {
+		mask-image: url('/icons/bus-right-fill-color.svg');
+		-webkit-mask-image: url('/icons/bus-right-fill-color.svg');
+	}
+	.sbb-metro {
+		mask-image: url('/icons/metro-right-fill-color.svg');
+		-webkit-mask-image: url('/icons/metro-right-fill-color.svg');
+	}
+	.sbb-train {
+		mask-image: url('/icons/train-right-fill-color.svg');
+		-webkit-mask-image: url('/icons/train-right-fill-color.svg');
+	}
+	.sbb-tram {
+		mask-image: url('/icons/tram-right-fill-color.svg');
+		-webkit-mask-image: url('/icons/tram-right-fill-color.svg');
+	}
+</style>

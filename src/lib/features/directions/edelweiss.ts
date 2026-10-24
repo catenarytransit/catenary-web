@@ -41,12 +41,81 @@ export interface EdelweissPlan {
 	direct: EdelweissItinerary[];
 }
 
+export type TransitIcon = 'bus' | 'metro' | 'train' | 'tram' | null;
+
 export interface ItinerarySegment {
 	mode: string;
 	color: string;
 	walking: boolean;
 	duration: number;
+	routeName: string | null;
+	icon: TransitIcon;
 	coordinates: [number, number][];
+}
+
+export interface ItineraryTimeMarker {
+	time: string;
+	transit: boolean;
+}
+
+/** Show access/egress times only for journeys starting with a walk. */
+export function itineraryTimeMarkers(itinerary: EdelweissItinerary): ItineraryTimeMarker[] {
+	const firstLeg = itinerary.legs[0];
+	const startsWithWalk = !!firstLeg && isWalkingLeg(firstLeg.mode);
+	const defaultMarkers = [
+		{ time: itinerary.startTime, transit: !startsWithWalk },
+		{ time: itinerary.endTime, transit: !startsWithWalk }
+	];
+	if (!startsWithWalk) return defaultMarkers;
+
+	const transitIndices = itinerary.legs.flatMap((leg, index) => isWalkingLeg(leg.mode) ? [] : [index]);
+	if (!transitIndices.length) return defaultMarkers;
+	const firstIndex = transitIndices[0];
+	const lastIndex = transitIndices[transitIndices.length - 1];
+	const transitStart = itinerary.legs[firstIndex].startTime ?? itinerary.legs[firstIndex - 1]?.endTime;
+	const transitEnd = itinerary.legs[lastIndex].endTime ?? itinerary.legs[lastIndex + 1]?.startTime ??
+		(lastIndex === itinerary.legs.length - 1 ? itinerary.endTime : undefined);
+	const markers: ItineraryTimeMarker[] = [];
+	function add(time: string | undefined, transit: boolean): void {
+		if (!time || !Number.isFinite(Date.parse(time))) return;
+		if (markers.at(-1)?.time === time) return;
+		markers.push({ time, transit });
+	}
+	add(itinerary.startTime, false);
+	add(transitStart, true);
+	add(transitEnd, true);
+	if (isWalkingLeg(itinerary.legs[itinerary.legs.length - 1].mode)) add(itinerary.endTime, false);
+	return markers;
+}
+
+/** Use the SBB right-facing pictograms available in static/icons. */
+export function transitIcon(mode: string): TransitIcon {
+	switch (mode.toUpperCase()) {
+		case 'BUS':
+		case 'TROLLEYBUS':
+		case 'COACH':
+			return 'bus';
+		case 'SUBWAY':
+		case 'METRO':
+		case 'UNDERGROUND':
+			return 'metro';
+		case 'TRAM':
+		case 'STREETCAR':
+		case 'LIGHT_RAIL':
+		case 'LIGHTRAIL':
+			return 'tram';
+		case 'RAIL':
+		case 'TRAIN':
+		case 'HEAVY_RAIL':
+		case 'COMMUTER_RAIL':
+		case 'REGIONAL_RAIL':
+		case 'INTERCITY_RAIL':
+		case 'HIGH_SPEED_RAIL':
+		case 'HIGHSPEED_RAIL':
+			return 'train';
+		default:
+			return null;
+	}
 }
 
 export function isValidPoint(p: Coordinate | null | undefined): p is Coordinate {
@@ -91,6 +160,8 @@ export function itinerarySegments(itinerary: EdelweissItinerary): ItinerarySegme
 		mode: leg.mode,
 		walking: isWalkingLeg(leg.mode),
 		color: isWalkingLeg(leg.mode) ? '#64748b' : routeColor(leg.routeColor),
+		routeName: leg.routeShortName?.trim() || leg.routeLongName?.trim() || null,
+		icon: isWalkingLeg(leg.mode) ? null : transitIcon(leg.mode),
 		duration: Math.max(1, Number.isFinite(leg.duration) ? (leg.duration as number) : Math.max(1,
 			(new Date(leg.endTime ?? '').getTime() - new Date(leg.startTime ?? '').getTime()) / 1000 || 1)),
 		coordinates: legCoordinates(leg)

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import polyline from '@mapbox/polyline';
-import { itinerarySegments, legCoordinates, normalizePlan, routeColor, type EdelweissItinerary } from './edelweiss';
+import { itinerarySegments, itineraryTimeMarkers, legCoordinates, normalizePlan, routeColor, transitIcon, type EdelweissItinerary } from './edelweiss';
 import { itineraryGeoJson } from './mapRoutes';
 
 const itinerary: EdelweissItinerary = {
@@ -26,6 +26,51 @@ describe('Edelweiss geometry and itinerary presentation', () => {
 		expect(geo.features).toHaveLength(3);
 		expect(geo.features[1].geometry.coordinates).toHaveLength(3);
 		expect(geo.features.every(f=>f.properties.active)).toBe(true);
+	});
+	it('chooses the correct SBB pictogram for common transit modes', () => {
+		expect(transitIcon('BUS')).toBe('bus');
+		expect(transitIcon('SUBWAY')).toBe('metro');
+		expect(transitIcon('TRAM')).toBe('tram');
+		expect(transitIcon('RAIL')).toBe('train');
+		expect(transitIcon('FERRY')).toBeNull();
+		const named = itinerarySegments({...itinerary, legs: [
+			{mode: 'BUS', routeShortName: '720', routeColor: '123456'}
+		]});
+		expect(named[0].routeName).toBe('720');
+		expect(named[0].icon).toBe('bus');
+	});
+	it('renders walking start, transit start/end and walking end as four timestamps', () => {
+		const timed: EdelweissItinerary = {
+			startTime: '2026-10-23T17:00:00Z', endTime: '2026-10-23T17:30:00Z',
+			legs: [
+				{mode:'WALK', endTime:'2026-10-23T17:05:00Z'},
+				{mode:'BUS', startTime:'2026-10-23T17:05:00Z', endTime:'2026-10-23T17:25:00Z'},
+				{mode:'WALK', startTime:'2026-10-23T17:25:00Z'}
+			]
+		};
+		expect(itineraryTimeMarkers(timed)).toEqual([
+			{time:'2026-10-23T17:00:00Z',transit:false},
+			{time:'2026-10-23T17:05:00Z',transit:true},
+			{time:'2026-10-23T17:25:00Z',transit:true},
+			{time:'2026-10-23T17:30:00Z',transit:false}
+		]);
+		expect(itineraryTimeMarkers({...timed,legs:timed.legs.slice(0,2)})).toHaveLength(3);
+		expect(itineraryTimeMarkers({...timed,legs:timed.legs.slice(1)})).toEqual([
+			{time:timed.startTime, transit:true}, {time:timed.endTime, transit:true}
+		]);
+		expect(itineraryTimeMarkers({...timed,legs:[timed.legs[0]]})).toEqual([
+			{time:timed.startTime, transit:false}, {time:timed.endTime, transit:false}
+		]);
+	});
+	it('does not invent unknown boarding times', () => {
+		const times = itineraryTimeMarkers({...itinerary, legs: [
+			{mode:'WALK'}, {mode:'BUS', endTime:'2026-10-23T17:25:00Z'}, {mode:'WALK'}
+		]});
+		expect(times).toEqual([
+			{time:itinerary.startTime, transit:false},
+			{time:'2026-10-23T17:25:00Z', transit:true},
+			{time:itinerary.endTime, transit:false}
+		]);
 	});
 	it('does not invent straight transit alignments when geometry is missing', () => {
 		expect(legCoordinates({mode:'RAIL',from:{lat:34,lon:-118,name:'A'},to:{lat:35,lon:-117,name:'B'}})).toEqual([]);
