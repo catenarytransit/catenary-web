@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import polyline from '@mapbox/polyline';
-import { itinerarySegments, itineraryTimeMarkers, legCoordinates, normalizePlan, routeColor, transitIcon, type EdelweissItinerary } from './edelweiss';
+import { itinerarySegments, itineraryDisplaySegments, itineraryTimeMarkers, itineraryTimeRow, formatWalkSegment, formatJourneyDuration, routeBadgeKind, routeLabel, legCoordinates, normalizePlan, routeColor, transitIcon, type EdelweissItinerary } from './edelweiss';
 import { itineraryGeoJson } from './mapRoutes';
 
 const itinerary: EdelweissItinerary = {
@@ -71,6 +71,54 @@ describe('Edelweiss geometry and itinerary presentation', () => {
 			{time:'2026-10-23T17:25:00Z', transit:true},
 			{time:itinerary.endTime, transit:false}
 		]);
+	});
+	it('combines consecutive walking legs for cards, not map geometry', () => {
+		const merged = { ...itinerary, legs: [
+			{mode:'WALK',duration:180}, {mode:'FOOT',duration:300},
+			{mode:'RAIL',duration:600,routeShortName:'RE1'},
+			{mode:'WALK',duration:120}, {mode:'WALK',duration:60}
+		]};
+		const display = itineraryDisplaySegments(merged);
+		expect(display.map(x=>x.walking)).toEqual([true,false,true]);
+		expect(display.map(x=>x.duration)).toEqual([480,600,180]);
+		expect(itinerarySegments(merged)).toHaveLength(5);
+		expect(formatWalkSegment(display[0])).toBe("8'");
+	});
+	it('sums real walking geometry length, and hides missing distances', () => {
+		const path = polyline.encode([[0,0],[0,0.009]],6);
+		const trip = {...itinerary,legs:[
+			{mode:'WALK',duration:240,legGeometry:{points:path,precision:6}},
+			{mode:'WALK',duration:240,legGeometry:{points:path,precision:6}}
+		]};
+		const walk = itineraryDisplaySegments(trip)[0];
+		expect(walk.distanceMeters).toBeGreaterThan(1900);
+		expect(formatWalkSegment(walk)).toBe("8' - 2km");
+		const unavailable = itineraryDisplaySegments({...trip, legs:[trip.legs[0],{mode:'WALK',duration:240}]})[0];
+		expect(formatWalkSegment(unavailable)).toBe("8'");
+	});
+	it('places total duration between first transit and last transit times', () => {
+		const timed = {...itinerary, duration:30600, legs:[
+			{mode:'WALK',endTime:'2026-10-23T17:05:00Z'},
+			{mode:'RAIL',startTime:'2026-10-23T17:05:00Z',endTime:'2026-10-23T17:25:00Z'},
+			{mode:'WALK'}
+		]};
+		expect(formatJourneyDuration(timed)).toBe('8 h 30 min');
+		expect(itineraryTimeRow(timed).map(x=>x.kind)).toEqual(['time','time','duration','time','time']);
+		expect(itineraryTimeRow({...timed,legs:timed.legs.slice(1)}).map(x=>x.kind))
+			.toEqual(['time','duration','time']);
+	});
+	it('uses chateau to recognize MTA, RATP, and German S-Bahn badges', () => {
+		expect(routeBadgeKind({mode:'SUBWAY',chateau:'nyct',routeId:'A',routeShortName:'A'})).toBe('mta');
+		expect(routeBadgeKind({mode:'SUBWAY',chateau:'île~de~france~mobilités',routeShortName:'14'})).toBe('ratp');
+		expect(routeBadgeKind({mode:'RAIL',chateau:'deutschland',routeShortName:'S8'})).toBe('sbahn');
+		expect(routeBadgeKind({mode:'RAIL',chateau:'vbb',routeShortName:'S1'})).toBe('sbahn');
+		expect(routeBadgeKind({mode:'RAIL',chateau:'schweiz',routeShortName:'IC5'})).toBe('sbb');
+		expect(routeBadgeKind({mode:'SUBWAY',chateau:'other',routeShortName:'14'})).toBe('standard');
+	});
+	it('uses only trip short name for UK National Rail', () => {
+		expect(routeLabel({mode:'RAIL',chateau:'nationalrailuk',routeShortName:'GWR',tripShortName:'1A23'})).toBe('1A23');
+		expect(routeLabel({mode:'RAIL',chateau:'nationalrailuk',routeShortName:'GWR'})).toBeNull();
+		expect(routeLabel({mode:'RAIL',chateau:'deutschland',routeShortName:'RE1',tripShortName:'6'})).toBe('RE1');
 	});
 	it('does not invent straight transit alignments when geometry is missing', () => {
 		expect(legCoordinates({mode:'RAIL',from:{lat:34,lon:-118,name:'A'},to:{lat:35,lon:-117,name:'B'}})).toEqual([]);
