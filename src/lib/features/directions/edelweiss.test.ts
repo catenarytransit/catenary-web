@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import polyline from '@mapbox/polyline';
-import { itinerarySegments, itineraryDisplaySegments, itineraryTimeMarkers, itineraryTimeRow, formatWalkSegment, formatJourneyDuration, routeBadgeKind, routeLabel, legCoordinates, normalizePlan, routeColor, transitIcon, type EdelweissItinerary } from './edelweiss';
+import { itinerarySegments, itineraryDisplaySegments, allocateTimelinePercentages, itineraryTimeMarkers, itineraryTimeRow, formatWalkSegment, formatJourneyDuration, routeBadgeKind, routeLabel, legCoordinates, normalizePlan, routeColor, transitIcon, type EdelweissItinerary } from './edelweiss';
 import { itineraryGeoJson } from './mapRoutes';
 
 const itinerary: EdelweissItinerary = {
@@ -83,6 +83,35 @@ describe('Edelweiss geometry and itinerary presentation', () => {
 		expect(display.map(x=>x.duration)).toEqual([480,600,180]);
 		expect(itinerarySegments(merged)).toHaveLength(5);
 		expect(formatWalkSegment(display[0])).toBe("8'");
+	});
+	it('marks internal walking transfers as silent segments and does not merge them with egress', () => {
+		const trip: EdelweissItinerary = {
+			startTime: itinerary.startTime, endTime: itinerary.endTime,
+			legs: [
+				{mode:'WALK', duration:60},
+				{mode:'BUS', duration:600},
+				{mode:'WALK', duration:45},
+				{mode:'WALK', duration:75},
+				{mode:'RAIL', duration:720},
+				{mode:'WALK', duration:180}
+			]
+		};
+		const segments = itineraryDisplaySegments(trip);
+		expect(segments.map(x=>x.transfer)).toEqual([false,false,true,false,false]);
+		expect(segments[2].walking).toBe(true);
+		expect(segments[2].duration).toBe(120);
+		expect(segments[4].duration).toBe(180);
+	});
+	it('fits proportional durations into exactly the available width with short-leg minimums', () => {
+		const durations = [5, 5, 600, 20].map(duration=>({duration}));
+		const widths = allocateTimelinePercentages(durations,300,26);
+		expect(widths.reduce((a,b)=>a+b,0)).toBeCloseTo(100,8);
+		expect(widths[0] * 3).toBeGreaterThanOrEqual(25.99);
+		expect(widths[2]).toBeGreaterThan(widths[1]);
+		const tiny = allocateTimelinePercentages(Array.from({length:20},()=>({duration:1})),70,26);
+		expect(tiny.reduce((a,b)=>a+b,0)).toBeCloseTo(100,8);
+		expect(tiny.every(w=>w>0)).toBe(true);
+		expect(allocateTimelinePercentages([],300)).toEqual([]);
 	});
 	it('sums real walking geometry length, and hides missing distances', () => {
 		const path = polyline.encode([[0,0],[0,0.009]],6);
