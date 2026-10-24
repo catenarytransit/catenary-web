@@ -8,6 +8,7 @@
 	import RatpBullet from '$components/ratpbullet.svelte';
 	import SbbLogo from '$components/SbbLogo.svelte';
 	import { activeItineraries, activeItineraryIndex, fitDirectionsItinerary } from '$lib/features/directions/mapRoutes';
+	import { getRecentDirectionsLocations, rememberDirectionsLocation } from '$lib/features/directions/recentLocations';
 	import {
 		streamDirectionsLocations,
 		type DirectionsLocation,
@@ -153,6 +154,11 @@
 				lon: focus.userLon!
 			});
 		}
+		const other = field === 'origin' ? destinationSelection : originSelection;
+		for (const item of getRecentDirectionsLocations()) {
+			if (other && item.lat === other.lat && item.lon === other.lon) continue;
+			result.push(item);
+		}
 		return result;
 	}
 
@@ -218,6 +224,7 @@
 	}
 
 	function chooseSuggestion(item: DirectionsLocation): void {
+		rememberDirectionsLocation(item);
 		if (activeField === 'origin') {
 			origin = item.name;
 			originSelection = item;
