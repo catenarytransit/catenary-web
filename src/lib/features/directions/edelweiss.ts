@@ -1,4 +1,6 @@
 import polyline from '@mapbox/polyline';
+import { MTA_CHATEAU_ID, isSubwayRouteId } from '$root/utils/mta_subway_utils';
+import { IDFM_CHATEAU_ID, isRatpRoute } from '$root/utils/ratp_utils';
 
 export interface Coordinate {
 	lat: number;
@@ -23,6 +25,11 @@ export interface EdelweissLeg {
 	routeColor?: string | null;
 	routeShortName?: string | null;
 	routeLongName?: string | null;
+	routeTextColor?: string | null;
+	routeId?: string | null;
+	tripShortName?: string | null;
+	/** The originating timetable's source chateau (supplied by Edelweiss). */
+	chateau?: string | null;
 	from?: RoutePoint | null;
 	to?: RoutePoint | null;
 	legGeometry?: EdelweissGeometry | null;
@@ -49,6 +56,8 @@ export interface ItinerarySegment {
 	walking: boolean;
 	duration: number;
 	routeName: string | null;
+	textColor: string;
+	badgeKind: 'standard' | 'mta' | 'ratp' | 'sbahn' | 'sbb';
 	icon: TransitIcon;
 	coordinates: [number, number][];
 	/** Calculated from detailed OSR walking geometry; null if unavailable. */
@@ -58,6 +67,22 @@ export interface ItinerarySegment {
 export interface ItineraryTimeMarker {
 	time: string;
 	transit: boolean;
+}
+
+export type ItineraryTimeItem =
+	| { kind: 'time'; time: string; transit: boolean }
+	| { kind: 'duration'; text: string };
+
+/** Position the total duration midway between first boarding and final alighting. */
+export function itineraryTimeRow(itinerary: EdelweissItinerary): ItineraryTimeItem[] {
+	const markers = itineraryTimeMarkers(itinerary);
+	const firstTransit = markers.findIndex(marker => marker.transit);
+	const lastTransit = markers.findLastIndex(marker => marker.transit);
+	// Pure walking journeys have no transit anchors; center the duration between endpoints.
+	const insertion = firstTransit >= 0 && lastTransit > firstTransit ? lastTransit : 1;
+	const items: ItineraryTimeItem[] = markers.map(marker => ({kind:'time',...marker}));
+	items.splice(Math.min(insertion,items.length),0,{kind:'duration',text:formatJourneyDuration(itinerary)});
+	return items;
 }
 
 /** Show access/egress times only for journeys starting with a walk. */
@@ -157,6 +182,46 @@ export function legCoordinates(leg: EdelweissLeg): [number, number][] {
 	return [];
 }
 
+/** Apply special badges only when the source chateau confirms the network. */
+export function routeBadgeKind(leg: EdelweissLeg): ItinerarySegment['badgeKind'] {
+	const chateau = leg.chateau || '';
+	const shortName = (leg.routeShortName || '').trim();
+	const mode = leg.mode.toUpperCase();
+	if (chateau === MTA_CHATEAU_ID && mode === 'SUBWAY' &&
+		isSubwayRouteId(shortName) && isSubwayRouteId(leg.routeId || shortName)) return 'mta';
+	if (chateau === IDFM_CHATEAU_ID && isRatpRoute(shortName) && (
+		(mode === 'SUBWAY' && /^(?:[1-9]|1[0-9]|[37]bis|[37]b)$/i.test(shortName)) ||
+		(mode === 'TRAM' && /^T\d+[A-Za-z]?$/i.test(shortName)) ||
+		(mode === 'RAIL' && /^[A-EHJKLNPRUV]$/i.test(shortName))
+	)) return 'ratp';
+	if (['deutschland','vbb'].includes(chateau) && ['RAIL','TRAIN'].includes(mode) &&
+		/^S\d+[A-Za-z]?$/i.test(shortName)) return 'sbahn';
+	if (chateau === 'schweiz' && ['RAIL','TRAIN'].includes(mode) &&
+		/^(?:IC|IR)(?:\d+)?$|^EC$/i.test(shortName)) return 'sbb';
+	return 'standard';
+}
+
+export function routeLabel(leg: EdelweissLeg): string | null {
+	// UK rail route names are often generic operator labels, not a useful train ID.
+	if (leg.chateau === 'nationalrailuk' && ['RAIL','TRAIN'].includes(leg.mode.toUpperCase())) {
+		return leg.tripShortName?.trim() || null;
+	}
+	return leg.routeShortName?.trim() || leg.routeLongName?.trim() || null;
+}
+
+/** Use GTFS text color when supplied; otherwise select contrast against route color. */
+export function routeTextColor(raw: unknown, background: string): string {
+	if (typeof raw === 'string' && /^(?:#?[0-9a-fA-F]{3}|#?[0-9a-fA-F]{6})$/.test(raw.trim())) {
+		return '#' + raw.trim().replace(/^#/, '');
+	}
+	const hex = background.replace('#','');
+	const full = hex.length === 3 ? hex.split('').map(v=>v+v).join('') : hex;
+	const rgb = [0,2,4].map(i => parseInt(full.slice(i,i+2),16) / 255)
+		.map(v => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+	const luminance = rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
+	return luminance > 0.179 ? '#111111' : '#ffffff';
+}
+
 /** Haversine length of actual detailed walking geometry. Point count is not distance. */
 export function walkingLegDistanceMeters(leg: EdelweissLeg): number | null {
 	if (!isWalkingLeg(leg.mode) || !leg.legGeometry?.points) return null;
@@ -182,7 +247,9 @@ export function itinerarySegments(itinerary: EdelweissItinerary): ItinerarySegme
 		mode: leg.mode,
 		walking: isWalkingLeg(leg.mode),
 		color: isWalkingLeg(leg.mode) ? '#64748b' : routeColor(leg.routeColor),
-		routeName: leg.routeShortName?.trim() || leg.routeLongName?.trim() || null,
+		routeName: routeLabel(leg),
+		textColor: routeTextColor(leg.routeTextColor, routeColor(leg.routeColor)),
+		badgeKind: routeBadgeKind(leg),
 		icon: isWalkingLeg(leg.mode) ? null : transitIcon(leg.mode),
 		duration: Math.max(1, Number.isFinite(leg.duration) ? (leg.duration as number) : Math.max(1,
 			(new Date(leg.endTime ?? '').getTime() - new Date(leg.startTime ?? '').getTime()) / 1000 || 1)),
