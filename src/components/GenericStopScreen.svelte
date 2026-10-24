@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy, tick } from 'svelte';
 	import HomeButton from './SidebarParts/home_button.svelte';
+	import DirectionsActions from './DirectionsActions.svelte';
 	import { writable, get } from 'svelte/store';
 	import { timezone_to_locale } from './timezone_to_locale';
 	import {
@@ -1059,6 +1060,7 @@
 					/>
 				</p>
 			</div>
+			<DirectionsActions name={displayName} lat={displayLat} lon={displayLon} kind={osm_id ? 'station' : 'stop'} locationKey={osm_id ? 'station:' + osm_id : 'stop:' + chateau + ':' + key} />
 			<p class="text-sm ml-1 mb-0">
 				{displayTimezone}
 				{#if osm_id && show_osm_ids}
