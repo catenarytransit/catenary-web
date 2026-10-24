@@ -51,6 +51,8 @@ export interface ItinerarySegment {
 	routeName: string | null;
 	icon: TransitIcon;
 	coordinates: [number, number][];
+	/** Calculated from detailed OSR walking geometry; null if unavailable. */
+	distanceMeters: number | null;
 }
 
 export interface ItineraryTimeMarker {
@@ -155,6 +157,26 @@ export function legCoordinates(leg: EdelweissLeg): [number, number][] {
 	return [];
 }
 
+/** Haversine length of actual detailed walking geometry. Point count is not distance. */
+export function walkingLegDistanceMeters(leg: EdelweissLeg): number | null {
+	if (!isWalkingLeg(leg.mode) || !leg.legGeometry?.points) return null;
+	// Disable the straight-line fallback; no path means no reliable walking length.
+	const points = legCoordinates({ ...leg, from: null, to: null });
+	if (points.length < 2) return null;
+	const radians = Math.PI / 180;
+	let total = 0;
+	for (let i = 1; i < points.length; i++) {
+		const [lonA, latA] = points[i - 1];
+		const [lonB, latB] = points[i];
+		const dLat = (latB - latA) * radians;
+		const dLon = (lonB - lonA) * radians;
+		const a = Math.sin(dLat / 2) ** 2 +
+			Math.cos(latA * radians) * Math.cos(latB * radians) * Math.sin(dLon / 2) ** 2;
+		total += 2 * 6371000 * Math.asin(Math.min(1, Math.sqrt(a)));
+	}
+	return total;
+}
+
 export function itinerarySegments(itinerary: EdelweissItinerary): ItinerarySegment[] {
 	return itinerary.legs.map((leg) => ({
 		mode: leg.mode,
@@ -164,8 +186,46 @@ export function itinerarySegments(itinerary: EdelweissItinerary): ItinerarySegme
 		icon: isWalkingLeg(leg.mode) ? null : transitIcon(leg.mode),
 		duration: Math.max(1, Number.isFinite(leg.duration) ? (leg.duration as number) : Math.max(1,
 			(new Date(leg.endTime ?? '').getTime() - new Date(leg.startTime ?? '').getTime()) / 1000 || 1)),
-		coordinates: legCoordinates(leg)
+		coordinates: legCoordinates(leg),
+		distanceMeters: walkingLegDistanceMeters(leg)
 	}));
+}
+
+/** Collapse consecutive walking legs in the card, without modifying map leg geometries. */
+export function itineraryDisplaySegments(itinerary: EdelweissItinerary): ItinerarySegment[] {
+	const displayed: ItinerarySegment[] = [];
+	for (const segment of itinerarySegments(itinerary)) {
+		const previous = displayed.at(-1);
+		if (segment.walking && previous?.walking) {
+			previous.duration += segment.duration;
+			previous.distanceMeters = previous.distanceMeters !== null && segment.distanceMeters !== null
+				? previous.distanceMeters + segment.distanceMeters : null;
+			// This display-only geometry is not used to draw the MapLibre route.
+			continue;
+		}
+		displayed.push({ ...segment });
+	}
+	return displayed;
+}
+
+export function formatWalkSegment(segment: ItinerarySegment): string {
+	const minutes = Math.max(1, Math.round(segment.duration / 60));
+	const distance = segment.distanceMeters;
+	if (distance === null || !Number.isFinite(distance)) return `${minutes}'`;
+	if (distance >= 1000) {
+		const kilometers = Math.round(distance / 100) / 10;
+		return `${minutes}' - ${kilometers}km`;
+	}
+	return `${minutes}' - ${Math.round(distance / 10) * 10}m`;
+}
+
+export function formatJourneyDuration(itinerary: EdelweissItinerary): string {
+	const elapsed = (Date.parse(itinerary.endTime) - Date.parse(itinerary.startTime)) / 1000;
+	const duration = Number.isFinite(itinerary.duration) && (itinerary.duration ?? 0) >= 0
+		? itinerary.duration as number : elapsed;
+	const minutes = Math.max(0, Math.round(Math.max(0, duration) / 60));
+	const hours = Math.floor(minutes / 60);
+	return hours > 0 ? `${hours} h ${minutes % 60} min` : `${minutes} min`;
 }
 
 export function normalizePlan(value: unknown): EdelweissItinerary[] {
