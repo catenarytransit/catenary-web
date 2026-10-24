@@ -287,7 +287,18 @@ export function itineraryDisplaySegments(itinerary: EdelweissItinerary): Itinera
 		}
 		displayed.push({ ...segment });
 	}
-	return displayed;
+	// Preview-only filters: a transfer walk appears only when it exceeds
+	// five minutes. Access/egress walks shorter than 25 m can be omitted when
+	// detailed walking geometry provides a reliable distance. Unknown distances
+	// stay visible rather than being silently treated as short walks.
+	const hasTransit = displayed.some(segment => !segment.walking);
+	return displayed.filter(segment => {
+		if (!segment.walking) return true;
+		if (segment.transfer) return segment.duration > 5 * 60;
+		if (hasTransit && segment.distanceMeters !== null &&
+			Number.isFinite(segment.distanceMeters) && segment.distanceMeters < 25) return false;
+		return true;
+	});
 }
 
 /**
