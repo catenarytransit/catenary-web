@@ -319,6 +319,8 @@
 		{#if routingError}<p role="alert" class="text-sm text-red-600">{routingError}</p>{/if}
 		{#if !routingLoading && !routingError && originSelection && destinationSelection && routes.length === 0}<p class="text-sm text-gray-500">No routes found for this journey.</p>{/if}
 		{#each routes as itinerary, index}
+			{@const segments = itineraryDisplaySegments(itinerary)}
+			{@const widths = allocateTimelinePercentages(segments, timelineWidth)}
 			<button type="button" on:click={() => showRoute(index)} aria-pressed={selectedRoute === index} class="w-full rounded-xl border bg-white p-3 text-left shadow-sm dark:bg-gray-800 {selectedRoute === index ? 'border-cyan-700 ring-1 ring-cyan-700' : 'border-gray-200 dark:border-gray-700'}">
 				<div class="flex items-center justify-between gap-1.5 text-sm sm:text-base" aria-label="Journey departure, duration and arrival">
 					{#each itineraryTimeRow(itinerary) as item}
@@ -330,8 +332,6 @@
 					{/each}
 				</div>
 				<div class="mt-3 w-full max-w-full" use:measureTimeline aria-label="Journey segments">
-					{@const segments = itineraryDisplaySegments(itinerary)}
-					{@const widths = allocateTimelinePercentages(segments, timelineWidth)}
 					<div class="flex w-full min-w-0 items-start overflow-hidden">
 						{#each segments as segment, segmentIndex}
 							<div class="min-w-0 shrink-0 overflow-visible" style:width={`${widths[segmentIndex]}%`} role="group" aria-label={segment.transfer ? 'Transfer' : segment.walking ? `Walk ${formatWalkSegment(segment)}` : segment.routeName ? `${segment.mode} ${segment.routeName}` : segment.mode}>
