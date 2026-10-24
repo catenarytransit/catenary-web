@@ -54,6 +54,8 @@ export interface ItinerarySegment {
 	mode: string;
 	color: string;
 	walking: boolean;
+	/** Walking between two transit legs is a silent transfer, not access/egress. */
+	transfer: boolean;
 	duration: number;
 	routeName: string | null;
 	textColor: string;
@@ -242,17 +244,30 @@ export function walkingLegDistanceMeters(leg: EdelweissLeg): number | null {
 	return total;
 }
 
+/** The displayed timeline follows wall-clock leg times when provided, not equal-sized chunks. */
+function legDurationSeconds(leg: EdelweissLeg): number {
+	const start = Date.parse(leg.startTime ?? '');
+	const end = Date.parse(leg.endTime ?? '');
+	if (Number.isFinite(start) && Number.isFinite(end) && end >= start) {
+		return Math.max(1, (end - start) / 1000);
+	}
+	return Math.max(1, Number.isFinite(leg.duration) ? leg.duration as number : 1);
+}
+
 export function itinerarySegments(itinerary: EdelweissItinerary): ItinerarySegment[] {
-	return itinerary.legs.map((leg) => ({
+	const transitIndices = itinerary.legs.flatMap((leg, index) => isWalkingLeg(leg.mode) ? [] : [index]);
+	const firstTransit = transitIndices[0] ?? -1;
+	const lastTransit = transitIndices.at(-1) ?? -1;
+	return itinerary.legs.map((leg, index) => ({
 		mode: leg.mode,
 		walking: isWalkingLeg(leg.mode),
+		transfer: isWalkingLeg(leg.mode) && firstTransit >= 0 && index > firstTransit && index < lastTransit,
 		color: isWalkingLeg(leg.mode) ? '#64748b' : routeColor(leg.routeColor),
 		routeName: routeLabel(leg),
 		textColor: routeTextColor(leg.routeTextColor, routeColor(leg.routeColor)),
 		badgeKind: routeBadgeKind(leg),
 		icon: isWalkingLeg(leg.mode) ? null : transitIcon(leg.mode),
-		duration: Math.max(1, Number.isFinite(leg.duration) ? (leg.duration as number) : Math.max(1,
-			(new Date(leg.endTime ?? '').getTime() - new Date(leg.startTime ?? '').getTime()) / 1000 || 1)),
+		duration: legDurationSeconds(leg),
 		coordinates: legCoordinates(leg),
 		distanceMeters: walkingLegDistanceMeters(leg)
 	}));
@@ -263,7 +278,7 @@ export function itineraryDisplaySegments(itinerary: EdelweissItinerary): Itinera
 	const displayed: ItinerarySegment[] = [];
 	for (const segment of itinerarySegments(itinerary)) {
 		const previous = displayed.at(-1);
-		if (segment.walking && previous?.walking) {
+		if (segment.walking && previous?.walking && segment.transfer === previous.transfer) {
 			previous.duration += segment.duration;
 			previous.distanceMeters = previous.distanceMeters !== null && segment.distanceMeters !== null
 				? previous.distanceMeters + segment.distanceMeters : null;
@@ -273,6 +288,43 @@ export function itineraryDisplaySegments(itinerary: EdelweissItinerary): Itinera
 		displayed.push({ ...segment });
 	}
 	return displayed;
+}
+
+/**
+ * Allocate the full available timeline width by elapsed leg duration, reserving
+ * a few pixels for very short legs. The minimum is reduced on narrow cards or
+ * many-leg trips, so the combined widths never exceed the container.
+ */
+export function allocateTimelinePercentages(
+	segments: ReadonlyArray<Pick<ItinerarySegment, 'duration'>>,
+	containerWidth: number,
+	minimumWidth = 26
+): number[] {
+	const count = segments.length;
+	if (!count) return [];
+	const width = Number.isFinite(containerWidth) && containerWidth > 0 ? containerWidth : 320;
+	const minPixels = Math.min(Math.max(0, minimumWidth), width / count);
+	const weights = segments.map(s => Number.isFinite(s.duration) && s.duration > 0 ? s.duration : 1);
+	const pixels = new Array<number>(count).fill(0);
+	const remaining = new Set<number>(weights.map((_, i) => i));
+	let remainingWidth = width;
+	while (remaining.size) {
+		const totalWeight = [...remaining].reduce((sum, i) => sum + weights[i], 0);
+		const underMinimum = [...remaining].filter(i => remainingWidth * weights[i] / totalWeight < minPixels - 1e-9);
+		if (!underMinimum.length) {
+			for (const i of remaining) pixels[i] = remainingWidth * weights[i] / totalWeight;
+			break;
+		}
+		for (const i of underMinimum) {
+			pixels[i] = minPixels;
+			remaining.delete(i);
+			remainingWidth -= minPixels;
+		}
+	}
+	const widths = pixels.map(p => p / width * 100);
+	// Assign any floating-point rounding residue to the last segment.
+	widths[count - 1] = Math.max(0, 100 - widths.slice(0, -1).reduce((sum, value) => sum + value, 0));
+	return widths;
 }
 
 export function formatWalkSegment(segment: ItinerarySegment): string {
