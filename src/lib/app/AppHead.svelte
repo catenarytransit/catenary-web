@@ -32,7 +32,7 @@
 
 <style>
 	:global(body) {
-		font-family: 'Arimo', 'Noto Sans', sans-serif;
+		font-family: 'DM Sans', 'Noto Sans', sans-serif;
 	}
 
 	:global(.material-symbols-outlined) {
