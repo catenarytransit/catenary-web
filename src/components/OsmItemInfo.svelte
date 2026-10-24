@@ -5,6 +5,7 @@
 	import { data_stack_store, map_pointer_store, nearby_pick_state_store, nearby_user_picks_store } from '$root/globalstores';
 	import { recordOsmItemVisit } from '$lib/features/search/state/stationHistory';
 	import { OsmSearchResultStack } from './stackenum';
+	import DirectionsActions from './DirectionsActions.svelte';
 	import type { GeoJSONSource } from 'maplibre-gl';
 
 	export let osm_id: string;
@@ -128,6 +129,8 @@
 		<p class="text-sm capitalize text-gray-600 dark:text-gray-300">{kind.replaceAll('_', ' ')}</p>
 		{#if address}<p class="mt-1 text-sm">{address}</p>{/if}
 	</div>
+
+	<DirectionsActions {name} {lat} {lon} {address} kind="place" locationKey={'osm:' + osm_class + ':' + osm_id} />
 
 	<button type="button" class="w-full rounded-lg bg-sky-600 px-4 py-3 font-medium text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
 		disabled={lat == null || lon == null} on:click={showNearby}>
