@@ -33,21 +33,12 @@
 	let routes: EdelweissItinerary[] = [];
 	let selectedRoute = 0;
 	let timelineWidth = 320;
-	let timelineObserver: ResizeObserver | null = null;
-	let timelineElement: HTMLDivElement | null = null;
 	function measureTimeline(node: HTMLDivElement) {
-		timelineElement = node;
 		const measure = () => { timelineWidth = node.clientWidth || 320; };
 		measure();
-		if (typeof ResizeObserver !== 'undefined') {
-			timelineObserver = new ResizeObserver(measure);
-			timelineObserver.observe(node);
-		}
-		return { destroy() {
-			timelineObserver?.disconnect();
-			timelineObserver = null;
-			if (timelineElement === node) timelineElement = null;
-		} };
+		const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+		observer?.observe(node);
+		return { destroy() { observer?.disconnect(); } };
 	}
 	let departure = Math.floor(Date.now() / 1000);
 	const stackData = get(data_stack_store).at(-1)?.data;
