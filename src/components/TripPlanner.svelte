@@ -137,6 +137,25 @@
 		};
 	}
 
+
+	function emptyFieldSuggestions(field: Field): DirectionsLocation[] {
+		const result: DirectionsLocation[] = [];
+		const focus = getFocus();
+		const originIsUserLocation = originSelection?.key === 'user:location';
+		if (!(field === 'destination' && originIsUserLocation) &&
+			Number.isFinite(focus.userLat) && Number.isFinite(focus.userLon)) {
+			result.push({
+				key: 'user:location',
+				kind: 'place',
+				name: 'Your location',
+				address: '',
+				lat: focus.userLat!,
+				lon: focus.userLon!
+			});
+		}
+		return result;
+	}
+
 	function querySuggestions(field: Field): void {
 		cancelSearch();
 		activeField = field;
@@ -145,7 +164,10 @@
 		searchError = false;
 		const text = (field === 'origin' ? origin : destination).trim();
 		const id = ++requestId;
-		if (!text) return;
+		if (!text) {
+			suggestions = emptyFieldSuggestions(field);
+			return;
+		}
 		loading = true;
 		const current = new AbortController();
 		controller = current;
@@ -175,6 +197,24 @@
 		clearRoutes();
 		updateUrl();
 		querySuggestions(field);
+	}
+
+	function swapEndpoints(): void {
+		requestId++;
+		cancelSearch();
+		activeField = null;
+		suggestions = [];
+		highlighted = -1;
+		searchError = false;
+		const previousOrigin = origin;
+		const previousOriginSelection = originSelection;
+		origin = destination;
+		originSelection = destinationSelection;
+		destination = previousOrigin;
+		destinationSelection = previousOriginSelection;
+		clearRoutes();
+		updateUrl();
+		void routeSelectedCoordinates();
 	}
 
 	function chooseSuggestion(item: DirectionsLocation): void {
@@ -242,7 +282,7 @@
 
 	<div class="relative">
 		<!-- Container for inputs and connector graphics -->
-		<div class="relative flex flex-col gap-2">
+		<div class="relative flex flex-col gap-2 pr-12">
 			<div class="absolute bottom-0 left-0 top-0 flex w-6 flex-col items-center py-4" aria-hidden="true">
 				<div class="h-3 w-3 rounded-full border-2 border-gray-600 bg-white dark:border-gray-300 dark:bg-gray-900"></div>
 				<div class="w-0.5 flex-grow bg-gray-300 dark:bg-gray-600"></div>
@@ -282,6 +322,15 @@
 					class="w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700"
 				/>
 			</div>
+			<button
+				type="button"
+				on:click={swapEndpoints}
+				aria-label="Swap start and destination"
+				title="Swap start and destination"
+				class="absolute right-0 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 shadow-sm transition-colors hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
+			>
+				<span class="material-symbols-outlined" aria-hidden="true">swap_vert</span>
+			</button>
 		</div>
 
 		<!-- Floating suggestions overlap the future routing-results area, not the input rows. -->
@@ -300,8 +349,8 @@
 						class="flex w-full min-w-0 items-center gap-2 px-3 py-3 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800 {index === highlighted ? 'bg-gray-100 dark:bg-gray-800' : ''}"
 						on:click={() => chooseSuggestion(suggestion)}
 					>
-						<span class="material-symbols-outlined shrink-0 text-gray-500" aria-hidden="true">
-							{suggestion.kind === 'station' ? 'train' : suggestion.kind === 'stop' ? 'directions_bus' : 'place'}
+						<span class="material-symbols-outlined shrink-0 {suggestion.key === 'user:location' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}" aria-hidden="true">
+							{suggestion.key === 'user:location' ? 'my_location' : suggestion.kind === 'station' ? 'train' : suggestion.kind === 'stop' ? 'directions_bus' : 'place'}
 						</span>
 						<span class="min-w-0 flex-1 truncate">
 							<span class="font-medium">{suggestion.name}</span>
