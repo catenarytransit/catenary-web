@@ -137,6 +137,36 @@
 		};
 	}
 
+
+	function emptyFieldSuggestions(field: Field): DirectionsLocation[] {
+		const result: DirectionsLocation[] = [];
+		const focus = getFocus();
+		const originIsUserLocation = originSelection?.key === 'user:location';
+		if (!(field === 'destination' && originIsUserLocation) &&
+			Number.isFinite(focus.userLat) && Number.isFinite(focus.userLon)) {
+			result.push({
+				key: 'user:location',
+				kind: 'place',
+				name: 'Your location',
+				address: '',
+				lat: focus.userLat!,
+				lon: focus.userLon!
+			});
+		}
+		// Allow choosing the visible map center without entering a search term.
+		if (get(map_pointer_store) && isValidPoint({ lat: focus.mapLat, lon: focus.mapLon })) {
+			result.push({
+				key: 'map:center',
+				kind: 'place',
+				name: 'Map center',
+				address: '',
+				lat: focus.mapLat,
+				lon: focus.mapLon
+			});
+		}
+		return result;
+	}
+
 	function querySuggestions(field: Field): void {
 		cancelSearch();
 		activeField = field;
@@ -145,7 +175,10 @@
 		searchError = false;
 		const text = (field === 'origin' ? origin : destination).trim();
 		const id = ++requestId;
-		if (!text) return;
+		if (!text) {
+			suggestions = emptyFieldSuggestions(field);
+			return;
+		}
 		loading = true;
 		const current = new AbortController();
 		controller = current;
@@ -300,8 +333,8 @@
 						class="flex w-full min-w-0 items-center gap-2 px-3 py-3 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800 {index === highlighted ? 'bg-gray-100 dark:bg-gray-800' : ''}"
 						on:click={() => chooseSuggestion(suggestion)}
 					>
-						<span class="material-symbols-outlined shrink-0 text-gray-500" aria-hidden="true">
-							{suggestion.kind === 'station' ? 'train' : suggestion.kind === 'stop' ? 'directions_bus' : 'place'}
+						<span class="material-symbols-outlined shrink-0 {suggestion.key === 'user:location' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}" aria-hidden="true">
+							{suggestion.key === 'user:location' ? 'my_location' : suggestion.key === 'map:center' ? 'location_searching' : suggestion.kind === 'station' ? 'train' : suggestion.kind === 'stop' ? 'directions_bus' : 'place'}
 						</span>
 						<span class="min-w-0 flex-1 truncate">
 							<span class="font-medium">{suggestion.name}</span>
