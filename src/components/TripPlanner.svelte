@@ -3,7 +3,7 @@
 	import { get } from 'svelte/store';
 	import { data_stack_store, geolocation_store, map_pointer_store } from '$root/globalstores';
 	import { TripPlannerStack } from '$components/stackenum';
-	import { queryEdelweiss, itineraryDisplaySegments, itineraryTimeRow, formatWalkSegment, formatJourneyTime, type EdelweissItinerary, isValidPoint } from '$lib/features/directions/edelweiss';
+	import { queryEdelweiss, itineraryDisplaySegments, allocateTimelinePercentages, itineraryTimeRow, formatWalkSegment, formatJourneyTime, type EdelweissItinerary, isValidPoint } from '$lib/features/directions/edelweiss';
 	import MtaBullet from '$components/mtabullet.svelte';
 	import RatpBullet from '$components/ratpbullet.svelte';
 	import SbbLogo from '$components/SbbLogo.svelte';
@@ -32,6 +32,23 @@
 	let routingError = '';
 	let routes: EdelweissItinerary[] = [];
 	let selectedRoute = 0;
+	let timelineWidth = 320;
+	let timelineObserver: ResizeObserver | null = null;
+	let timelineElement: HTMLDivElement | null = null;
+	function measureTimeline(node: HTMLDivElement) {
+		timelineElement = node;
+		const measure = () => { timelineWidth = node.clientWidth || 320; };
+		measure();
+		if (typeof ResizeObserver !== 'undefined') {
+			timelineObserver = new ResizeObserver(measure);
+			timelineObserver.observe(node);
+		}
+		return { destroy() {
+			timelineObserver?.disconnect();
+			timelineObserver = null;
+			if (timelineElement === node) timelineElement = null;
+		} };
+	}
 	let departure = Math.floor(Date.now() / 1000);
 	const stackData = get(data_stack_store).at(-1)?.data;
 	if (stackData instanceof TripPlannerStack) {
@@ -321,41 +338,52 @@
 						{/if}
 					{/each}
 				</div>
-				<div class="mt-3 flex w-full items-start gap-1 overflow-x-auto pb-1" aria-label="Journey segments">
-					{#each itineraryDisplaySegments(itinerary) as segment}
-						<div class="min-w-[55px] flex-1" style:flex-grow={segment.duration} style:flex-basis="0" role="group" aria-label={segment.walking ? `Walk ${formatWalkSegment(segment)}` : segment.routeName ? `${segment.mode} ${segment.routeName}` : segment.mode}>
-							<div class="flex h-6 items-center gap-1.5">
-								<span class="segment-bar min-w-0 flex-1" class:walking-bar={segment.walking}></span>
-								{#if segment.walking}
-									<span class="material-symbols-outlined shrink-0 text-black dark:text-white" style:font-size="20px" aria-hidden="true">directions_walk</span>
-								{:else if segment.icon}
-									<span class="sbb-mode-icon bg-black dark:bg-white" class:sbb-bus={segment.icon === 'bus'} class:sbb-metro={segment.icon === 'metro'} class:sbb-train={segment.icon === 'train'} class:sbb-tram={segment.icon === 'tram'} aria-hidden="true"></span>
-								{:else}
-									<span class="material-symbols-outlined shrink-0 text-black dark:text-white" style:font-size="20px" aria-hidden="true">directions_transit</span>
-								{/if}
-								<span class="segment-bar min-w-0 flex-1" class:walking-bar={segment.walking}></span>
-							</div>
-							<div class="mt-1 flex min-h-5 items-start justify-center text-center text-xs" title={segment.walking ? formatWalkSegment(segment) : segment.routeName ?? segment.mode}>
-								{#if segment.walking}
-									<span class="whitespace-nowrap text-gray-600 dark:text-gray-300">{formatWalkSegment(segment)}</span>
-								{:else if segment.routeName}
-									{#if segment.badgeKind === 'mta'}
-										<MtaBullet route_short_name={segment.routeName} matchTextHeight={true} />
-									{:else if segment.badgeKind === 'ratp'}
-										<RatpBullet route_short_name={segment.routeName} matchTextHeight={true} />
-									{:else}
-										<span class="inline-flex max-w-full items-center justify-center overflow-hidden text-ellipsis whitespace-nowrap px-1.5 py-0.5 text-xs font-semibold leading-none" class:rounded-full={segment.badgeKind === 'sbahn'} class:rounded-sm={segment.badgeKind !== 'sbahn'} style:background-color={segment.color} style:color={segment.textColor}>
-											{#if segment.badgeKind === 'sbb'}
-												<SbbLogo text={segment.routeName} chateau="schweiz" />
-											{:else}
-												{segment.routeName}
-											{/if}
-										</span>
+				<div class="mt-3 w-full max-w-full" use:measureTimeline aria-label="Journey segments">
+					{@const segments = itineraryDisplaySegments(itinerary)}
+					{@const widths = allocateTimelinePercentages(segments, timelineWidth)}
+					<div class="flex w-full min-w-0 items-start overflow-hidden">
+						{#each segments as segment, segmentIndex}
+							<div class="min-w-0 shrink-0 overflow-visible" style:width={`${widths[segmentIndex]}%`} role="group" aria-label={segment.transfer ? 'Transfer' : segment.walking ? `Walk ${formatWalkSegment(segment)}` : segment.routeName ? `${segment.mode} ${segment.routeName}` : segment.mode}>
+								<div class="flex h-6 w-full min-w-0 items-center gap-1">
+									{#if !segment.transfer}
+										{#if segment.walking}
+											<span class="material-symbols-outlined shrink-0 text-black dark:text-white" style:font-size="18px" aria-hidden="true">directions_walk</span>
+										{:else if segment.icon}
+											<span class="sbb-mode-icon shrink-0 bg-black dark:bg-white" class:sbb-bus={segment.icon === 'bus'} class:sbb-metro={segment.icon === 'metro'} class:sbb-train={segment.icon === 'train'} class:sbb-tram={segment.icon === 'tram'} aria-hidden="true"></span>
+										{:else}
+											<span class="material-symbols-outlined shrink-0 text-black dark:text-white" style:font-size="18px" aria-hidden="true">directions_transit</span>
+										{/if}
 									{/if}
+									{#if segment.walking && !segment.transfer}
+										<span class="walking-dot-line min-w-0 flex-1" aria-hidden="true"></span>
+									{:else}
+										<span class="segment-bar min-w-0 flex-1" aria-hidden="true"></span>
+									{/if}
+								</div>
+								{#if !segment.transfer}
+									<div class="mt-1 flex min-h-5 w-full min-w-0 items-start justify-start text-xs" title={segment.walking ? formatWalkSegment(segment) : segment.routeName ?? segment.mode}>
+										{#if segment.walking}
+											<span class="truncate text-gray-600 dark:text-gray-300">{formatWalkSegment(segment)}</span>
+										{:else if segment.routeName}
+											{#if segment.badgeKind === 'mta'}
+												<MtaBullet route_short_name={segment.routeName} matchTextHeight={true} />
+											{:else if segment.badgeKind === 'ratp'}
+												<RatpBullet route_short_name={segment.routeName} matchTextHeight={true} />
+											{:else}
+												<span class="inline-flex max-w-full items-center justify-center overflow-hidden text-ellipsis whitespace-nowrap px-1.5 py-0.5 text-xs font-semibold leading-none" class:rounded-full={segment.badgeKind === 'sbahn'} class:rounded-sm={segment.badgeKind !== 'sbahn'} style:background-color={segment.color} style:color={segment.textColor}>
+													{#if segment.badgeKind === 'sbb'}
+														<SbbLogo text={segment.routeName} chateau="schweiz" />
+													{:else}
+														{segment.routeName}
+													{/if}
+												</span>
+											{/if}
+										{/if}
+									</div>
 								{/if}
 							</div>
-						</div>
-					{/each}
+						{/each}
+					</div>
 				</div>
 				<div class="mt-2 flex items-center text-xs text-gray-500 dark:text-gray-400"><span>{itinerary.transfers ?? 0} transfers</span></div>
 			</button>
@@ -370,8 +398,15 @@
 	:global(.dark) .segment-bar {
 		border-top-color: #6b7280;
 	}
-	.walking-bar {
-		border-top-style: dotted;
+	.walking-dot-line {
+		height: 4px;
+		background-image: radial-gradient(circle, #9ca3af 1.6px, transparent 1.7px);
+		background-size: 8px 4px;
+		background-position: left center;
+		background-repeat: repeat-x;
+	}
+	:global(.dark) .walking-dot-line {
+		background-image: radial-gradient(circle, #6b7280 1.6px, transparent 1.7px);
 	}
 	.sbb-mode-icon {
 		display: inline-block;
