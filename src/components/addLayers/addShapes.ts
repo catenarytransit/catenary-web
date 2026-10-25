@@ -46,7 +46,7 @@ export function addShapes(map: maplibregl.Map, darkMode: boolean) {
 		paint: {
 			'line-color': ['concat', '#', ['get', 'color']],
 			'line-width': ['interpolate', ['linear'], ['zoom'], 7, 0.4, 10, 0.7, 12, 1, 14, 1.2, 15, 1.5],
-			'line-opacity': ['interpolate', ['linear'], ['zoom'], 8, 0.05, 11, 0.3, 14, 0.5]
+			'line-opacity': ['interpolate', ['linear'], ['zoom'], 8, 0.05, 11, 0.2, 14, 0.5]
 
 			////'line-emissive-strength': 1
 			//'line-opacity': ['interpolate', ['linear'], ['zoom'], 6.5, 0.5, 7.2, 0.5, 10, 0.5, 10, 0.5],
