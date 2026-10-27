@@ -409,8 +409,9 @@ export function normalizePlan(value: unknown): EdelweissItinerary[] {
 export async function queryEdelweiss(
 	origin: Coordinate,
 	destination: Coordinate,
-	departureUnixSeconds: number,
-	signal: AbortSignal
+	timeUnixSeconds: number,
+	signal: AbortSignal,
+	arriveBy = false
 ): Promise<EdelweissItinerary[]> {
 	if (!isValidPoint(origin) || !isValidPoint(destination)) {
 		throw new Error('Select valid starting and finishing locations');
@@ -421,13 +422,16 @@ export async function queryEdelweiss(
 		body: JSON.stringify({
 			from: { lat: origin.lat, lon: origin.lon },
 			to: { lat: destination.lat, lon: destination.lon },
-			departure_unix_seconds: Math.floor(departureUnixSeconds),
+			...(arriveBy ? { arrival_unix_seconds: Math.floor(timeUnixSeconds) } : { departure_unix_seconds: Math.floor(timeUnixSeconds) }),
 			detailed_legs: true
 		}),
 		signal
 	});
 	if (!response.ok) {
 		const reason = (await response.text()).slice(0, 240);
+		if (arriveBy && /missing field.*departure_unix_seconds|departure_unix_seconds.*required/i.test(reason)) {
+			throw new Error('Arrive by routing requires the updated Edelweiss server.');
+		}
 		throw new Error(reason || 'Edelweiss returned HTTP ' + response.status);
 	}
 	return normalizePlan(await response.json());

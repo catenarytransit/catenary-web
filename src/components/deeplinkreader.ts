@@ -70,7 +70,8 @@ export function deep_link_url_reader(urlParams?: URLSearchParams) {
 		const departure = getOptionalNumber(urlParams, 'departure');
 		nextStack = new StackInterface(new TripPlannerStack(
 			fromLat, fromLon, getFirstParam(urlParams, 'from_name'),
-			toLat, toLon, getFirstParam(urlParams, 'to_name'), departure
+			toLat, toLon, getFirstParam(urlParams, 'to_name'), departure,
+			getFirstParam(urlParams, 'time_mode') === 'arrive' ? 'arrive' : 'depart'
 		));
 	}
 

@@ -282,7 +282,8 @@ export class TripPlannerStack {
 		public toLat: number | null = null,
 		public toLon: number | null = null,
 		public toName: string | null = null,
-		public departure: number | null = null
+		public departure: number | null = null,
+		public timeMode: 'depart' | 'arrive' = 'depart'
 	) {}
 }
 
@@ -367,7 +368,7 @@ const PAGE_QUERY_KEYS = [
 	'start_date',
 	'vehicle',
 	'route_type',
-	'from_lat', 'from_lon', 'from_name', 'to_lat', 'to_lon', 'to_name', 'departure',
+	'from_lat', 'from_lon', 'from_name', 'to_lat', 'to_lon', 'to_name', 'departure', 'time_mode',
 	'is_now',
 	'time'
 ];
@@ -397,7 +398,8 @@ function stackDataToPageQuery(data: StackInterface['data']): Record<string, Page
 	if (data instanceof TripPlannerStack) return {
 		page: 'directions', from_lat: data.fromLat, from_lon: data.fromLon,
 		from_name: data.fromName, to_lat: data.toLat, to_lon: data.toLon,
-		to_name: data.toName, departure: data.departure
+		to_name: data.toName, departure: data.departure,
+		time_mode: data.timeMode === 'arrive' ? 'arrive' : null
 	};
 	if (data instanceof SingleTrip) {
 		return {
