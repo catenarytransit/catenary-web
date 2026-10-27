@@ -3,7 +3,7 @@
 	import { slide } from 'svelte/transition';
 	import JourneyPreviewTimeline from '$components/JourneyPreviewTimeline.svelte';
 	import {
-		formatJourneyDuration, formatJourneyTime, isWalkingLeg, itinerarySegments,
+		formatJourneyTime, isWalkingLeg, itinerarySegments,
 		routeLabel, walkingLegDistanceMeters,
 		type EdelweissItinerary, type EdelweissLeg, type EdelweissIntermediateStop
 	} from '$lib/features/directions/edelweiss';
@@ -82,8 +82,7 @@
 		</button>
 		<section class="rounded-xl border border-gray-200 bg-white p-4 text-gray-900 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white" aria-label="Journey summary">
 			<h2 class="mb-3 break-words text-base font-semibold">{originName} <span aria-hidden="true">→</span> {destinationName}</h2>
-			<JourneyPreviewTimeline {itinerary} summary showTransfers={false} />
-			<p class="mt-3 text-sm font-medium text-gray-600 dark:text-gray-300">Total journey: {formatJourneyDuration(itinerary)}</p>
+			<JourneyPreviewTimeline {itinerary} summary />
 		</section>
 	</div>
 
@@ -96,25 +95,26 @@
 						<div class="flex h-8 items-center justify-center" aria-hidden="true">
 							<span class="h-6 border-l-2 border-dashed border-gray-500 dark:border-gray-400"></span>
 						</div>
-						<div class="min-w-0 text-sm font-medium">Walk</div>
-						<div class="col-span-1 whitespace-nowrap text-right text-xs text-gray-600 dark:text-gray-300">Walk: {walkingDistance(leg)}</div>
+						<div class="min-w-0 text-sm font-medium">Walk: {walkingDistance(leg)}</div>
+						<div></div>
 					</div>
 				</div>
 			{:else}
 				<article class="rounded-xl border border-gray-200 bg-white p-4 text-gray-900 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white" aria-label={`Connection ${index + 1}`}>
-					<div class="grid grid-cols-[3.5rem_1.25rem_minmax(0,1fr)_4.5rem] gap-x-2">
-						<time class="pt-0.5 text-sm font-semibold tabular-nums leading-5" datetime={leg.startTime || itinerary.startTime}>{legTime(leg, 'start')}</time>
-						<div class="relative flex justify-center pt-1" aria-hidden="true">
-							<span class="absolute top-3 bottom-0 w-0.5 bg-gray-300 dark:bg-gray-600"></span>
-							<span class="relative z-10 h-3 w-3 rounded-full border-[3px] bg-white dark:bg-gray-800" style:border-color={segments[index].color}></span>
+					<div class="grid grid-cols-[3.5rem_1.25rem_minmax(0,1fr)_4.5rem] items-center gap-x-2">
+						<time class="self-center text-sm font-semibold tabular-nums leading-5" datetime={leg.startTime || itinerary.startTime}>{legTime(leg, 'start')}</time>
+						<div class="relative flex h-full items-center justify-center" aria-hidden="true">
+							<span class="absolute top-1/2 bottom-0 w-0.5 bg-gray-300 dark:bg-gray-600"></span>
+							<span class="relative z-10 h-3 w-3 rounded-full bg-black dark:bg-white"></span>
 						</div>
-						<div class="min-w-0 pb-3 text-sm font-medium leading-5">{placeName(leg, 'from', index)}</div>
+						<div class="min-w-0 py-2 text-sm font-medium leading-5">{placeName(leg, 'from', index)}</div>
 						<div class="break-words pt-0.5 text-right text-xs leading-5 text-gray-600 dark:text-gray-300">{platform(leg, 'from')}</div>
 
 						<div></div>
 						<div class="relative flex justify-center" aria-hidden="true"><span class="absolute inset-y-0 w-0.5 bg-gray-300 dark:bg-gray-600"></span></div>
 						<div class="min-w-0 pb-2">
 							<div class="flex flex-wrap items-center gap-2">
+								<span class="connection-mode-icon" class:mode-bus={segments[index].icon === 'bus'} class:mode-metro={segments[index].icon === 'metro'} class:mode-tram={segments[index].icon === 'tram'} class:mode-train={segments[index].icon === 'train'} aria-label={leg.mode}></span>
 								<span class="inline-flex max-w-full items-center rounded px-1.5 py-0.5 text-xs font-semibold" style:background-color={segments[index].color} style:color={segments[index].textColor}>{routeLabel(leg) || leg.mode}</span>
 								{#if leg.routeLongName}<span class="min-w-0 text-xs text-gray-600 dark:text-gray-300">{leg.routeLongName}</span>{/if}
 							</div>
@@ -134,7 +134,7 @@
 									<div transition:slide={{ duration: 180 }} class="pb-2 text-xs tabular-nums leading-5 text-gray-500 dark:text-gray-400">{stopTime(stop)}</div>
 									<div class="relative flex justify-center" aria-hidden="true">
 										<span class="absolute inset-y-0 w-0.5 bg-gray-300 dark:bg-gray-600"></span>
-										<span class="relative z-10 mt-1.5 h-2 w-2 rounded-full border border-gray-400 bg-white dark:border-gray-400 dark:bg-gray-800"></span>
+										<span class="relative z-10 h-2 w-2 rounded-full bg-black dark:bg-white"></span>
 									</div>
 									<div class="min-w-0 pb-2 text-xs leading-5 text-gray-500 dark:text-gray-400" transition:slide={{ duration: 180 }}>{stop.name}</div>
 									<div class="pb-2 text-right text-xs text-gray-500 dark:text-gray-400" transition:slide={{ duration: 180 }}>{stop.platform || stop.platformCode || ''}</div>
@@ -142,11 +142,11 @@
 							{/if}
 						{/if}
 
-						<time class="pt-0.5 text-sm font-semibold tabular-nums leading-5" datetime={leg.endTime || itinerary.endTime}>{legTime(leg, 'end')}</time>
-						<div class="relative flex justify-center pt-1" aria-hidden="true">
-							<span class="relative z-10 h-3 w-3 rounded-full border-[3px] bg-white dark:bg-gray-800" style:border-color={segments[index].color}></span>
+						<time class="self-center text-sm font-semibold tabular-nums leading-5" datetime={leg.endTime || itinerary.endTime}>{legTime(leg, 'end')}</time>
+						<div class="relative flex h-full items-center justify-center" aria-hidden="true">
+							<span class="relative z-10 h-3 w-3 rounded-full bg-black dark:bg-white"></span>
 						</div>
-						<div class="min-w-0 text-sm font-medium leading-5">{placeName(leg, 'to', index)}</div>
+						<div class="min-w-0 py-2 text-sm font-medium leading-5">{placeName(leg, 'to', index)}</div>
 						<div class="break-words pt-0.5 text-right text-xs leading-5 text-gray-600 dark:text-gray-300">{platform(leg, 'to')}</div>
 					</div>
 				</article>
@@ -156,3 +156,12 @@
 		{/each}
 	</div>
 </div>
+
+<style>
+	.connection-mode-icon { display: inline-block; width: 20px; height: 20px; flex-shrink: 0; background-color: #111827; mask-position: center; mask-size: contain; mask-repeat: no-repeat; -webkit-mask-position: center; -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; }
+	:global(.dark) .connection-mode-icon { background-color: #ffffff; }
+	.mode-bus { mask-image: url('/icons/bus-right-fill-color.svg'); -webkit-mask-image: url('/icons/bus-right-fill-color.svg'); }
+	.mode-metro { mask-image: url('/icons/metro-right-fill-color.svg'); -webkit-mask-image: url('/icons/metro-right-fill-color.svg'); }
+	.mode-tram { mask-image: url('/icons/tram-right-fill-color.svg'); -webkit-mask-image: url('/icons/tram-right-fill-color.svg'); }
+	.mode-train { mask-image: url('/icons/train-right-fill-color.svg'); -webkit-mask-image: url('/icons/train-right-fill-color.svg'); }
+</style>
