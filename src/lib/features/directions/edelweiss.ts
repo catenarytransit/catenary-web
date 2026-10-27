@@ -9,12 +9,23 @@ export interface Coordinate {
 
 export interface RoutePoint extends Coordinate {
 	name: string;
+	/** Stop platform information, when included by the routing backend. */
+	platform?: string | null;
+	platformCode?: string | null;
 }
 
 export interface EdelweissGeometry {
 	points?: string;
 	precision?: number;
 	length?: number;
+}
+
+export interface EdelweissIntermediateStop extends Partial<RoutePoint> {
+	name: string;
+	arrival?: string | null;
+	departure?: string | null;
+	scheduledArrival?: string | null;
+	scheduledDeparture?: string | null;
 }
 
 export interface EdelweissLeg {
@@ -35,6 +46,9 @@ export interface EdelweissLeg {
 	chateau?: string | null;
 	from?: RoutePoint | null;
 	to?: RoutePoint | null;
+	fromPlatform?: string | null;
+	toPlatform?: string | null;
+	intermediateStops?: EdelweissIntermediateStop[];
 	legGeometry?: EdelweissGeometry | null;
 }
 
