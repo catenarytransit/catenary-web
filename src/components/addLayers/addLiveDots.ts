@@ -397,7 +397,7 @@ export async function makeCircleLayers(map: Map, darkMode: boolean, layerspercat
 		type: 'circle',
 		source: 'buses',
 		paint: {
-			'circle-radius': ['interpolate', ['linear'], ['zoom'], 7, 1, 8, 1.2, 9, 1.5, 10, 2, 16, 6],
+			'circle-radius': ['interpolate', ['linear'], ['zoom'], 7, 1, 8, 1, 9, 1.2, 10, 1.8, 13, 2.5, 16, 6],
 			'circle-color': ['get', 'color'],
 			'circle-stroke-color': '#3a3a3a',
 			'circle-stroke-opacity': [
@@ -417,7 +417,7 @@ export async function makeCircleLayers(map: Map, darkMode: boolean, layerspercat
 			//'circle-emissive-strength': 1,
 			'circle-opacity': 0.5
 		},
-		minzoom: 9
+		minzoom: 11
 	});
 
 	map.addLayer({
@@ -438,7 +438,7 @@ export async function makeCircleLayers(map: Map, darkMode: boolean, layerspercat
 			'icon-offset': busbearingoffset,
 			'icon-size': busbearingsize
 		},
-		minzoom: 10.5
+		minzoom: 12
 	});
 
 	map.addLayer({
@@ -458,7 +458,7 @@ export async function makeCircleLayers(map: Map, darkMode: boolean, layerspercat
 			'icon-offset': busbearingoffset,
 			'icon-size': busbearingsize
 		},
-		minzoom: 10.5
+		minzoom: 12
 	});
 
 	map.addLayer({
@@ -478,7 +478,7 @@ export async function makeCircleLayers(map: Map, darkMode: boolean, layerspercat
 			'text-size': bus_label_text_size,
 			'text-ignore-placement': ['step', ['zoom'], false, 13, true]
 		},
-		minzoom: 12,
+		minzoom: 13,
 		paint: {
 			'text-color': textColorOfMapLabels(darkMode),
 			//'text-color': ['get', 'color'],
