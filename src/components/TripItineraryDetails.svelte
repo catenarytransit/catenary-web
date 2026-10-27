@@ -91,7 +91,7 @@
 		{#each itinerary.legs as leg, index (index)}
 			{#if isWalkingLeg(leg.mode)}
 				<div class="rounded-xl border border-gray-400 bg-transparent px-4 py-3 text-gray-800 dark:border-gray-600 dark:text-white" aria-label="Walking connection">
-					<div class="grid grid-cols-[3.5rem_1.25rem_minmax(0,1fr)_3.5rem] items-center gap-x-2">
+					<div class="grid grid-cols-[3.5rem_1.25rem_minmax(0,1fr)_4.5rem] items-center gap-x-2">
 						<span class="text-sm font-semibold tabular-nums">{walkingMinutes(leg)}</span>
 						<div class="flex h-8 items-center justify-center" aria-hidden="true">
 							<span class="h-6 border-l-2 border-dashed border-gray-500 dark:border-gray-400"></span>
@@ -102,7 +102,7 @@
 				</div>
 			{:else}
 				<article class="rounded-xl border border-gray-200 bg-white p-4 text-gray-900 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white" aria-label={`Connection ${index + 1}`}>
-					<div class="grid grid-cols-[3.5rem_1.25rem_minmax(0,1fr)_3.5rem] gap-x-2">
+					<div class="grid grid-cols-[3.5rem_1.25rem_minmax(0,1fr)_4.5rem] gap-x-2">
 						<time class="pt-0.5 text-sm font-semibold tabular-nums leading-5" datetime={leg.startTime || itinerary.startTime}>{legTime(leg, 'start')}</time>
 						<div class="relative flex justify-center pt-1" aria-hidden="true">
 							<span class="absolute top-3 bottom-0 w-0.5 bg-gray-300 dark:bg-gray-600"></span>
