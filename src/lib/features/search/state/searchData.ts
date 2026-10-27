@@ -1,6 +1,7 @@
 import type { GeoJSONSource, Map } from 'maplibre-gl';
 import { parseCypressOsmId } from '$lib/features/osm/osmPoiId';
 import { recordOsmItemVisit } from './stationHistory';
+import { rememberDirectionsLocation, searchHistoryLocation } from '$lib/features/directions/recentLocations';
 import { get, writable, type Writable } from 'svelte/store';
 import { data_stack_store, geolocation_store, map_pointer_store } from '$root/globalstores';
 import {
@@ -148,6 +149,9 @@ export function selectResult(item: SearchResultItem): void {
 	const map = get(map_pointer_store) as Map | null;
 	autocompleteFocus.set(false);
 	recalculateBackButton();
+
+	const recentLocation = searchHistoryLocation(item);
+	if (recentLocation) rememberDirectionsLocation(recentLocation);
 
 	switch (item.type) {
 		case 'cypress': {

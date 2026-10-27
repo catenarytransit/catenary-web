@@ -5,6 +5,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100;200;300;400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@100;200;300;400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400..700;1,400..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -220,7 +221,7 @@ body::-webkit-scrollbar-thumb:hover {
 html,
 body {
 	overscroll-behavior: none;
-	font-family: 'Arimo', 'Noto Sans', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans SC', sans-serif;
+	font-family: 'DM Sans', 'Noto Sans', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans SC', sans-serif;
 }
 
 /*PROGRESS BAR*/
@@ -405,7 +406,7 @@ $icon-padding: 0.4em;
      but listing them explicitly ensures order.
   */
 	--font-sans:
-		'Arimo', 'Noto Sans', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans SC', ui-sans-serif, system-ui,
+		'DM Sans', 'Noto Sans', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans SC', ui-sans-serif, system-ui,
 		sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 
 	--font-mono: 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', monospace;

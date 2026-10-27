@@ -1,6 +1,7 @@
 <script lang="ts">
 	import {
 		BlockStack,
+		TripPlannerStack,
 		MapSelectionScreen,
 		OsmItemStack,
 		OsmSearchResultStack,
@@ -14,6 +15,7 @@
 		type StackInterface
 	} from '$components/stackenum';
 	import HomeButton from '$components/SidebarParts/home_button.svelte';
+	import TripPlanner from '$components/TripPlanner.svelte';
 	import SettingsMenu from '$components/SettingsMenu.svelte';
 	import NearbyDepartures from '$components/NearbyDepartures.svelte';
 	import SingleTripInfo from '$components/SingleTripInfo.svelte';
@@ -30,7 +32,9 @@
 	export let dismissDonationPopup: () => void = () => {};
 </script>
 
-<div class="md:mt-12"></div>
+{#if !(latest_item_on_stack?.data instanceof TripPlannerStack)}
+	<div class="md:mt-12"></div>
+{/if}
 
 {#if latest_item_on_stack != null}
 	{#if latest_item_on_stack.data instanceof MapSelectionScreen}
@@ -39,6 +43,10 @@
 		{:catch error}
 			<p class="p-4 text-red-500">Error loading component: {error.message}</p>
 		{/await}
+	{/if}
+
+	{#if latest_item_on_stack.data instanceof TripPlannerStack}
+		<TripPlanner />
 	{/if}
 
 	{#if latest_item_on_stack.data instanceof SettingsStack}

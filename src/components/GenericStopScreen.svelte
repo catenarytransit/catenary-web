@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy, tick } from 'svelte';
 	import HomeButton from './SidebarParts/home_button.svelte';
+	import DirectionsActions from './DirectionsActions.svelte';
 	import { writable, get } from 'svelte/store';
 	import { timezone_to_locale } from './timezone_to_locale';
 	import {
@@ -1059,6 +1060,7 @@
 					/>
 				</p>
 			</div>
+			<DirectionsActions name={displayName} lat={displayLat} lon={displayLon} kind={osm_id ? 'station' : 'stop'} locationKey={osm_id ? 'station:' + osm_id : 'stop:' + chateau + ':' + key} />
 			<p class="text-sm ml-1 mb-0">
 				{displayTimezone}
 				{#if osm_id && show_osm_ids}
@@ -1298,6 +1300,15 @@
 										<div
 											class={`${(event.realtime_departure || event.scheduled_departure) < current_time / 1000 && event.scheduled_departure < current_time / 1000 ? 'opacity-80' : ''} ${event.trip_cancelled ? 'opacity-60' : ''}`}
 										>
+										
+										<StopScreenRow
+											{event}
+											timezone={displayTimezone}
+											{current_time}
+											{show_seconds}
+											use_symbol_sign={true}
+											show_arrivals={event.last_stop}
+										/>
 											<p>
 												{#if isSubway && shortName}
 													<MtaBullet route_short_name={shortName} matchTextHeight={true} />
@@ -1338,17 +1349,9 @@
 											{/if}
 										</div>
 
-										<StopScreenRow
-											{event}
-											timezone={displayTimezone}
-											{current_time}
-											{show_seconds}
-											use_symbol_sign={true}
-											show_arrivals={event.last_stop}
-										/>
 
 										{#if show_gtfs_ids}
-											<p>trip id: {event.trip_id}</p>
+											<p class="font-mono">trip id: {event.trip_id}</p>
 										{/if}
 
 										{#if event.platform_string_realtime}

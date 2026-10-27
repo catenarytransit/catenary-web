@@ -2,7 +2,7 @@
 	import { get } from 'svelte/store';
 	import { _ } from 'svelte-i18n';
 	import { data_stack_store } from '$root/globalstores';
-	import { SettingsStack, StackInterface } from '$components/stackenum';
+	import { TripPlannerStack, SettingsStack, StackInterface } from '$components/stackenum';
 	import {
 		autocompleteFocus,
 		displayedResults,
@@ -15,6 +15,23 @@
 	} from '../state/searchData';
 
 	let textInput = get(searchText);
+	let menuOpen = false;
+
+	function toggleMenu(): void {
+		menuOpen = !menuOpen;
+	}
+
+	function openDirections(): void {
+		menuOpen = false;
+		autocompleteFocus.set(false);
+		recalculateBackButton();
+		data_stack_store.update((stack) => [...stack, new StackInterface(new TripPlannerStack())]);
+	}
+
+	function closePanels(): void {
+		menuOpen = false;
+	}
+
 
 	function handleTextChange(event: Event): void {
 		const input = event.currentTarget as HTMLInputElement;
@@ -77,6 +94,7 @@
 	}
 
 	function openSettings(): void {
+		closePanels();
 		data_stack_store.update((stack) => [...stack, new StackInterface(new SettingsStack())]);
 	}
 
@@ -101,7 +119,16 @@
 				<span class="material-symbols-outlined inline-block align-middle">arrow_back</span>
 			</button>
 		{:else}
-			<img src="/logo.svg" alt="Catenary" class="my-auto mr-1 inline h-4 align-middle" />
+			<button
+				type="button"
+				class="mx-2 inline-flex cursor-pointer items-center justify-center text-gray-600 dark:text-gray-300"
+				on:click={toggleMenu}
+				aria-label="Open menu"
+				aria-expanded={menuOpen}
+				aria-controls="search-main-menu"
+			>
+				<span class="material-symbols-outlined">menu</span>
+			</button>
 		{/if}
 
 		<input
@@ -120,10 +147,11 @@
 			<button
 				type="button"
 				class="mx-2 inline-block cursor-pointer align-middle text-sm text-black dark:text-white"
-				on:click={openSettings}
-				aria-label="Settings"
+				on:click={openDirections}
+				aria-label="Directions / Trip Planner"
+				title="Directions / Trip Planner"
 			>
-				<span class="material-symbols-outlined inline-block align-middle">settings</span>
+				<span class="material-symbols-outlined inline-block align-middle" style="color: rgb(0, 123, 139); font-variation-settings: 'FILL' 1;">directions</span>
 			</button>
 		{:else}
 			<button
@@ -137,3 +165,13 @@
 		{/if}
 	</div>
 </div>
+
+{#if menuOpen}
+	<div id="search-main-menu" class="absolute left-0 top-full z-50 mt-2 min-w-48 rounded-xl border border-gray-200 bg-white p-1 shadow-lg dark:border-gray-700 dark:bg-gray-900" role="menu" aria-label="Main menu">
+		<button type="button" role="menuitem" on:click={openSettings} class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-gray-800 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-800">
+			<span class="material-symbols-outlined" aria-hidden="true">settings</span>
+			<span>{$_('settings')}</span>
+		</button>
+	</div>
+{/if}
+
