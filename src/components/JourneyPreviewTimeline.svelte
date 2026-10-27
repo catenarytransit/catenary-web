@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { itineraryDisplaySegments, allocateTimelinePercentages, itineraryTimeRow, formatWalkSegment, formatJourneyTime, type EdelweissItinerary } from '$lib/features/directions/edelweiss';
 	import MtaBullet from '$components/mtabullet.svelte';
 	import RatpBullet from '$components/ratpbullet.svelte';
