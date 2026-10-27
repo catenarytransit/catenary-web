@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { slide } from 'svelte/transition';
 	import JourneyPreviewTimeline from '$components/JourneyPreviewTimeline.svelte';
 	import {
 		formatJourneyTime, isWalkingLeg, itinerarySegments,
@@ -90,64 +89,59 @@
 		{#each itinerary.legs as leg, index (index)}
 			{#if isWalkingLeg(leg.mode)}
 				<div class="rounded-xl border border-gray-400 bg-transparent px-4 py-3 text-gray-800 dark:border-gray-600 dark:text-white" aria-label="Walking connection">
-					<div class="grid grid-cols-[3.5rem_1.25rem_minmax(0,1fr)_4.5rem] items-center gap-x-2">
-						<span class="text-sm font-semibold tabular-nums">{walkingMinutes(leg)}</span>
-						<div class="flex h-8 items-center justify-center" aria-hidden="true">
-							<span class="h-6 border-l-2 border-dashed border-gray-500 dark:border-gray-400"></span>
-						</div>
-						<div class="min-w-0 text-sm font-medium">Walk: {walkingDistance(leg)}</div>
-						<div></div>
+					<div class="connection-row">
+						<span class="text-right text-sm font-semibold tabular-nums">{walkingMinutes(leg)}</span>
+						<span class="pearl-rail walk-rail" aria-hidden="true"></span>
+						<span class="min-w-0 text-left text-sm font-medium">Walk: {walkingDistance(leg)}</span>
+						<span></span>
 					</div>
 				</div>
 			{:else}
-				<article class="rounded-xl border border-gray-200 bg-white p-4 text-gray-900 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white" aria-label={`Connection ${index + 1}`}>
-					<div class="grid grid-cols-[3.5rem_1.25rem_minmax(0,1fr)_4.5rem] items-center gap-x-2">
-						<time class="self-center text-sm font-semibold tabular-nums leading-5" datetime={leg.startTime || itinerary.startTime}>{legTime(leg, 'start')}</time>
-						<div class="relative flex h-full items-center justify-center" aria-hidden="true">
-							<span class="absolute top-1/2 bottom-0 w-0.5 bg-gray-300 dark:bg-gray-600"></span>
-							<span class="relative z-10 h-3 w-3 rounded-full bg-black dark:bg-white"></span>
-						</div>
-						<div class="min-w-0 py-2 text-sm font-medium leading-5">{placeName(leg, 'from', index)}</div>
-						<div class="break-words pt-0.5 text-right text-xs leading-5 text-gray-600 dark:text-gray-300">{platform(leg, 'from')}</div>
+				<article class="rounded-xl border border-gray-200 bg-white p-4 text-gray-900 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white" aria-label={'Connection ' + (index + 1)}>
+					<!-- Contiguous rows give the pearl string no gaps; left and right gutters match. -->
+					<div class="connection-row">
+						<time class="min-w-0 text-right text-sm font-semibold tabular-nums leading-5" datetime={leg.startTime || itinerary.startTime}>{legTime(leg, 'start')}</time>
+						<span class="pearl-rail rail-first" aria-hidden="true"><span class="pearl"></span></span>
+						<span class="min-w-0 text-left text-sm font-medium leading-5">{placeName(leg, 'from', index)}</span>
+						<span class="min-w-0 break-words text-right text-xs text-gray-600 dark:text-gray-300">{platform(leg, 'from')}</span>
+					</div>
 
-						<div></div>
-						<div class="relative flex justify-center" aria-hidden="true"><span class="absolute inset-y-0 w-0.5 bg-gray-300 dark:bg-gray-600"></span></div>
-						<div class="min-w-0 pb-2">
-							<div class="flex flex-wrap items-center gap-2">
-								<span class="connection-mode-icon" class:mode-bus={segments[index].icon === 'bus'} class:mode-metro={segments[index].icon === 'metro'} class:mode-tram={segments[index].icon === 'tram'} class:mode-train={segments[index].icon === 'train'} aria-label={leg.mode}></span>
-								<span class="inline-flex max-w-full items-center rounded px-1.5 py-0.5 text-xs font-semibold" style:background-color={segments[index].color} style:color={segments[index].textColor}>{routeLabel(leg) || leg.mode}</span>
-								{#if leg.routeLongName}<span class="min-w-0 text-xs text-gray-600 dark:text-gray-300">{leg.routeLongName}</span>{/if}
-							</div>
+					<div class="connection-row">
+						<span></span>
+						<span class="pearl-rail" aria-hidden="true"></span>
+						<div class="flex min-w-0 flex-wrap items-center gap-2 py-1">
+							<span class="connection-mode-icon" class:mode-bus={segments[index].icon === 'bus'} class:mode-metro={segments[index].icon === 'metro'} class:mode-tram={segments[index].icon === 'tram'} class:mode-train={segments[index].icon === 'train'} aria-label={leg.mode}></span>
+							<span class="inline-flex max-w-full items-center rounded px-1.5 py-0.5 text-xs font-semibold" style:background-color={segments[index].color} style:color={segments[index].textColor}>{routeLabel(leg) || leg.mode}</span>
+							{#if leg.routeLongName}<span class="min-w-0 text-xs text-gray-600 dark:text-gray-300">{leg.routeLongName}</span>{/if}
 						</div>
-						<div></div>
+						<span></span>
+					</div>
 
-						{#if stops(leg).length > 0}
-							<div></div>
-							<div class="relative flex justify-center" aria-hidden="true"><span class="absolute inset-y-0 w-0.5 bg-gray-300 dark:bg-gray-600"></span></div>
-							<button type="button" class="mb-2 flex w-full items-center justify-between gap-2 rounded py-1 text-left text-xs text-gray-600 hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-600 dark:text-gray-300 dark:hover:bg-gray-700" aria-expanded={!!expandedStops[index]} on:click={() => toggleStops(index)}>
-								<span>{stops(leg).length} {stops(leg).length === 1 ? 'stop' : 'stops'} · {Math.max(1, Math.round((leg.duration ?? ((Date.parse(leg.endTime ?? '') - Date.parse(leg.startTime ?? '')) / 1000)) / 60))} min</span>
-								<span class="material-symbols-outlined text-base transition-transform" class:rotate-180={!!expandedStops[index]} aria-hidden="true">expand_more</span>
-							</button>
-							<div></div>
-							{#if expandedStops[index]}
-								{#each stops(leg) as stop, stopIndex (stopIndex)}
-									<div transition:slide={{ duration: 180 }} class="pb-2 text-xs tabular-nums leading-5 text-gray-500 dark:text-gray-400">{stopTime(stop)}</div>
-									<div class="relative flex justify-center" aria-hidden="true">
-										<span class="absolute inset-y-0 w-0.5 bg-gray-300 dark:bg-gray-600"></span>
-										<span class="relative z-10 h-2 w-2 rounded-full bg-black dark:bg-white"></span>
-									</div>
-									<div class="min-w-0 pb-2 text-xs leading-5 text-gray-500 dark:text-gray-400" transition:slide={{ duration: 180 }}>{stop.name}</div>
-									<div class="pb-2 text-right text-xs text-gray-500 dark:text-gray-400" transition:slide={{ duration: 180 }}>{stop.platform || stop.platformCode || ''}</div>
-								{/each}
-							{/if}
+					{#if stops(leg).length > 0}
+						<!-- The click target spans the entire card, not just the stop-name column. -->
+						<button type="button" class="connection-row w-full rounded py-1 text-left text-xs text-gray-600 hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-600 dark:text-gray-300 dark:hover:bg-gray-700" aria-expanded={!!expandedStops[index]} aria-label={(expandedStops[index] ? 'Hide ' : 'Show ') + stops(leg).length + ' intermediate stops'} on:click={() => toggleStops(index)}>
+							<span></span>
+							<span class="pearl-rail" aria-hidden="true"></span>
+							<span class="min-w-0 text-left">{stops(leg).length} {stops(leg).length === 1 ? 'stop' : 'stops'} · {Math.max(1, Math.round((leg.duration ?? ((Date.parse(leg.endTime ?? '') - Date.parse(leg.startTime ?? '')) / 1000)) / 60))} min</span>
+							<span class="material-symbols-outlined justify-self-end text-base transition-transform" class:rotate-180={!!expandedStops[index]} aria-hidden="true">expand_more</span>
+						</button>
+						{#if expandedStops[index]}
+							{#each stops(leg) as stop, stopIndex (stopIndex)}
+								<div class="connection-row">
+									<span class="min-w-0 text-right text-xs tabular-nums leading-5 text-gray-500 dark:text-gray-400">{stopTime(stop)}</span>
+									<span class="pearl-rail" aria-hidden="true"><span class="pearl pearl-small"></span></span>
+									<span class="min-w-0 text-left text-xs leading-5 text-gray-500 dark:text-gray-400">{stop.name}</span>
+									<span class="min-w-0 text-right text-xs text-gray-500 dark:text-gray-400">{stop.platform || stop.platformCode || ''}</span>
+								</div>
+							{/each}
 						{/if}
+					{/if}
 
-						<time class="self-center text-sm font-semibold tabular-nums leading-5" datetime={leg.endTime || itinerary.endTime}>{legTime(leg, 'end')}</time>
-						<div class="relative flex h-full items-center justify-center" aria-hidden="true">
-							<span class="relative z-10 h-3 w-3 rounded-full bg-black dark:bg-white"></span>
-						</div>
-						<div class="min-w-0 py-2 text-sm font-medium leading-5">{placeName(leg, 'to', index)}</div>
-						<div class="break-words pt-0.5 text-right text-xs leading-5 text-gray-600 dark:text-gray-300">{platform(leg, 'to')}</div>
+					<div class="connection-row">
+						<time class="min-w-0 text-right text-sm font-semibold tabular-nums leading-5" datetime={leg.endTime || itinerary.endTime}>{legTime(leg, 'end')}</time>
+						<span class="pearl-rail rail-last" aria-hidden="true"><span class="pearl"></span></span>
+						<span class="min-w-0 text-left text-sm font-medium leading-5">{placeName(leg, 'to', index)}</span>
+						<span class="min-w-0 break-words text-right text-xs text-gray-600 dark:text-gray-300">{platform(leg, 'to')}</span>
 					</div>
 				</article>
 			{/if}
@@ -158,10 +152,73 @@
 </div>
 
 <style>
-	.connection-mode-icon { display: inline-block; width: 20px; height: 20px; flex-shrink: 0; background-color: #111827; mask-position: center; mask-size: contain; mask-repeat: no-repeat; -webkit-mask-position: center; -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; }
-	:global(.dark) .connection-mode-icon { background-color: #ffffff; }
+	/* Identical gutters beside the fixed-width pearl column put time and stop
+	   text equally far from the dot, even when a stop name wraps. */
+	.connection-row {
+		display: grid;
+		grid-template-columns: 3.5rem 1.25rem minmax(0, 1fr) 4.5rem;
+		column-gap: 0.75rem;
+		align-items: center;
+		min-height: 2.5rem;
+	}
+	.pearl-rail {
+		position: relative;
+		align-self: stretch;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 100%;
+	}
+	.pearl-rail::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 50%;
+		width: 2px;
+		background: #d1d5db;
+		transform: translateX(-50%);
+	}
+	:global(.dark) .pearl-rail::before { background: #4b5563; }
+	.rail-first::before { top: 50%; }
+	.rail-last::before { bottom: 50%; }
+	.pearl {
+		position: relative;
+		z-index: 1;
+		display: block;
+		width: 12px;
+		height: 12px;
+		flex: none;
+		border-radius: 50%;
+		background: #000;
+	}
+	.pearl-small { width: 8px; height: 8px; }
+	:global(.dark) .pearl { background: #fff; }
+	.walk-rail::before {
+		background: repeating-linear-gradient(to bottom, #9ca3af 0 4px, transparent 4px 7px);
+	}
+	:global(.dark) .walk-rail::before {
+		background: repeating-linear-gradient(to bottom, #9ca3af 0 4px, transparent 4px 7px);
+	}
+	.connection-mode-icon {
+		display: inline-block;
+		width: 20px;
+		height: 20px;
+		flex-shrink: 0;
+		background-color: #111827;
+		mask-position: center;
+		mask-size: contain;
+		mask-repeat: no-repeat;
+		-webkit-mask-position: center;
+		-webkit-mask-size: contain;
+		-webkit-mask-repeat: no-repeat;
+	}
+	:global(.dark) .connection-mode-icon { background-color: #fff; }
 	.mode-bus { mask-image: url('/icons/bus-right-fill-color.svg'); -webkit-mask-image: url('/icons/bus-right-fill-color.svg'); }
 	.mode-metro { mask-image: url('/icons/metro-right-fill-color.svg'); -webkit-mask-image: url('/icons/metro-right-fill-color.svg'); }
 	.mode-tram { mask-image: url('/icons/tram-right-fill-color.svg'); -webkit-mask-image: url('/icons/tram-right-fill-color.svg'); }
 	.mode-train { mask-image: url('/icons/train-right-fill-color.svg'); -webkit-mask-image: url('/icons/train-right-fill-color.svg'); }
+	@media (max-width: 360px) {
+		.connection-row { grid-template-columns: 3.5rem 1.25rem minmax(0, 1fr) 3rem; column-gap: 0.5rem; }
+	}
 </style>
