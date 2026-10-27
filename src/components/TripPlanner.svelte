@@ -63,8 +63,8 @@
 		element.src = field === 'origin' ? '/icons/start_point.svg' : '/icons/end_point.svg';
 		element.alt = field === 'origin' ? 'Drag starting point' : 'Drag destination';
 		element.draggable = false;
-		element.style.width = '32px';
-		element.style.height = '32px';
+		element.style.width = '16px';
+		element.style.height = '16px';
 		element.style.cursor = 'grab';
 		// MapLibre requires a position before the marker is added to the map.
 		const marker = new Marker({ element, draggable: true, anchor: 'center' })
