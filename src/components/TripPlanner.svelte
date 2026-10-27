@@ -487,8 +487,6 @@
 		{#if routingError}<p role="alert" class="text-sm text-red-600">{routingError}</p>{/if}
 		{#if !routingLoading && !routingError && originSelection && destinationSelection && routes.length === 0}<p class="text-sm text-gray-500">No routes found for this journey.</p>{/if}
 		{#each routes as itinerary, index}
-			{@const segments = itineraryDisplaySegments(itinerary)}
-			{@const widths = allocateTimelinePercentages(segments, timelineWidth)}
 			<div class="w-full rounded-xl border bg-white p-3 shadow-sm transition-all duration-300 ease-out dark:bg-gray-800 {selectedRoute === index ? 'border-cyan-700 ring-1 ring-cyan-700' : 'border-gray-200 dark:border-gray-700'}">
 				<button type="button" on:click={() => showRoute(index)} aria-pressed={selectedRoute === index} aria-expanded={expandedRoute === index} aria-label={`Preview journey ${index + 1}`} class="block w-full text-left">
 				<JourneyPreviewTimeline {itinerary} />
