@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { onDestroy, tick } from 'svelte';
+	import { onDestroy, onMount, tick } from 'svelte';
+	import { Marker, type Map as MapLibreMap } from 'maplibre-gl';
 	import { get } from 'svelte/store';
 	import { data_stack_store, geolocation_store, map_pointer_store } from '$root/globalstores';
 	import { TripPlannerStack } from '$components/stackenum';
@@ -8,7 +9,7 @@
 	import RatpBullet from '$components/ratpbullet.svelte';
 	import SbbLogo from '$components/SbbLogo.svelte';
 	import DatePicker from '$components/DatePicker.svelte';
-	import { activeItineraries, activeItineraryIndex, fitDirectionsItinerary } from '$lib/features/directions/mapRoutes';
+	import { activeItineraries, activeItineraryIndex, selectedTransferItineraryIndex, fitDirectionsItinerary } from '$lib/features/directions/mapRoutes';
 	import { getRecentDirectionsLocations, rememberDirectionsLocation } from '$lib/features/directions/recentLocations';
 	import {
 		streamDirectionsLocations,
@@ -34,6 +35,9 @@
 	let routingError = '';
 	let routes: EdelweissItinerary[] = [];
 	let selectedRoute = 0;
+	let originMarker: Marker | null = null;
+	let destinationMarker: Marker | null = null;
+	let markerMap: MapLibreMap | null = null;
 	let timelineWidth = 320;
 	function measureTimeline(node: HTMLDivElement) {
 		const measure = () => { timelineWidth = node.clientWidth || 320; };
@@ -59,6 +63,82 @@
 			destination = destinationSelection.name;
 		}
 	}
+
+	function makeEndpointMarker(field: Field, map: MapLibreMap): Marker {
+		const element = document.createElement('img');
+		element.src = field === 'origin' ? '/icons/start_point.svg' : '/icons/end_point.svg';
+		element.alt = field === 'origin' ? 'Drag starting point' : 'Drag destination';
+		element.draggable = false;
+		element.style.width = '32px';
+		element.style.height = '32px';
+		element.style.cursor = 'grab';
+		const marker = new Marker({ element, draggable: true, anchor: 'center' }).addTo(map);
+		marker.on('dragend', () => {
+			const { lat, lng: lon } = marker.getLngLat();
+			if (!isValidPoint({ lat, lon })) return;
+			const updated: DirectionsLocation = {
+				key: 'map:' + field + ':' + lat + ',' + lon,
+				kind: 'place',
+				name: 'Dropped pin',
+				address: '',
+				lat, lon
+			};
+			if (field === 'origin') {
+				originSelection = updated;
+				origin = updated.name;
+			} else {
+				destinationSelection = updated;
+				destination = updated.name;
+			}
+			requestId++;
+			cancelSearch();
+			activeField = null;
+			suggestions = [];
+			updateUrl();
+			void routeSelectedCoordinates();
+		});
+		return marker;
+	}
+
+	function syncEndpointMarkers(): void {
+		const map = get(map_pointer_store);
+		if (map !== markerMap) {
+			originMarker?.remove();
+			destinationMarker?.remove();
+			originMarker = null;
+			destinationMarker = null;
+			markerMap = map;
+		}
+		if (!map) return;
+		for (const field of ['origin', 'destination'] as const) {
+			const selected = field === 'origin' ? originSelection : destinationSelection;
+			let marker = field === 'origin' ? originMarker : destinationMarker;
+			if (!selected || !isValidPoint(selected)) {
+				marker?.remove();
+				if (field === 'origin') originMarker = null;
+				else destinationMarker = null;
+				continue;
+			}
+			if (!marker) {
+				marker = makeEndpointMarker(field, map);
+				if (field === 'origin') originMarker = marker;
+				else destinationMarker = marker;
+			}
+			marker.setLngLat([selected.lon, selected.lat]);
+		}
+	}
+
+	onMount(() => {
+		const unsubscribe = map_pointer_store.subscribe(() => syncEndpointMarkers());
+		return () => {
+			unsubscribe();
+			originMarker?.remove();
+			destinationMarker?.remove();
+			originMarker = null;
+			destinationMarker = null;
+			markerMap = null;
+		};
+	});
 
 	function updateUrl(): void {
 		data_stack_store.update((stack) => {
@@ -89,6 +169,7 @@
 		selectedRoute = 0;
 		activeItineraries.set([]);
 		activeItineraryIndex.set(0);
+		selectedTransferItineraryIndex.set(null);
 	}
 
 	async function routeSelectedCoordinates(): Promise<void> {
@@ -126,6 +207,7 @@
 	function showRoute(index: number): void {
 		selectedRoute = index;
 		activeItineraryIndex.set(index);
+		selectedTransferItineraryIndex.set(index);
 		const map = get(map_pointer_store);
 		if (map && routes[index]) fitDirectionsItinerary(map, routes[index]);
 	}
@@ -215,6 +297,7 @@
 			destinationSelection = null;
 		}
 		clearRoutes();
+		syncEndpointMarkers();
 		updateUrl();
 		querySuggestions(field);
 	}
@@ -233,6 +316,7 @@
 		destination = previousOrigin;
 		destinationSelection = previousOriginSelection;
 		clearRoutes();
+		syncEndpointMarkers();
 		updateUrl();
 		void routeSelectedCoordinates();
 	}
@@ -251,6 +335,7 @@
 		activeField = null;
 		suggestions = [];
 		highlighted = -1;
+		syncEndpointMarkers();
 		updateUrl();
 		void routeSelectedCoordinates();
 	}
