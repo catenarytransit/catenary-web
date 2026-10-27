@@ -6,6 +6,7 @@
 		routeLabel, walkingLegDistanceMeters,
 		type EdelweissItinerary, type EdelweissLeg, type EdelweissIntermediateStop
 	} from '$lib/features/directions/edelweiss';
+	import { connectionRailColor } from '$lib/features/directions/connectionRailColor';
 
 	export let itinerary: EdelweissItinerary;
 	export let originName: string;
@@ -86,6 +87,14 @@
 	</div>
 
 	<div class="flex flex-col gap-3 px-4 pb-8 pt-1" aria-label="Connections and transfers">
+		<div class="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-gray-900 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white" aria-label="Journey origin">
+			<div class="connection-row">
+				<span></span>
+				<span class="pearl-rail rail-first" aria-hidden="true"><span class="pearl"></span></span>
+				<span class="min-w-0 break-words text-left text-sm font-semibold leading-5">{originName}</span>
+				<span></span>
+			</div>
+		</div>
 		{#each itinerary.legs as leg, index (index)}
 			{#if isWalkingLeg(leg.mode)}
 				<div class="rounded-xl border border-gray-400 bg-transparent px-4 py-3 text-gray-800 dark:border-gray-600 dark:text-white" aria-label="Walking connection">
@@ -97,7 +106,7 @@
 					</div>
 				</div>
 			{:else}
-				<article class="rounded-xl border border-gray-200 bg-white p-4 text-gray-900 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white" aria-label={'Connection ' + (index + 1)}>
+				<article class="rounded-xl border border-gray-200 bg-white p-4 text-gray-900 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white" aria-label={'Connection ' + (index + 1)} style={`--rail-light: ${connectionRailColor(leg.routeColor, false)}; --rail-dark: ${connectionRailColor(leg.routeColor, true)};`}>
 					<!-- Contiguous rows give the pearl string no gaps; left and right gutters match. -->
 					<div class="connection-row">
 						<time class="min-w-0 text-right text-sm font-semibold tabular-nums leading-5" datetime={leg.startTime || itinerary.startTime}>{legTime(leg, 'start')}</time>
@@ -129,7 +138,7 @@
 							{#each stops(leg) as stop, stopIndex (stopIndex)}
 								<div class="connection-row">
 									<span class="min-w-0 text-right text-xs tabular-nums leading-5 text-gray-500 dark:text-gray-400">{stopTime(stop)}</span>
-									<span class="pearl-rail" aria-hidden="true"><span class="pearl pearl-small"></span></span>
+									<span class="pearl-rail" aria-hidden="true"><span class="pearl"></span></span>
 									<span class="min-w-0 text-left text-xs leading-5 text-gray-500 dark:text-gray-400">{stop.name}</span>
 									<span class="min-w-0 text-right text-xs text-gray-500 dark:text-gray-400">{stop.platform || stop.platformCode || ''}</span>
 								</div>
@@ -148,6 +157,14 @@
 		{:else}
 			<p class="py-4 text-center text-sm text-gray-500 dark:text-gray-400">No leg details are available for this journey.</p>
 		{/each}
+		<div class="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-gray-900 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white" aria-label="Journey destination">
+			<div class="connection-row">
+				<span></span>
+				<span class="pearl-rail rail-last" aria-hidden="true"><span class="pearl"></span></span>
+				<span class="min-w-0 break-words text-left text-sm font-semibold leading-5">{destinationName}</span>
+				<span></span>
+			</div>
+		</div>
 	</div>
 </div>
 
@@ -176,29 +193,30 @@
 		bottom: 0;
 		left: 50%;
 		width: 2px;
-		background: #d1d5db;
+		background: var(--rail-light, #000);
 		transform: translateX(-50%);
 	}
-	:global(.dark) .pearl-rail::before { background: #4b5563; }
+	:global(.dark) .pearl-rail::before { background: var(--rail-dark, #fff); }
 	.rail-first::before { top: 50%; }
 	.rail-last::before { bottom: 50%; }
 	.pearl {
 		position: relative;
 		z-index: 1;
 		display: block;
-		width: 12px;
-		height: 12px;
+		width: 8px;
+		height: 8px;
 		flex: none;
 		border-radius: 50%;
 		background: #000;
 	}
-	.pearl-small { width: 8px; height: 8px; }
 	:global(.dark) .pearl { background: #fff; }
+	/* Round dots rather than dash-shaped segments for walking connections. */
 	.walk-rail::before {
-		background: repeating-linear-gradient(to bottom, #9ca3af 0 4px, transparent 4px 7px);
+		width: 4px;
+		background: radial-gradient(circle, #64748b 1.2px, transparent 1.3px) center top / 4px 7px repeat-y;
 	}
 	:global(.dark) .walk-rail::before {
-		background: repeating-linear-gradient(to bottom, #9ca3af 0 4px, transparent 4px 7px);
+		background: radial-gradient(circle, #9ca3af 1.2px, transparent 1.3px) center top / 4px 7px repeat-y;
 	}
 	.connection-mode-icon {
 		display: inline-block;
