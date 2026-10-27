@@ -1,5 +1,5 @@
 import * as maplibregl from 'maplibre-gl';
-import { activeItineraries, activeItineraryIndex, refreshDirectionsSource } from '$lib/features/directions/mapRoutes';
+import { activeItineraries, activeItineraryIndex, refreshDirectionsSource, raiseDirectionsLayers } from '$lib/features/directions/mapRoutes';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { configureMapLibreWorkers } from '../configureMapLibreWorkers';
 import { get, writable, type Readable, type Writable } from 'svelte/store';
@@ -245,6 +245,11 @@ export function createMapController(
 		subscriptions.push(activeItineraries.subscribe((items) => refreshDirectionsSource(currentMap, items, get(activeItineraryIndex))));
 		subscriptions.push(activeItineraryIndex.subscribe((index) => refreshDirectionsSource(currentMap, get(activeItineraries), index)));
 		currentMap.on('style.load', () => refreshDirectionsSource(currentMap, get(activeItineraries), get(activeItineraryIndex)));
+		// setupMap adds other app layers asynchronously; promote the route after
+		// each completed style change instead of letting those layers bury it.
+		currentMap.on('idle', () => {
+			if (get(activeItineraries).length) raiseDirectionsLayers(currentMap);
+		});
 
 		subscribeToRuntimeState();
 		configureResolutionListener(currentMap);
