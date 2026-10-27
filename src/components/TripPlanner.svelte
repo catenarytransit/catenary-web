@@ -384,8 +384,8 @@
 			</div>
 		{/if}
 	</div>
-	<div class="mt-3" aria-label="Departure date and time">
-		<label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">Depart at</label>
+	<div class="mt-3" role="group" aria-label="Departure date and time">
+		<p class="mb-1 text-sm font-medium text-gray-700 dark:text-gray-200">Depart at</p>
 		<DatePicker
 			bind:unixTime={departure}
 			bind:isNow={departNow}
