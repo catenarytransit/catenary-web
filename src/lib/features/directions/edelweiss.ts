@@ -24,7 +24,10 @@ export interface EdelweissLeg {
 	endTime?: string;
 	routeColor?: string | null;
 	routeShortName?: string | null;
+	/** GTFS route type from Edelweiss, if metadata is present. */
+	routeType?: number | null;
 	routeLongName?: string | null;
+	/** Original GTFS route ID, retained as a last-resort identifier. */
 	routeTextColor?: string | null;
 	routeId?: string | null;
 	tripShortName?: string | null;
@@ -48,7 +51,7 @@ export interface EdelweissPlan {
 	direct: EdelweissItinerary[];
 }
 
-export type TransitIcon = 'bus' | 'metro' | 'train' | 'tram' | null;
+export type TransitIcon = 'bus' | 'metro' | 'train' | 'tram' | 'ferry' | null;
 
 export interface ItinerarySegment {
 	mode: string;
@@ -142,9 +145,25 @@ export function transitIcon(mode: string): TransitIcon {
 		case 'HIGH_SPEED_RAIL':
 		case 'HIGHSPEED_RAIL':
 			return 'train';
+		case 'FERRY':
+		case 'SHIP':
+			return 'ferry';
 		default:
 			return null;
 	}
+}
+
+/** Prefer the explicit mode; fall back to GTFS type, including extended modes. */
+export function legTransitIcon(leg: EdelweissLeg): TransitIcon {
+	const icon = transitIcon(leg.mode);
+	if (icon) return icon;
+	const type = leg.routeType;
+	if (type === 3 || (type != null && type >= 700 && type < 800)) return 'bus';
+	if (type === 0 || (type != null && type >= 900 && type < 1000)) return 'tram';
+	if (type === 1 || (type != null && type >= 400 && type < 500)) return 'metro';
+	if (type === 4 || (type != null && type >= 1000 && type < 1100)) return 'ferry';
+	if (type === 2 || (type != null && type >= 100 && type < 400)) return 'train';
+	return null;
 }
 
 export function isValidPoint(p: Coordinate | null | undefined): p is Coordinate {
@@ -208,7 +227,7 @@ export function routeLabel(leg: EdelweissLeg): string | null {
 	if (leg.chateau === 'nationalrailuk' && ['RAIL','TRAIN'].includes(leg.mode.toUpperCase())) {
 		return leg.tripShortName?.trim() || null;
 	}
-	return leg.routeShortName?.trim() || leg.routeLongName?.trim() || null;
+	return leg.routeShortName?.trim() || leg.routeLongName?.trim() || leg.tripShortName?.trim() || leg.routeId?.trim() || null;
 }
 
 /** Use GTFS text color when supplied; otherwise select contrast against route color. */
@@ -266,7 +285,7 @@ export function itinerarySegments(itinerary: EdelweissItinerary): ItinerarySegme
 		routeName: routeLabel(leg),
 		textColor: routeTextColor(leg.routeTextColor, routeColor(leg.routeColor)),
 		badgeKind: routeBadgeKind(leg),
-		icon: isWalkingLeg(leg.mode) ? null : transitIcon(leg.mode),
+		icon: isWalkingLeg(leg.mode) ? null : legTransitIcon(leg),
 		duration: legDurationSeconds(leg),
 		coordinates: legCoordinates(leg),
 		distanceMeters: walkingLegDistanceMeters(leg)
