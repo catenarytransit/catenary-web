@@ -58,15 +58,18 @@
 		}
 	}
 
-	function makeEndpointMarker(field: Field, map: MapLibreMap): Marker {
+	function makeEndpointMarker(field: Field, map: MapLibreMap, selected: DirectionsLocation): Marker {
 		const element = document.createElement('img');
 		element.src = field === 'origin' ? '/icons/start_point.svg' : '/icons/end_point.svg';
 		element.alt = field === 'origin' ? 'Drag starting point' : 'Drag destination';
 		element.draggable = false;
-		element.style.width = '32px';
-		element.style.height = '32px';
+		element.style.width = '16px';
+		element.style.height = '16px';
 		element.style.cursor = 'grab';
-		const marker = new Marker({ element, draggable: true, anchor: 'center' }).addTo(map);
+		// MapLibre requires a position before the marker is added to the map.
+		const marker = new Marker({ element, draggable: true, anchor: 'center' })
+			.setLngLat([selected.lon, selected.lat])
+			.addTo(map);
 		marker.on('dragend', () => {
 			const { lat, lng: lon } = marker.getLngLat();
 			if (!isValidPoint({ lat, lon })) return;
@@ -114,11 +117,13 @@
 				continue;
 			}
 			if (!marker) {
-				marker = makeEndpointMarker(field, map);
+				marker = makeEndpointMarker(field, map, selected);
 				if (field === 'origin') originMarker = marker;
 				else destinationMarker = marker;
+			} else {
+				// Update markers when suggestions, dragged points, or swapped endpoints change.
+				marker.setLngLat([selected.lon, selected.lat]);
 			}
-			marker.setLngLat([selected.lon, selected.lat]);
 		}
 	}
 
