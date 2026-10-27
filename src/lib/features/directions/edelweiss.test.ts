@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import polyline from '@mapbox/polyline';
-import { itinerarySegments, itineraryDisplaySegments, allocateTimelinePercentages, itineraryTimeMarkers, itineraryTimeRow, formatWalkSegment, formatJourneyDuration, routeBadgeKind, legCoordinates, normalizePlan, routeColor, transitIcon, legTransitIcon, routeLabel, type EdelweissItinerary } from './edelweiss';
+import { itinerarySegments, itineraryDisplaySegments, allocateTimelinePercentages, itineraryTimeMarkers, itineraryTimeRow, formatWalkSegment, formatJourneyDuration, routeBadgeKind, legCoordinates, normalizePlan, routeColor, transitIcon, legTransitIcon, routeLabel, resolveDepartureUnixSeconds, type EdelweissItinerary } from './edelweiss';
 import { itineraryGeoJson, itineraryStopGeoJson } from './mapRoutes';
 
 const itinerary: EdelweissItinerary = {
@@ -15,6 +15,11 @@ const itinerary: EdelweissItinerary = {
 	]
 };
 describe('Edelweiss geometry and itinerary presentation', () => {
+	it('uses a fresh now timestamp or the exact selected departure time', () => {
+		expect(resolveDepartureUnixSeconds(1_790_000_000, true, 1_800_000_010.9)).toBe(1_800_000_010);
+		expect(resolveDepartureUnixSeconds(1_790_000_000.8, false, 1_800_000_010)).toBe(1_790_000_000);
+	});
+
 	it('preserves missing metadata fallbacks and draws transfer stops', () => {
 		expect(legTransitIcon({mode:'TRANSIT',routeType:3})).toBe('bus');
 		expect(legTransitIcon({mode:'TRANSIT',routeType:2})).toBe('train');
