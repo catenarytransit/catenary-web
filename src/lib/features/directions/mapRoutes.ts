@@ -82,11 +82,21 @@ export function ensureDirectionsLayers(map: Map): void {
 	}
 }
 
+/** Keep directions above every application overlay, including layers added after map load. */
+export function raiseDirectionsLayers(map: Map): void {
+	if (!map.isStyleLoaded()) return;
+	for (const id of ['edelweiss-alternatives','edelweiss-route','edelweiss-walk',
+		'edelweiss-direction-stops','edelweiss-direction-stop-labels']) {
+		if (map.getLayer(id)) map.moveLayer(id);
+	}
+}
+
 export function refreshDirectionsSource(map: Map, itineraries: EdelweissItinerary[], selected: number): void {
 	if (!map.isStyleLoaded()) return;
 	ensureDirectionsLayers(map);
 	(map.getSource(SOURCE) as GeoJSONSource | undefined)?.setData(itineraryGeoJson(itineraries, selected));
 	(map.getSource(STOPS_SOURCE) as GeoJSONSource | undefined)?.setData(itineraryStopGeoJson(itineraries[selected]));
+	raiseDirectionsLayers(map);
 }
 
 export function fitDirectionsItinerary(map: Map, itinerary: EdelweissItinerary): void {
