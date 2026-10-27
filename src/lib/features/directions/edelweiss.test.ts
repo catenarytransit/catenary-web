@@ -20,7 +20,7 @@ describe('Edelweiss geometry and itinerary presentation', () => {
 		expect(resolveDepartureUnixSeconds(1_790_000_000.8, false, 1_800_000_010)).toBe(1_790_000_000);
 	});
 
-	it('preserves missing metadata fallbacks and draws transfer stops', () => {
+	it('shows only interchange points between transit legs', () => {
 		expect(legTransitIcon({mode:'TRANSIT',routeType:3})).toBe('bus');
 		expect(legTransitIcon({mode:'TRANSIT',routeType:2})).toBe('train');
 		expect(routeLabel({mode:'BUS',routeId:'R42'})).toBe('R42');
@@ -30,8 +30,24 @@ describe('Edelweiss geometry and itinerary presentation', () => {
 			{mode:'RAIL',from:{lat:34.2,lon:-118.2,name:'Transfer 2'},to:{lat:34.3,lon:-118.3,name:'Arrive'}}
 		]};
 		const stops = itineraryStopGeoJson(journey).features;
-		expect(stops.map(stop=>stop.properties.kind)).toEqual(['boarding','transfer','transfer','alighting']);
-		expect(stops[1].geometry.coordinates).toEqual([-118.1,34.1]);
+		expect(stops.map(stop=>stop.properties.kind)).toEqual(['transfer','transfer']);
+		expect(stops.map(stop=>stop.geometry.coordinates)).toEqual([[-118.1,34.1],[-118.2,34.2]]);
+		expect(itineraryStopGeoJson(undefined).features).toEqual([]);
+		expect(itineraryStopGeoJson({...journey,legs:journey.legs.slice(0,1)}).features).toEqual([]);
+	});
+	it('deduplicates identical transfer coordinates and excludes invalid points', () => {
+		const point = { lat: 34.1, lon: -118.1, name: 'Shared platform' };
+		const journey: EdelweissItinerary = {
+			startTime: itinerary.startTime, endTime: itinerary.endTime,
+			legs: [
+				{ mode: 'BUS', to: point },
+				{ mode: 'WALK', from: point, to: point },
+				{ mode: 'RAIL', from: point, to: { lat: NaN, lon: 0, name: 'Invalid' } },
+				{ mode: 'BUS', from: { lat: NaN, lon: 0, name: 'Invalid' } }
+			]
+		};
+		expect(itineraryStopGeoJson(journey).features.map(f => f.geometry.coordinates))
+			.toEqual([[-118.1, 34.1]]);
 	});
 	it('decodes MOTIS six-digit leg geometry in lon-lat order', () => {
 		expect(legCoordinates(itinerary.legs[1])).toEqual([[-118.01,34.01],[-118.02,34.02],[-118.03,34.03]]);
