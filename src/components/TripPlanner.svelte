@@ -395,33 +395,31 @@
 									{#if !segment.transfer}
 										{#if segment.walking}
 											<span class="material-symbols-outlined shrink-0 text-black dark:text-white" style:font-size="18px" aria-hidden="true">directions_walk</span>
-										{:else if segment.icon}
-											<span class="sbb-mode-icon shrink-0 bg-black dark:bg-white" class:sbb-bus={segment.icon === 'bus'} class:sbb-metro={segment.icon === 'metro'} class:sbb-train={segment.icon === 'train'} class:sbb-tram={segment.icon === 'tram'} aria-hidden="true"></span>
 										{:else}
-											<span class="material-symbols-outlined shrink-0 text-black dark:text-white" style:font-size="18px" aria-hidden="true">directions_transit</span>
+											<span class="sbb-mode-icon shrink-0 bg-black dark:bg-white" class:sbb-bus={segment.icon === 'bus'} class:sbb-metro={segment.icon === 'metro'} class:sbb-tram={segment.icon === 'tram'} class:sbb-train={segment.icon === 'train' || !segment.icon} aria-hidden="true"></span>
 										{/if}
 									{/if}
 									{#if segment.walking && !segment.transfer}
 										<span class="walking-dot-line min-w-0 flex-1" aria-hidden="true"></span>
 									{:else}
-										<span class="segment-bar min-w-0 flex-1" aria-hidden="true"></span>
+										<span class="segment-bar min-w-0 flex-1" style:border-top-color={segment.transfer ? undefined : segment.walking ? undefined : /^(?:#000(?:000)?|#fff(?:fff)?)$/i.test(segment.color) ? undefined : segment.color} aria-hidden="true"></span>
 									{/if}
 								</div>
 								{#if !segment.transfer}
 									<div class="mt-1 flex min-h-5 w-full min-w-0 items-start justify-start text-xs" title={segment.walking ? formatWalkSegment(segment) : segment.routeName ?? segment.mode}>
 										{#if segment.walking}
 											<span class="truncate text-gray-600 dark:text-gray-300">{formatWalkSegment(segment)}</span>
-										{:else if segment.routeName}
-											{#if segment.badgeKind === 'mta'}
+										{:else}
+											{#if segment.routeName && segment.badgeKind === 'mta'}
 												<MtaBullet route_short_name={segment.routeName} matchTextHeight={true} />
-											{:else if segment.badgeKind === 'ratp'}
+											{:else if segment.routeName && segment.badgeKind === 'ratp'}
 												<RatpBullet route_short_name={segment.routeName} matchTextHeight={true} />
 											{:else}
 												<span class="inline-flex max-w-full items-center justify-center overflow-hidden text-ellipsis whitespace-nowrap px-1.5 py-0.5 text-xs font-semibold leading-none" class:rounded-full={segment.badgeKind === 'sbahn'} class:rounded-sm={segment.badgeKind !== 'sbahn'} style:background-color={segment.color} style:color={segment.textColor}>
-													{#if segment.badgeKind === 'sbb'}
+													{#if segment.badgeKind === 'sbb' && segment.routeName}
 														<SbbLogo text={segment.routeName} chateau="schweiz" />
 													{:else}
-														{segment.routeName}
+														{segment.routeName || segment.mode}
 													{/if}
 												</span>
 											{/if}
@@ -483,4 +481,5 @@
 		mask-image: url('/icons/tram-right-fill-color.svg');
 		-webkit-mask-image: url('/icons/tram-right-fill-color.svg');
 	}
+
 </style>
