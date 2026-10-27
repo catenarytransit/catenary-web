@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onDestroy, onMount, tick } from 'svelte';
+	import { slide } from 'svelte/transition';
 	import { Marker, type Map as MapLibreMap } from 'maplibre-gl';
 	import { get } from 'svelte/store';
 	import { data_stack_store, geolocation_store, map_pointer_store } from '$root/globalstores';
@@ -9,6 +10,7 @@
 	import RatpBullet from '$components/ratpbullet.svelte';
 	import SbbLogo from '$components/SbbLogo.svelte';
 	import DatePicker from '$components/DatePicker.svelte';
+	import TripItineraryDetails from '$components/TripItineraryDetails.svelte';
 	import { activeItineraries, activeItineraryIndex, selectedTransferItineraryIndex, fitDirectionsItinerary } from '$lib/features/directions/mapRoutes';
 	import { getRecentDirectionsLocations, rememberDirectionsLocation } from '$lib/features/directions/recentLocations';
 	import {
@@ -35,6 +37,8 @@
 	let routingError = '';
 	let routes: EdelweissItinerary[] = [];
 	let selectedRoute = 0;
+	let expandedRoute: number | null = null;
+	let detailsIndex: number | null = null;
 	let originMarker: Marker | null = null;
 	let destinationMarker: Marker | null = null;
 	let markerMap: MapLibreMap | null = null;
@@ -167,6 +171,8 @@
 		routingError = '';
 		routes = [];
 		selectedRoute = 0;
+		expandedRoute = null;
+		detailsIndex = null;
 		activeItineraries.set([]);
 		activeItineraryIndex.set(0);
 		selectedTransferItineraryIndex.set(null);
@@ -205,6 +211,7 @@
 	}
 
 	function showRoute(index: number): void {
+		expandedRoute = expandedRoute === index ? null : index;
 		selectedRoute = index;
 		activeItineraryIndex.set(index);
 		selectedTransferItineraryIndex.set(index);
@@ -212,6 +219,11 @@
 		if (map && routes[index]) fitDirectionsItinerary(map, routes[index]);
 	}
 
+
+	function openDetails(index: number): void {
+		if (!routes[index]) return;
+		detailsIndex = index;
+	}
 
 	function cancelSearch(): void {
 		controller?.abort();
@@ -377,7 +389,8 @@
 	if (originSelection && destinationSelection) void routeSelectedCoordinates();
 </script>
 
-<section aria-label="Directions / Trip Planner" class="flex h-full flex-col overflow-visible px-4 py-4">
+<section aria-label="Directions / Trip Planner" class="relative flex h-full min-h-0 flex-col overflow-hidden">
+	<div class="min-h-0 flex-1 overflow-y-auto px-4 py-4" class:hidden={detailsIndex !== null} aria-hidden={detailsIndex !== null}>
 	<div class="mb-4 flex items-center justify-between">
 		<h2 class="text-lg font-semibold">Directions</h2>
 		<button type="button" on:click={closeDirections} aria-label="Exit directions" class="inline-flex items-center gap-1 rounded-full px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800">
@@ -485,7 +498,8 @@
 		{#each routes as itinerary, index}
 			{@const segments = itineraryDisplaySegments(itinerary)}
 			{@const widths = allocateTimelinePercentages(segments, timelineWidth)}
-			<button type="button" on:click={() => showRoute(index)} aria-pressed={selectedRoute === index} class="w-full rounded-xl border bg-white p-3 text-left shadow-sm dark:bg-gray-800 {selectedRoute === index ? 'border-cyan-700 ring-1 ring-cyan-700' : 'border-gray-200 dark:border-gray-700'}">
+			<div class="w-full rounded-xl border bg-white p-3 shadow-sm transition-all duration-300 ease-out dark:bg-gray-800 {selectedRoute === index ? 'border-cyan-700 ring-1 ring-cyan-700' : 'border-gray-200 dark:border-gray-700'}">
+				<button type="button" on:click={() => showRoute(index)} aria-pressed={selectedRoute === index} aria-expanded={expandedRoute === index} aria-label={`Preview journey ${index + 1}`} class="block w-full text-left">
 				<div class="flex items-center justify-between gap-1.5 text-sm sm:text-base" aria-label="Journey departure, duration and arrival">
 					{#each itineraryTimeRow(itinerary) as item}
 						{#if item.kind === 'duration'}
@@ -539,9 +553,21 @@
 					</div>
 				</div>
 				<div class="mt-2 flex items-center text-xs text-gray-500 dark:text-gray-400"><span>{itinerary.transfers ?? 0} transfers</span></div>
-			</button>
+				</button>
+				{#if expandedRoute === index}
+					<div transition:slide={{ duration: 240 }} class="mt-3 flex justify-end border-t border-gray-200 pt-3 dark:border-gray-700">
+						<button type="button" on:click={() => openDetails(index)} class="inline-flex items-center gap-1 rounded-lg bg-cyan-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-cyan-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700">
+							Details <span class="material-symbols-outlined text-base" aria-hidden="true">chevron_right</span>
+						</button>
+					</div>
+				{/if}
+			</div>
 		{/each}
 	</div>
+	</div>
+	{#if detailsIndex !== null && routes[detailsIndex]}
+		<TripItineraryDetails itinerary={routes[detailsIndex]} originName={originSelection?.name || origin} destinationName={destinationSelection?.name || destination} onBack={() => { detailsIndex = null; }} />
+	{/if}
 </section>
 
 <style>
