@@ -419,6 +419,16 @@ export async function queryEdelweiss(
 	return normalizePlan(await response.json());
 }
 
+/** Use a fresh timestamp for "Now" rather than reusing the timestamp when the planner opened. */
+export function resolveDepartureUnixSeconds(
+	selectedUnixSeconds: number,
+	isNow: boolean,
+	nowUnixSeconds: number = Date.now() / 1000
+): number {
+	const requested = isNow ? nowUnixSeconds : selectedUnixSeconds;
+	return Math.floor(Number.isFinite(requested) && requested > 0 ? requested : nowUnixSeconds);
+}
+
 export function formatJourneyTime(iso: string): string {
 	return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit', hour12: false })
 		.format(new Date(iso));
