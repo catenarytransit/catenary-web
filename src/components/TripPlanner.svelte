@@ -1,12 +1,13 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
+	import { onDestroy, tick } from 'svelte';
 	import { get } from 'svelte/store';
 	import { data_stack_store, geolocation_store, map_pointer_store } from '$root/globalstores';
 	import { TripPlannerStack } from '$components/stackenum';
-	import { queryEdelweiss, itineraryDisplaySegments, allocateTimelinePercentages, itineraryTimeRow, formatWalkSegment, formatJourneyTime, type EdelweissItinerary, isValidPoint } from '$lib/features/directions/edelweiss';
+	import { queryEdelweiss, itineraryDisplaySegments, allocateTimelinePercentages, itineraryTimeRow, formatWalkSegment, formatJourneyTime, resolveDepartureUnixSeconds, type EdelweissItinerary, isValidPoint } from '$lib/features/directions/edelweiss';
 	import MtaBullet from '$components/mtabullet.svelte';
 	import RatpBullet from '$components/ratpbullet.svelte';
 	import SbbLogo from '$components/SbbLogo.svelte';
+	import DatePicker from '$components/DatePicker.svelte';
 	import { activeItineraries, activeItineraryIndex, fitDirectionsItinerary } from '$lib/features/directions/mapRoutes';
 	import { getRecentDirectionsLocations, rememberDirectionsLocation } from '$lib/features/directions/recentLocations';
 	import {
@@ -42,9 +43,13 @@
 		return { destroy() { observer?.disconnect(); } };
 	}
 	let departure = Math.floor(Date.now() / 1000);
+	let departNow = true;
 	const stackData = get(data_stack_store).at(-1)?.data;
 	if (stackData instanceof TripPlannerStack) {
-		departure = stackData.departure ?? departure;
+		if (typeof stackData.departure === 'number' && Number.isFinite(stackData.departure) && stackData.departure > 0) {
+			departure = Math.floor(stackData.departure);
+			departNow = false;
+		}
 		if (stackData.fromLat != null && stackData.fromLon != null && isValidPoint({lat:stackData.fromLat, lon:stackData.fromLon})) {
 			originSelection = { key:'url:from', kind:'place', name:stackData.fromName || 'Start', address:'', lat:stackData.fromLat, lon:stackData.fromLon };
 			origin = originSelection.name;
@@ -66,7 +71,8 @@
 				data.toLat = destinationSelection?.lat ?? null;
 				data.toLon = destinationSelection?.lon ?? null;
 				data.toName = destinationSelection?.name ?? null;
-				data.departure = departure;
+				// Null represents live "Now" so a shared directions URL stays current.
+				data.departure = departNow ? null : Math.floor(departure);
 				return [...stack];
 			}
 			return stack;
@@ -93,7 +99,7 @@
 		routeController = current;
 		routingLoading = true;
 		try {
-			const found = await queryEdelweiss(originSelection, destinationSelection, departure, current.signal);
+			const found = await queryEdelweiss(originSelection, destinationSelection, resolveDepartureUnixSeconds(departure, departNow), current.signal);
 			if (current.signal.aborted || id !== routeRequestId) return;
 			routes = found;
 			activeItineraries.set(found);
@@ -107,6 +113,14 @@
 		} finally {
 			if (id === routeRequestId) routingLoading = false;
 		}
+	}
+
+	async function onDepartureChange(): Promise<void> {
+		// DatePicker binds its edited value and emits a change event; consume the
+		// committed value before persisting or sending the next route request.
+		await tick();
+		updateUrl();
+		void routeSelectedCoordinates();
 	}
 
 	function showRoute(index: number): void {
@@ -369,6 +383,15 @@
 				{#if searchError}<p class="px-3 py-2 text-xs text-red-600" role="status">Unable to load location suggestions.</p>{/if}
 			</div>
 		{/if}
+	</div>
+	<div class="mt-3" aria-label="Departure date and time">
+		<label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">Depart at</label>
+		<DatePicker
+			bind:unixTime={departure}
+			bind:isNow={departNow}
+			timezone="Local Time"
+			on:change={onDepartureChange}
+		/>
 	</div>
 	<div class="mt-5 flex flex-col gap-3 pb-8" aria-label="Available routes">
 		{#if routingLoading}<p role="status" class="text-sm text-gray-500">Finding routes…</p>{/if}
