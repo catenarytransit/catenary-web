@@ -1,13 +1,12 @@
 <script lang="ts">
-	import { itineraryDisplaySegments, allocateTimelinePercentages, itineraryTimeRow, formatWalkSegment, formatJourneyTime, type EdelweissItinerary } from '$lib/features/directions/edelweiss';
+	import { itineraryDisplaySegments, allocateTimelinePercentages, itineraryTimeMarkers, formatJourneyDuration, formatWalkSegment, formatJourneyTime, type EdelweissItinerary } from '$lib/features/directions/edelweiss';
 	import MtaBullet from '$components/mtabullet.svelte';
 	import RatpBullet from '$components/ratpbullet.svelte';
 	import SbbLogo from '$components/SbbLogo.svelte';
 
 	export let itinerary: EdelweissItinerary;
-	/** Summary uses just the two endpoint times; detailed duration is rendered below it. */
+	/** Use only endpoint times on the compact details summary. */
 	export let summary = false;
-	export let showTransfers = true;
 	let timelineWidth = 320;
 	$: segments = itineraryDisplaySegments(itinerary);
 	$: widths = allocateTimelinePercentages(segments, timelineWidth);
@@ -28,16 +27,11 @@
 			<time datetime={itinerary.endTime}>{formatJourneyTime(itinerary.endTime)}</time>
 		</div>
 	{:else}
-				<div class="flex items-center justify-between gap-1.5 text-sm sm:text-base" aria-label="Journey departure, duration and arrival">
-					{#each itineraryTimeRow(itinerary) as item}
-						{#if item.kind === 'duration'}
-							<span class="min-w-0 shrink text-center text-xs font-medium text-gray-600 dark:text-gray-300" aria-label="Total journey duration">{item.text}</span>
-						{:else}
-							<time datetime={item.time} class:font-semibold={item.transit} class:font-normal={!item.transit} class="shrink-0 whitespace-nowrap">{formatJourneyTime(item.time)}</time>
-						{/if}
-					{/each}
-				</div>
-
+		<div class="flex items-center justify-between gap-1.5 text-sm sm:text-base" aria-label="Journey departure and arrival times">
+			{#each itineraryTimeMarkers(itinerary) as marker}
+				<time datetime={marker.time} class:font-semibold={marker.transit} class:font-normal={!marker.transit} class="shrink-0 whitespace-nowrap">{formatJourneyTime(marker.time)}</time>
+			{/each}
+		</div>
 	{/if}
 				<div class="mt-3 w-full max-w-full" use:measureTimeline aria-label="Journey segments">
 					<div class="flex w-full min-w-0 items-start overflow-hidden">
@@ -83,9 +77,11 @@
 					</div>
 				</div>
 
-	{#if showTransfers}
-		<div class="mt-2 flex items-center text-xs text-gray-500 dark:text-gray-400"><span>{itinerary.transfers ?? 0} transfers</span></div>
-	{/if}
+	<div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-gray-600 dark:text-gray-300" aria-label="Journey duration and transfers">
+		<span>Total travel time: {formatJourneyDuration(itinerary)}</span>
+		<span aria-hidden="true">·</span>
+		<span>{itinerary.transfers ?? 0} {(itinerary.transfers ?? 0) === 1 ? 'transfer' : 'transfers'}</span>
+	</div>
 </div>
 
 <style>
