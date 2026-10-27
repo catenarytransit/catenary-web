@@ -20,6 +20,14 @@ export interface EdelweissGeometry {
 	length?: number;
 }
 
+export interface EdelweissIntermediateStop extends Partial<RoutePoint> {
+	name: string;
+	arrival?: string | null;
+	departure?: string | null;
+	scheduledArrival?: string | null;
+	scheduledDeparture?: string | null;
+}
+
 export interface EdelweissLeg {
 	mode: string;
 	duration?: number;
@@ -40,6 +48,7 @@ export interface EdelweissLeg {
 	to?: RoutePoint | null;
 	fromPlatform?: string | null;
 	toPlatform?: string | null;
+	intermediateStops?: EdelweissIntermediateStop[];
 	legGeometry?: EdelweissGeometry | null;
 }
 
