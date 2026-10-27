@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import polyline from '@mapbox/polyline';
-import { itinerarySegments, itineraryDisplaySegments, allocateTimelinePercentages, itineraryTimeMarkers, itineraryTimeRow, formatWalkSegment, formatJourneyDuration, routeBadgeKind, routeLabel, legCoordinates, normalizePlan, routeColor, transitIcon, type EdelweissItinerary } from './edelweiss';
-import { itineraryGeoJson } from './mapRoutes';
+import { itinerarySegments, itineraryDisplaySegments, allocateTimelinePercentages, itineraryTimeMarkers, itineraryTimeRow, formatWalkSegment, formatJourneyDuration, routeBadgeKind, legCoordinates, normalizePlan, routeColor, transitIcon, legTransitIcon, routeLabel, type EdelweissItinerary } from './edelweiss';
+import { itineraryGeoJson, itineraryStopGeoJson } from './mapRoutes';
 
 const itinerary: EdelweissItinerary = {
 	startTime: '2026-10-23T17:00:00Z',
@@ -15,6 +15,19 @@ const itinerary: EdelweissItinerary = {
 	]
 };
 describe('Edelweiss geometry and itinerary presentation', () => {
+	it('preserves missing metadata fallbacks and draws transfer stops', () => {
+		expect(legTransitIcon({mode:'TRANSIT',routeType:3})).toBe('bus');
+		expect(legTransitIcon({mode:'TRANSIT',routeType:2})).toBe('train');
+		expect(routeLabel({mode:'BUS',routeId:'R42'})).toBe('R42');
+		const journey: EdelweissItinerary = {...itinerary,legs:[
+			{mode:'BUS',from:{lat:34,lon:-118,name:'Board'},to:{lat:34.1,lon:-118.1,name:'Transfer'}},
+			{mode:'WALK',from:{lat:34.1,lon:-118.1,name:'Transfer'},to:{lat:34.2,lon:-118.2,name:'Transfer 2'}},
+			{mode:'RAIL',from:{lat:34.2,lon:-118.2,name:'Transfer 2'},to:{lat:34.3,lon:-118.3,name:'Arrive'}}
+		]};
+		const stops = itineraryStopGeoJson(journey).features;
+		expect(stops.map(stop=>stop.properties.kind)).toEqual(['boarding','transfer','transfer','alighting']);
+		expect(stops[1].geometry.coordinates).toEqual([-118.1,34.1]);
+	});
 	it('decodes MOTIS six-digit leg geometry in lon-lat order', () => {
 		expect(legCoordinates(itinerary.legs[1])).toEqual([[-118.01,34.01],[-118.02,34.02],[-118.03,34.03]]);
 	});
