@@ -83,6 +83,17 @@ export interface ItinerarySegment {
 	distanceMeters: number | null;
 }
 
+/** Presentation-only entry for the directions details list. Original itinerary legs stay untouched. */
+export interface ItineraryDetailLeg {
+	leg: EdelweissLeg;
+	/** Index in the unmodified itinerary (also indexes its transit style segments). */
+	sourceIndex: number;
+	/** Sum of walking durations, excluding any unrecorded waiting between legs. */
+	walkingSeconds: number | null;
+	/** Sum of OSR walking geometry lengths; null if any path has no geometry. */
+	walkingMeters: number | null;
+}
+
 export interface ItineraryTimeMarker {
 	time: string;
 	transit: boolean;
@@ -304,6 +315,38 @@ export function itinerarySegments(itinerary: EdelweissItinerary): ItinerarySegme
 		coordinates: legCoordinates(leg),
 		distanceMeters: walkingLegDistanceMeters(leg)
 	}));
+}
+
+/** Combine adjacent pedestrian legs for the detailed list only.
+ * Keep the original first leg and its index: route reconstruction and MapLibre
+ * still use the separate, unchanged API legs and their geometries.
+ */
+export function itineraryDetailLegs(itinerary: EdelweissItinerary): ItineraryDetailLeg[] {
+	const displayed: ItineraryDetailLeg[] = [];
+	for (const [sourceIndex, leg] of itinerary.legs.entries()) {
+		if (!isWalkingLeg(leg.mode)) {
+			displayed.push({ leg, sourceIndex, walkingSeconds: null, walkingMeters: null });
+			continue;
+		}
+		const start = Date.parse(leg.startTime ?? '');
+		const end = Date.parse(leg.endTime ?? '');
+		const seconds = typeof leg.duration === 'number' && Number.isFinite(leg.duration) && leg.duration >= 0
+			? leg.duration
+			: Number.isFinite(start) && Number.isFinite(end) && end >= start
+				? (end - start) / 1000
+				: null;
+		const meters = walkingLegDistanceMeters(leg);
+		const previous = displayed.at(-1);
+		if (previous && isWalkingLeg(previous.leg.mode)) {
+			previous.walkingSeconds = previous.walkingSeconds !== null && seconds !== null
+				? previous.walkingSeconds + seconds : null;
+			previous.walkingMeters = previous.walkingMeters !== null && meters !== null
+				? previous.walkingMeters + meters : null;
+		} else {
+			displayed.push({ leg, sourceIndex, walkingSeconds: seconds, walkingMeters: meters });
+		}
+	}
+	return displayed;
 }
 
 /** Collapse consecutive walking legs in the card, without modifying map leg geometries. */
