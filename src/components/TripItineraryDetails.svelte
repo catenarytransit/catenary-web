@@ -2,8 +2,8 @@
 	import { onMount } from 'svelte';
 	import JourneyPreviewTimeline from '$components/JourneyPreviewTimeline.svelte';
 	import {
-		formatJourneyTime, isWalkingLeg, itinerarySegments,
-		routeLabel, walkingLegDistanceMeters,
+		formatJourneyTime, isWalkingLeg, itinerarySegments, itineraryDetailLegs,
+		routeLabel,
 		type EdelweissItinerary, type EdelweissLeg, type EdelweissIntermediateStop
 	} from '$lib/features/directions/edelweiss';
 	import { connectionRailColor } from '$lib/features/directions/connectionRailColor';
@@ -16,6 +16,7 @@
 	let backButton: HTMLButtonElement;
 	let expandedStops: Record<number, boolean> = {};
 	$: segments = itinerarySegments(itinerary);
+	$: detailLegs = itineraryDetailLegs(itinerary);
 
 	onMount(() => backButton?.focus());
 
@@ -40,14 +41,11 @@
 		return time && Number.isFinite(Date.parse(time)) ? formatJourneyTime(time) : '';
 	}
 
-	function walkingMinutes(leg: EdelweissLeg): string {
-		const computed = (Date.parse(leg.endTime ?? '') - Date.parse(leg.startTime ?? '')) / 1000;
-		const seconds = Number.isFinite(leg.duration) ? leg.duration! : computed;
-		return `${Math.max(1, Math.round(Number.isFinite(seconds) ? seconds / 60 : 1))}'`;
+	function walkingMinutes(seconds: number | null): string {
+		return seconds === null ? '—' : `${Math.max(1, Math.round(seconds / 60))}'`;
 	}
 
-	function walkingDistance(leg: EdelweissLeg): string {
-		const meters = walkingLegDistanceMeters(leg);
+	function walkingDistance(meters: number | null): string {
 		if (meters === null || !Number.isFinite(meters)) return 'distance unavailable';
 		return meters >= 1000 ? `${(meters / 1000).toFixed(1)} km` : `${Math.round(meters)} m`;
 	}
@@ -95,13 +93,15 @@
 				<span></span>
 			</div>
 		</div>
-		{#each itinerary.legs as leg, index (index)}
+		{#each detailLegs as detail (detail.sourceIndex)}
+			{@const leg = detail.leg}
+			{@const index = detail.sourceIndex}
 			{#if isWalkingLeg(leg.mode)}
 				<div class="rounded-xl border border-gray-400 bg-transparent px-4 py-3 text-gray-800 dark:border-gray-600 dark:text-white" aria-label="Walking connection">
 					<div class="connection-row">
-						<span class="text-right text-sm font-semibold tabular-nums">{walkingMinutes(leg)}</span>
+						<span class="text-right text-sm font-semibold tabular-nums">{walkingMinutes(detail.walkingSeconds)}</span>
 						<span class="pearl-rail walk-rail" aria-hidden="true"></span>
-						<span class="min-w-0 text-left text-sm font-medium">Walk: {walkingDistance(leg)}</span>
+						<span class="min-w-0 text-left text-sm font-medium">Walk: {walkingDistance(detail.walkingMeters)}</span>
 						<span></span>
 					</div>
 				</div>
