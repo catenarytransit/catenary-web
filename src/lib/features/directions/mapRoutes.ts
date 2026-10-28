@@ -61,7 +61,7 @@ export function ensureDirectionsLayers(map: Map): void {
 		map.addLayer({ id: 'edelweiss-alternatives', type: 'line', source: SOURCE,
 			filter: ['==', ['get', 'active'], false],
 			layout: { 'line-cap': 'round', 'line-join': 'round' },
-			paint: { 'line-color': ['get', 'color'], 'line-width': 3, 'line-opacity': 0.35 }
+			paint: { 'line-color': '#a8adb4', 'line-width': 4, 'line-opacity': 0.55 }
 		});
 	}
 	if (!map.getLayer('edelweiss-route')) {
