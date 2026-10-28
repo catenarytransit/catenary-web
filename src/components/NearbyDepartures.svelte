@@ -143,6 +143,7 @@
 	export let darkMode: boolean = true;
 
 	import { onMount } from 'svelte';
+	import { fly } from 'svelte/transition';
 	import { writable, get } from 'svelte/store';
 	import { _, locale } from 'svelte-i18n';
 	import DelayDiff from './DelayDiff.svelte';
@@ -488,6 +489,7 @@
 	let delayed_refresh_timeout: ReturnType<typeof setTimeout> | null = null;
 	let loading = false;
 	let marker_reference: maplibregl.Marker | null = null;
+	let centre_pin_ripple_id = 0;
 	let amount_of_ms_total_server_side: number | null = null;
 	export let window_height_known: number = 500;
 	let show_filter_menu: boolean = false;
@@ -534,16 +536,11 @@
 				.catch((e) => console.error('Failed to load switzerland geojson', e));
 
 			if (current_nearby_pick_state == 1) {
-				let map = get(map_pointer_store);
+				const map = get(map_pointer_store);
 				if (map) {
-					let marker_info = get(nearby_user_picks_store);
-					if (marker_reference == null) {
-						marker_reference = new maplibregl.Marker({ color: '#ac46ff', draggable: true })
-							.setLngLat([marker_info?.longitude, marker_info?.latitude])
-							.addTo(map);
-						marker_reference.on('dragend', onDragEnd);
-					}
-					let stops_context = map.getSource('stops_context');
+					// Restore saved coordinates, including a pin selected from a deep link.
+					makeNewMarker();
+					const stops_context = map.getSource('stops_context');
 					if (stops_context) {
 						stops_context.setData({ type: 'FeatureCollection', features: [] });
 					}
@@ -588,19 +585,22 @@
 	});
 
 	function my_location_press() {
+		if (get(nearby_pick_state_store) === 0) return;
 		nearby_pick_state_store.set(0);
+		// The pin position is kept in the store for later, but the marker
+		// should not appear when results are centered on the user's location.
+		marker_reference?.remove();
+		marker_reference = null;
 		clearNearbyDeparturesUrl();
 		getNearbyDepartures();
 	}
 
 	function pin_drop_press() {
+		if (get(nearby_pick_state_store) === 1) return;
 		nearby_pick_state_store.set(1);
-		let map = get(map_pointer_store);
-		if (map) {
-			let centre = map.getCenter();
-			if (marker_reference == null) makeNewMarker();
-			getNearbyDepartures();
-		}
+		// Use the existing saved pin, or drop one at map center on first use.
+		makeNewMarker();
+		getNearbyDepartures();
 	}
 
 	function onDragEnd() {
@@ -612,29 +612,39 @@
 	}
 
 	function makeNewMarker() {
-		let map = get(map_pointer_store);
-		if (map) {
-			let centre = map.getCenter();
-			if (marker_reference == null) {
-				marker_reference = new maplibregl.Marker({ color: '#ac46ff', draggable: true })
-					.setLngLat([centre.lng, centre.lat])
-					.addTo(map);
-				const lngLat = marker_reference.getLngLat();
-				nearby_user_picks_store.set({ latitude: lngLat.lat, longitude: lngLat.lng });
-				marker_reference.on('dragend', onDragEnd);
-			}
+		const map = get(map_pointer_store);
+		if (!map) return;
+		const saved = get(nearby_user_picks_store);
+		const hasSavedPin = saved !== null &&
+			Number.isFinite(saved.latitude) && Number.isFinite(saved.longitude);
+		const centre = map.getCenter();
+		const longitude = hasSavedPin ? saved.longitude : centre.lng;
+		const latitude = hasSavedPin ? saved.latitude : centre.lat;
+		if (!marker_reference) {
+			marker_reference = new maplibregl.Marker({ color: '#ac46ff', draggable: true })
+				.setLngLat([longitude, latitude])
+				.addTo(map);
+			marker_reference.on('dragend', onDragEnd);
+		} else {
+			marker_reference.setLngLat([longitude, latitude]);
+		}
+		if (!hasSavedPin) {
+			nearby_user_picks_store.set({ latitude, longitude });
 		}
 	}
 
 	function centre_press() {
-		let map = get(map_pointer_store);
-		if (map) {
-			let centre = map.getCenter();
-			if (marker_reference == null) makeNewMarker();
+		const map = get(map_pointer_store);
+		if (!map) return;
+		const centre = map.getCenter();
+		nearby_pick_state_store.set(1);
+		nearby_user_picks_store.set({ latitude: centre.lat, longitude: centre.lng });
+		if (marker_reference) {
 			marker_reference.setLngLat([centre.lng, centre.lat]);
-			nearby_user_picks_store.set({ latitude: centre.lat, longitude: centre.lng });
+		} else {
+			makeNewMarker();
 		}
-		pin_drop_press();
+		getNearbyDepartures();
 	}
 
 	async function getNearbyDepartures() {
@@ -778,45 +788,57 @@
 </script>
 
 {#if current_time != 0}
-	<div class="flex flex-row mb-0.5 md:mb-1">
-		<div class="flex flex-row gap-x-1 pl-3">
+	<div class="mb-0.5 flex flex-wrap items-center gap-2 px-3 md:mb-1">
+		<!-- Animated segmented switch; original Near me / pin Material Symbols are retained. -->
+		<div
+			role="group"
+			aria-label="Nearby search location"
+			class="relative grid h-10 w-[12.5rem] shrink-0 grid-cols-2 rounded-full bg-gray-200 p-1 dark:bg-gray-800"
+		>
 			<div
-				on:click={() => {
-					my_location_press();
-				}}
-				class={`border-2 ${current_nearby_pick_state == 0 ? 'bg-green-200 dark:bg-green-800' : ''} rounded-lg border-green-500 px-1.5 py-1`}
+				aria-hidden="true"
+				class="pointer-events-none absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-full bg-white shadow-sm transition-transform duration-200 ease-out motion-reduce:transition-none dark:bg-gray-600 {current_nearby_pick_state === 1 ? 'translate-x-full' : ''}"
+			></div>
+			<button
+				type="button"
+				aria-pressed={current_nearby_pick_state === 0}
+				on:click={my_location_press}
+				class="relative z-10 inline-flex min-w-0 items-center justify-center gap-1 rounded-full px-2 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700 {current_nearby_pick_state === 0 ? 'text-gray-950 dark:text-white' : 'text-gray-600 dark:text-gray-300'}"
 			>
-				<span class="material-symbols-outlined mx-auto translate-y-1 text-sm select-none"
-					>near_me</span
-				>
-			</div>
-
-			<div
-				class={`border-2  ${current_nearby_pick_state == 1 ? 'bg-purple-200 dark:bg-purple-800 ' : ''} rounded-lg border-purple-500 flex flex-row`}
+				<span class="material-symbols-outlined select-none text-[18px] leading-none" aria-hidden="true">near_me</span>
+				<span>Near me</span>
+			</button>
+			<button
+				type="button"
+				aria-pressed={current_nearby_pick_state === 1}
+				on:click={pin_drop_press}
+				class="relative z-10 inline-flex min-w-0 items-center justify-center gap-1 rounded-full px-2 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700 {current_nearby_pick_state === 1 ? 'text-gray-950 dark:text-white' : 'text-gray-600 dark:text-gray-300'}"
 			>
-				<div
-					class="px-2 py-0.5 border-r border-gray-500 flex flex-row"
-					on:click={() => {
-						pin_drop_press();
-					}}
-				>
-					<span class="material-symbols-outlined mx-auto translate-y-1 text-sm select-none"
-						>pin_drop</span
-					>
-				</div>
-
-				<div
-					class="px-2 py-0.5 flex flex-row"
-					on:click={() => {
-						centre_press();
-					}}
-				>
-					<span class="material-symbols-outlined mx-auto translate-y-1 text-sm select-none"
-						>center_focus_strong</span
-					>
-				</div>
-			</div>
+				<span class="material-symbols-outlined select-none text-[18px] leading-none" aria-hidden="true">pin_drop</span>
+				<span>Near pin</span>
+			</button>
 		</div>
+
+		{#if current_nearby_pick_state === 1}
+			<button
+				type="button"
+				transition:fly={{ x: -8, duration: 180 }}
+				on:click={() => {
+					centre_pin_ripple_id += 1;
+					centre_press();
+				}}
+				class="relative inline-flex h-10 shrink-0 items-center justify-center gap-1.5 overflow-hidden rounded-full border border-purple-500 bg-purple-50 px-3 text-xs font-semibold text-purple-800 transition-colors hover:bg-purple-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-500 dark:border-purple-400 dark:bg-purple-950 dark:text-purple-200 dark:hover:bg-purple-900"
+				title="Move the pin to the map centre"
+			>
+				{#key centre_pin_ripple_id}
+					{#if centre_pin_ripple_id > 0}
+						<span class="centre-pin-ripple" aria-hidden="true"></span>
+					{/if}
+				{/key}
+				<span class="material-symbols-outlined relative z-10 select-none text-[18px] leading-none" aria-hidden="true">center_focus_strong</span>
+				<span class="relative z-10">Centre pin</span>
+			</button>
+		{/if}
 
 		{#if amount_of_ms_total_server_side != null}
 			<div class="align-middle ml-1 my-auto">
@@ -1221,3 +1243,23 @@
 		{/if}
 	</div>
 {/if}
+
+<style>
+	.centre-pin-ripple {
+		position: absolute;
+		inset: 0;
+		border-radius: 9999px;
+		background: currentColor;
+		pointer-events: none;
+		animation: centre-pin-ripple 600ms ease-out forwards;
+	}
+
+	@keyframes centre-pin-ripple {
+		from { transform: scale(0.1); opacity: 0.24; }
+		to { transform: scale(1.7); opacity: 0; }
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.centre-pin-ripple { animation: none; opacity: 0; }
+	}
+</style>
