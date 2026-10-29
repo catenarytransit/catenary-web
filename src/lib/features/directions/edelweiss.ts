@@ -398,12 +398,15 @@ export function normalizePlan(value: unknown): EdelweissItinerary[] {
 		...(Array.isArray(plan.itineraries) ? plan.itineraries : []),
 		...(Array.isArray(plan.direct) ? plan.direct : [])
 	];
+	// Edelweiss owns journey Pareto selection and search-direction ordering.
+	// Do not mix direct routes into its transit itinerary ordering.
+	// The backend's transit list comes first; direct alternatives follow,
+	// preserving each collection's original order.
 	return source.filter((item): item is EdelweissItinerary =>
 		!!item && typeof item.startTime === 'string' &&
 		typeof item.endTime === 'string' &&
 		!Number.isNaN(Date.parse(item.startTime)) &&
-		!Number.isNaN(Date.parse(item.endTime)) && Array.isArray(item.legs))
-		.sort((a, b) => Date.parse(a.startTime) - Date.parse(b.startTime));
+		!Number.isNaN(Date.parse(item.endTime)) && Array.isArray(item.legs));
 }
 
 export async function queryEdelweiss(
