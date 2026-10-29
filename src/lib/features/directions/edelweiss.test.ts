@@ -209,9 +209,14 @@ describe('Edelweiss geometry and itinerary presentation', () => {
 	it('rejects invalid CSS colors from upstream', () => {
 		expect(routeColor('red; background:url(x)')).toBe('#087b8b');
 	});
-	it('keeps both direct and transit itineraries in departure order', () => {
-		const items = normalizePlan({itineraries:[itinerary],direct:[{...itinerary,startTime:'2026-10-23T16:00:00Z'}]});
-		expect(items).toHaveLength(2);
-		expect(items[0].startTime).toBe('2026-10-23T16:00:00Z');
+	it('preserves backend transit ordering and keeps direct journeys after transit', () => {
+		const later = {...itinerary,startTime:'2026-10-23T18:00:00Z'};
+		const earlier = {...itinerary,startTime:'2026-10-23T16:00:00Z'};
+		const direct = {...itinerary,startTime:'2026-10-23T15:00:00Z'};
+		const items = normalizePlan({itineraries:[later, earlier],direct:[direct]});
+		expect(items).toHaveLength(3);
+		expect(items.map(it => it.startTime)).toEqual([
+			later.startTime, earlier.startTime, direct.startTime
+		]);
 	});
 });
