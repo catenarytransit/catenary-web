@@ -1,6 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import polyline from '@mapbox/polyline';
-import { itinerarySegments, itineraryDetailLegs, itineraryDisplaySegments, allocateTimelinePercentages, itineraryTimeMarkers, itineraryTimeRow, formatWalkSegment, formatJourneyDuration, routeBadgeKind, legCoordinates, normalizePlan, routeColor, transitIcon, legTransitIcon, routeLabel, resolveDepartureUnixSeconds, type EdelweissItinerary } from './edelweiss';
+import {
+    itinerarySegments,
+    itineraryDetailLegs,
+    itineraryDisplaySegments,
+    allocateTimelinePercentages,
+    itineraryTimeMarkers,
+    itineraryTimeRow,
+    formatWalkSegment,
+    formatJourneyDuration,
+    routeBadgeKind,
+    legCoordinates,
+    normalizePlan,
+    routeColor,
+    transitIcon,
+    legTransitIcon,
+    routeLabel,
+    resolveDepartureUnixSeconds,
+    queryEdelweiss,
+    type EdelweissItinerary
+} from './edelweiss';
+
 import { itineraryGeoJson, itineraryStopGeoJson } from './mapRoutes';
 
 const itinerary: EdelweissItinerary = {
@@ -18,6 +38,26 @@ describe('Edelweiss geometry and itinerary presentation', () => {
 	it('uses a fresh now timestamp or the exact selected departure time', () => {
 		expect(resolveDepartureUnixSeconds(1_790_000_000, true, 1_800_000_010.9)).toBe(1_800_000_010);
 		expect(resolveDepartureUnixSeconds(1_790_000_000.8, false, 1_800_000_010)).toBe(1_790_000_000);
+	});
+
+	it('sends an exclusive departure or arrival time field according to the mode', async () => {
+		const calls: Record<string, unknown>[] = [];
+		const oldFetch = globalThis.fetch;
+		globalThis.fetch = (async (_url, init) => {
+			calls.push(JSON.parse(String(init?.body)));
+			return new Response(JSON.stringify({itineraries: [], direct: []}), {status: 200});
+		}) as typeof fetch;
+		try {
+			const start = {lat:34,lon:-118};
+			const end = {lat:34.1,lon:-118.1};
+			const signal = new AbortController().signal;
+			await queryEdelweiss(start, end, 1800000000, signal);
+			await queryEdelweiss(start, end, 1800000001, signal, true);
+			expect(calls[0]).toMatchObject({departure_unix_seconds:1800000000});
+			expect(calls[0]).not.toHaveProperty('arrival_unix_seconds');
+			expect(calls[1]).toMatchObject({arrival_unix_seconds:1800000001});
+			expect(calls[1]).not.toHaveProperty('departure_unix_seconds');
+		} finally { globalThis.fetch = oldFetch; }
 	});
 
 	it('shows only interchange points between transit legs', () => {
@@ -225,9 +265,14 @@ describe('Edelweiss geometry and itinerary presentation', () => {
 	it('rejects invalid CSS colors from upstream', () => {
 		expect(routeColor('red; background:url(x)')).toBe('#087b8b');
 	});
-	it('keeps both direct and transit itineraries in departure order', () => {
-		const items = normalizePlan({itineraries:[itinerary],direct:[{...itinerary,startTime:'2026-10-23T16:00:00Z'}]});
-		expect(items).toHaveLength(2);
-		expect(items[0].startTime).toBe('2026-10-23T16:00:00Z');
+	it('preserves backend transit ordering and keeps direct journeys after transit', () => {
+		const later = {...itinerary,startTime:'2026-10-23T18:00:00Z'};
+		const earlier = {...itinerary,startTime:'2026-10-23T16:00:00Z'};
+		const direct = {...itinerary,startTime:'2026-10-23T15:00:00Z'};
+		const items = normalizePlan({itineraries:[later, earlier],direct:[direct]});
+		expect(items).toHaveLength(3);
+		expect(items.map(it => it.startTime)).toEqual([
+			later.startTime, earlier.startTime, direct.startTime
+		]);
 	});
 });

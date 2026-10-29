@@ -16,11 +16,13 @@ export const POST: RequestHandler = async ({ request, fetch }) => {
 	} catch {
 		return new Response('Expected a JSON routing request', { status: 400 });
 	}
+	const arriveBy = payload.arrival_unix_seconds !== undefined;
+	const time = arriveBy ? payload.arrival_unix_seconds : payload.departure_unix_seconds;
 	if (!validPoint(payload?.from) || !validPoint(payload?.to) ||
-		typeof payload?.departure_unix_seconds !== 'number' ||
-		!Number.isSafeInteger(payload.departure_unix_seconds) ||
-		payload.departure_unix_seconds <= 0) {
-		return new Response('Invalid routing coordinates or departure time', { status: 400 });
+		(arriveBy && payload.departure_unix_seconds !== undefined) ||
+		typeof time !== 'number' ||
+		!Number.isSafeInteger(time) || time <= 0) {
+		return new Response('Invalid routing coordinates or requested time', { status: 400 });
 	}
 
 	// HTTPS deployment by default. EDELWEISS_URL can override for development.
@@ -40,7 +42,7 @@ export const POST: RequestHandler = async ({ request, fetch }) => {
 			body: JSON.stringify({
 				from: payload.from,
 				to: payload.to,
-				departure_unix_seconds: payload.departure_unix_seconds,
+				...(arriveBy ? { arrival_unix_seconds: time } : { departure_unix_seconds: time }),
 				detailed_legs: true
 			}),
 			signal: AbortSignal.timeout(60_000)

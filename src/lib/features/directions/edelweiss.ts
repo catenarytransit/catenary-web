@@ -441,19 +441,23 @@ export function normalizePlan(value: unknown): EdelweissItinerary[] {
 		...(Array.isArray(plan.itineraries) ? plan.itineraries : []),
 		...(Array.isArray(plan.direct) ? plan.direct : [])
 	];
+	// Edelweiss owns journey Pareto selection and search-direction ordering.
+	// Do not mix direct routes into its transit itinerary ordering.
+	// The backend's transit list comes first; direct alternatives follow,
+	// preserving each collection's original order.
 	return source.filter((item): item is EdelweissItinerary =>
 		!!item && typeof item.startTime === 'string' &&
 		typeof item.endTime === 'string' &&
 		!Number.isNaN(Date.parse(item.startTime)) &&
-		!Number.isNaN(Date.parse(item.endTime)) && Array.isArray(item.legs))
-		.sort((a, b) => Date.parse(a.startTime) - Date.parse(b.startTime));
+		!Number.isNaN(Date.parse(item.endTime)) && Array.isArray(item.legs));
 }
 
 export async function queryEdelweiss(
 	origin: Coordinate,
 	destination: Coordinate,
-	departureUnixSeconds: number,
-	signal: AbortSignal
+	timeUnixSeconds: number,
+	signal: AbortSignal,
+	arriveBy = false
 ): Promise<EdelweissItinerary[]> {
 	if (!isValidPoint(origin) || !isValidPoint(destination)) {
 		throw new Error('Select valid starting and finishing locations');
@@ -464,13 +468,16 @@ export async function queryEdelweiss(
 		body: JSON.stringify({
 			from: { lat: origin.lat, lon: origin.lon },
 			to: { lat: destination.lat, lon: destination.lon },
-			departure_unix_seconds: Math.floor(departureUnixSeconds),
+			...(arriveBy ? { arrival_unix_seconds: Math.floor(timeUnixSeconds) } : { departure_unix_seconds: Math.floor(timeUnixSeconds) }),
 			detailed_legs: true
 		}),
 		signal
 	});
 	if (!response.ok) {
 		const reason = (await response.text()).slice(0, 240);
+		if (arriveBy && /missing field.*departure_unix_seconds|departure_unix_seconds.*required/i.test(reason)) {
+			throw new Error('Arrive by routing requires the updated Edelweiss server.');
+		}
 		throw new Error(reason || 'Edelweiss returned HTTP ' + response.status);
 	}
 	return normalizePlan(await response.json());

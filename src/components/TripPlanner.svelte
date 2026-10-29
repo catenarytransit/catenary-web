@@ -42,8 +42,10 @@
 	let markerMap: MapLibreMap | null = null;
 	let departure = Math.floor(Date.now() / 1000);
 	let departNow = true;
+	let timeMode: 'depart' | 'arrive' = 'depart';
 	const stackData = get(data_stack_store).at(-1)?.data;
 	if (stackData instanceof TripPlannerStack) {
+		timeMode = stackData.timeMode === 'arrive' ? 'arrive' : 'depart';
 		if (typeof stackData.departure === 'number' && Number.isFinite(stackData.departure) && stackData.departure > 0) {
 			departure = Math.floor(stackData.departure);
 			departNow = false;
@@ -152,6 +154,7 @@
 				data.toName = destinationSelection?.name ?? null;
 				// Null represents live "Now" so a shared directions URL stays current.
 				data.departure = departNow ? null : Math.floor(departure);
+				data.timeMode = timeMode;
 				return [...stack];
 			}
 			return stack;
@@ -181,7 +184,7 @@
 		routeController = current;
 		routingLoading = true;
 		try {
-			const found = await queryEdelweiss(originSelection, destinationSelection, resolveDepartureUnixSeconds(departure, departNow), current.signal);
+			const found = await queryEdelweiss(originSelection, destinationSelection, resolveDepartureUnixSeconds(departure, departNow), current.signal, timeMode === 'arrive');
 			if (current.signal.aborted || id !== routeRequestId) return;
 			routes = found;
 			activeItineraries.set(found);
@@ -202,6 +205,13 @@
 		// DatePicker binds its edited value and emits a change event; consume the
 		// committed value before persisting or sending the next route request.
 		await tick();
+		updateUrl();
+		void routeSelectedCoordinates();
+	}
+
+	function chooseTimeMode(mode: 'depart' | 'arrive'): void {
+		if (timeMode === mode) return;
+		timeMode = mode;
 		updateUrl();
 		void routeSelectedCoordinates();
 	}
@@ -478,8 +488,15 @@
 			</div>
 		{/if}
 	</div>
-	<div class="mt-3" role="group" aria-label="Departure date and time">
-		<p class="mb-1 text-sm font-medium text-gray-700 dark:text-gray-200">Depart at</p>
+	<div class="mt-3" role="group" aria-label="Journey time preference">
+		<div class="relative mb-3 grid grid-cols-2 rounded-full bg-gray-100 p-1 dark:bg-gray-800" role="group" aria-label="Depart by or arrive by">
+			<div aria-hidden="true" class="pointer-events-none absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-full bg-white shadow-sm transition-transform duration-200 ease-out dark:bg-gray-700 {timeMode === 'arrive' ? 'translate-x-full' : ''}"></div>
+			<button type="button" aria-pressed={timeMode === 'depart'} on:click={() => chooseTimeMode('depart')}
+				class="relative z-10 rounded-full px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700 {timeMode === 'depart' ? 'text-gray-950 dark:text-white' : 'text-gray-500 dark:text-gray-300'}">Depart by</button>
+			<button type="button" aria-pressed={timeMode === 'arrive'} on:click={() => chooseTimeMode('arrive')}
+				class="relative z-10 rounded-full px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700 {timeMode === 'arrive' ? 'text-gray-950 dark:text-white' : 'text-gray-500 dark:text-gray-300'}">Arrive by</button>
+		</div>
+		<p class="mb-1 text-sm font-medium text-gray-700 dark:text-gray-200">{timeMode === 'arrive' ? 'Arrival date and time' : 'Departure date and time'}</p>
 		<DatePicker
 			bind:unixTime={departure}
 			bind:isNow={departNow}
