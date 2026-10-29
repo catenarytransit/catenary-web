@@ -83,6 +83,17 @@ export interface ItinerarySegment {
 	distanceMeters: number | null;
 }
 
+/** Presentation-only entry for the directions details list. Original itinerary legs stay untouched. */
+export interface ItineraryDetailLeg {
+	leg: EdelweissLeg;
+	/** Index in the unmodified itinerary (also indexes its transit style segments). */
+	sourceIndex: number;
+	/** Sum of walking durations, excluding any unrecorded waiting between legs. */
+	walkingSeconds: number | null;
+	/** Sum of OSR walking geometry lengths; null if any path has no geometry. */
+	walkingMeters: number | null;
+}
+
 export interface ItineraryTimeMarker {
 	time: string;
 	transit: boolean;
@@ -306,6 +317,38 @@ export function itinerarySegments(itinerary: EdelweissItinerary): ItinerarySegme
 	}));
 }
 
+/** Combine adjacent pedestrian legs for the detailed list only.
+ * Keep the original first leg and its index: route reconstruction and MapLibre
+ * still use the separate, unchanged API legs and their geometries.
+ */
+export function itineraryDetailLegs(itinerary: EdelweissItinerary): ItineraryDetailLeg[] {
+	const displayed: ItineraryDetailLeg[] = [];
+	for (const [sourceIndex, leg] of itinerary.legs.entries()) {
+		if (!isWalkingLeg(leg.mode)) {
+			displayed.push({ leg, sourceIndex, walkingSeconds: null, walkingMeters: null });
+			continue;
+		}
+		const start = Date.parse(leg.startTime ?? '');
+		const end = Date.parse(leg.endTime ?? '');
+		const seconds = typeof leg.duration === 'number' && Number.isFinite(leg.duration) && leg.duration >= 0
+			? leg.duration
+			: Number.isFinite(start) && Number.isFinite(end) && end >= start
+				? (end - start) / 1000
+				: null;
+		const meters = walkingLegDistanceMeters(leg);
+		const previous = displayed.at(-1);
+		if (previous && isWalkingLeg(previous.leg.mode)) {
+			previous.walkingSeconds = previous.walkingSeconds !== null && seconds !== null
+				? previous.walkingSeconds + seconds : null;
+			previous.walkingMeters = previous.walkingMeters !== null && meters !== null
+				? previous.walkingMeters + meters : null;
+		} else {
+			displayed.push({ leg, sourceIndex, walkingSeconds: seconds, walkingMeters: meters });
+		}
+	}
+	return displayed;
+}
+
 /** Collapse consecutive walking legs in the card, without modifying map leg geometries. */
 export function itineraryDisplaySegments(itinerary: EdelweissItinerary): ItinerarySegment[] {
 	const displayed: ItinerarySegment[] = [];
@@ -398,12 +441,15 @@ export function normalizePlan(value: unknown): EdelweissItinerary[] {
 		...(Array.isArray(plan.itineraries) ? plan.itineraries : []),
 		...(Array.isArray(plan.direct) ? plan.direct : [])
 	];
+	// Edelweiss owns journey Pareto selection and search-direction ordering.
+	// Do not mix direct routes into its transit itinerary ordering.
+	// The backend's transit list comes first; direct alternatives follow,
+	// preserving each collection's original order.
 	return source.filter((item): item is EdelweissItinerary =>
 		!!item && typeof item.startTime === 'string' &&
 		typeof item.endTime === 'string' &&
 		!Number.isNaN(Date.parse(item.startTime)) &&
-		!Number.isNaN(Date.parse(item.endTime)) && Array.isArray(item.legs))
-		.sort((a, b) => Date.parse(a.startTime) - Date.parse(b.startTime));
+		!Number.isNaN(Date.parse(item.endTime)) && Array.isArray(item.legs));
 }
 
 export async function queryEdelweiss(

@@ -1,6 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import polyline from '@mapbox/polyline';
-import { itinerarySegments, itineraryDisplaySegments, allocateTimelinePercentages, itineraryTimeMarkers, itineraryTimeRow, formatWalkSegment, formatJourneyDuration, routeBadgeKind, legCoordinates, normalizePlan, routeColor, transitIcon, legTransitIcon, routeLabel, resolveDepartureUnixSeconds, queryEdelweiss, type EdelweissItinerary } from './edelweiss';
+import {
+    itinerarySegments,
+    itineraryDetailLegs,
+    itineraryDisplaySegments,
+    allocateTimelinePercentages,
+    itineraryTimeMarkers,
+    itineraryTimeRow,
+    formatWalkSegment,
+    formatJourneyDuration,
+    routeBadgeKind,
+    legCoordinates,
+    normalizePlan,
+    routeColor,
+    transitIcon,
+    legTransitIcon,
+    routeLabel,
+    resolveDepartureUnixSeconds,
+    queryEdelweiss,
+    type EdelweissItinerary
+} from './edelweiss';
+
 import { itineraryGeoJson, itineraryStopGeoJson } from './mapRoutes';
 
 const itinerary: EdelweissItinerary = {
@@ -126,6 +146,42 @@ describe('Edelweiss geometry and itinerary presentation', () => {
 			{time:itinerary.endTime, transit:false}
 		]);
 	});
+	it('groups consecutive walking legs only on the details screen', () => {
+		const start = '2026-10-23T17:00:00Z';
+		const journey: EdelweissItinerary = { startTime: start, endTime: '2026-10-23T17:30:00Z', legs: [
+			{ mode: 'WALK', duration: 120, startTime: start, endTime: '2026-10-23T17:02:00Z',
+				legGeometry: { points: polyline.encode([[34, -118], [34, -117.999]], 6), precision: 6 } },
+			{ mode: 'FOOT', duration: 180, startTime: '2026-10-23T17:02:00Z', endTime: '2026-10-23T17:05:00Z',
+				legGeometry: { points: polyline.encode([[34, -117.999], [34, -117.997]], 6), precision: 6 } },
+			{ mode: 'BUS', duration: 900 },
+			{ mode: 'WALK', duration: 75 },
+			{ mode: 'WALK', duration: 45 }
+		]};
+		const details = itineraryDetailLegs(journey);
+		expect(details.map(item => item.sourceIndex)).toEqual([0, 2, 3]);
+		expect(details.map(item => item.leg.mode)).toEqual(['WALK', 'BUS', 'WALK']);
+		expect(details[0].walkingSeconds).toBe(300);
+		expect(details[0].walkingMeters).toBeGreaterThan(200);
+		expect(details[2].walkingSeconds).toBe(120);
+		expect(details[2].walkingMeters).toBeNull();
+		expect(details[0].leg).toBe(journey.legs[0]);
+		expect(journey.legs).toHaveLength(5);
+		expect(itinerarySegments(journey)).toHaveLength(5);
+	});
+	it('does not invent walking duration or distance when a constituent value is missing', () => {
+		const journey: EdelweissItinerary = { ...itinerary, legs: [
+			{ mode: 'WALK', duration: 90 },
+			{ mode: 'WALK' },
+			{ mode: 'TRAIN', duration: 600 },
+			{ mode: 'WALK', startTime: '2026-10-23T17:20:00Z', endTime: '2026-10-23T17:21:30Z' }
+		]};
+		const details = itineraryDetailLegs(journey);
+		expect(details.map(item => item.sourceIndex)).toEqual([0, 2, 3]);
+		expect(details[0].walkingSeconds).toBeNull();
+		expect(details[0].walkingMeters).toBeNull();
+		expect(details[2].walkingSeconds).toBe(90);
+		expect(itineraryDetailLegs({ ...journey, legs: [] })).toEqual([]);
+	});
 	it('combines consecutive walking legs for cards, not map geometry', () => {
 		const merged = { ...itinerary, legs: [
 			{mode:'WALK',duration:180}, {mode:'FOOT',duration:300},
@@ -209,9 +265,14 @@ describe('Edelweiss geometry and itinerary presentation', () => {
 	it('rejects invalid CSS colors from upstream', () => {
 		expect(routeColor('red; background:url(x)')).toBe('#087b8b');
 	});
-	it('keeps both direct and transit itineraries in departure order', () => {
-		const items = normalizePlan({itineraries:[itinerary],direct:[{...itinerary,startTime:'2026-10-23T16:00:00Z'}]});
-		expect(items).toHaveLength(2);
-		expect(items[0].startTime).toBe('2026-10-23T16:00:00Z');
+	it('preserves backend transit ordering and keeps direct journeys after transit', () => {
+		const later = {...itinerary,startTime:'2026-10-23T18:00:00Z'};
+		const earlier = {...itinerary,startTime:'2026-10-23T16:00:00Z'};
+		const direct = {...itinerary,startTime:'2026-10-23T15:00:00Z'};
+		const items = normalizePlan({itineraries:[later, earlier],direct:[direct]});
+		expect(items).toHaveLength(3);
+		expect(items.map(it => it.startTime)).toEqual([
+			later.startTime, earlier.startTime, direct.startTime
+		]);
 	});
 });
