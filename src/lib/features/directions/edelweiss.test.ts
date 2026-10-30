@@ -18,6 +18,14 @@ import {
     routeLabel,
     resolveDepartureUnixSeconds,
     queryEdelweiss,
+    streetRoutingRequest,
+    walkingPaceToMetersPerSecond,
+    cyclingKmhToMetersPerSecond,
+    formatWalkingPace,
+    walkingPaceToKilometresPerHour,
+    walkingPaceToSliderPosition,
+    walkingSliderPositionToPace,
+    isStreetLeg,
     type EdelweissItinerary
 } from './edelweiss';
 
@@ -38,6 +46,72 @@ describe('Edelweiss geometry and itinerary presentation', () => {
 	it('uses a fresh now timestamp or the exact selected departure time', () => {
 		expect(resolveDepartureUnixSeconds(1_790_000_000, true, 1_800_000_010.9)).toBe(1_800_000_010);
 		expect(resolveDepartureUnixSeconds(1_790_000_000.8, false, 1_800_000_010)).toBe(1_790_000_000);
+	});
+
+	it('converts walking/running pace and cycling speed without unit errors', () => {
+		expect(walkingPaceToMetersPerSecond(600)).toBeCloseTo(1000 / 600, 8);
+		expect(cyclingKmhToMetersPerSecond(18)).toBeCloseTo(5, 8);
+		expect(formatWalkingPace(345)).toBe('5:45 min/km');
+		expect(formatWalkingPace(840)).toBe('14:00 min/km');
+		expect(walkingPaceToKilometresPerHour(600)).toBeCloseTo(6, 8);
+		expect(walkingPaceToKilometresPerHour(840)).toBeCloseTo(3600 / 840, 8);
+		expect(() => walkingPaceToMetersPerSecond(0)).toThrow(RangeError);
+	});
+
+	it('uses increasing walking slider values for faster walking speeds', () => {
+		const slowPace = walkingSliderPositionToPace(240);
+		const fastPace = walkingSliderPositionToPace(1200);
+		expect(slowPace).toBe(1200); // 20:00 min/km, 3 km/h
+		expect(fastPace).toBe(240); // 4:00 min/km, 15 km/h
+		expect(walkingPaceToKilometresPerHour(fastPace))
+			.toBeGreaterThan(walkingPaceToKilometresPerHour(slowPace));
+		expect(walkingPaceToSliderPosition(840)).toBe(600);
+		for (const pace of [240, 600, 840, 1200]) {
+			expect(walkingSliderPositionToPace(walkingPaceToSliderPosition(pace))).toBe(pace);
+		}
+	});
+
+	it('serializes walking and cycling mode and SI speed for both transit ends', () => {
+		expect(streetRoutingRequest({
+			mode: 'WALK', walkingPaceSecondsPerKm: 600, cyclingSpeedKmH: 18
+		})).toMatchObject({
+			preTransitModes: ['WALK'], postTransitModes: ['WALK'],
+			pedestrianSpeed: 1000 / 600, cyclingSpeed: 5,
+			maxPreTransitTime: 900, maxPostTransitTime: 900
+		});
+		expect(streetRoutingRequest({
+			mode: 'BIKE', walkingPaceSecondsPerKm: 600, cyclingSpeedKmH: 18
+		})).toMatchObject({
+			preTransitModes: ['BIKE'], postTransitModes: ['BIKE'],
+			pedestrianSpeed: 1000 / 600, cyclingSpeed: 5,
+			maxPreTransitTime: 1800, maxPostTransitTime: 1800
+		});
+		expect(isStreetLeg('BIKE')).toBe(true);
+		expect(isStreetLeg('WALK')).toBe(true);
+		expect(isStreetLeg('BUS')).toBe(false);
+	});
+
+	it('passes walking/cycling speed preferences through the API request', async () => {
+		let payload: Record<string, unknown> | undefined;
+		const oldFetch = globalThis.fetch;
+		globalThis.fetch = (async (_url, init) => {
+			payload = JSON.parse(String(init?.body));
+			return new Response(JSON.stringify({itineraries: [], direct: []}), {status: 200});
+		}) as typeof fetch;
+		try {
+			await queryEdelweiss(
+				{lat:34,lon:-118}, {lat:34.1,lon:-118.1},
+				1800000000, new AbortController().signal, false,
+				{mode:'BIKE',walkingPaceSecondsPerKm:480,cyclingSpeedKmH:21.6}
+			);
+			expect(payload).toMatchObject({
+				preTransitModes:['BIKE'], postTransitModes:['BIKE'],
+				pedestrianSpeed:1000 / 480, cyclingSpeed:6,
+				maxPreTransitTime:1800, maxPostTransitTime:1800
+			});
+		} finally {
+			globalThis.fetch = oldFetch;
+		}
 	});
 
 	it('sends an exclusive departure or arrival time field according to the mode', async () => {

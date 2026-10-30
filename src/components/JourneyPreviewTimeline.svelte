@@ -36,11 +36,11 @@
 				<div class="mt-3 w-full max-w-full" use:measureTimeline aria-label="Journey segments">
 					<div class="flex w-full min-w-0 items-start overflow-hidden">
 						{#each segments as segment, segmentIndex}
-							<div class="min-w-0 shrink-0 overflow-visible" style:width={`${widths[segmentIndex]}%`} role="group" aria-label={segment.transfer ? 'Transfer' : segment.walking ? `Walk ${formatWalkSegment(segment)}` : segment.routeName ? `${segment.mode} ${segment.routeName}` : segment.mode}>
+							<div class="min-w-0 shrink-0 overflow-visible" style:width={`${widths[segmentIndex]}%`} role="group" aria-label={segment.transfer ? 'Transfer' : segment.walking ? `${segment.mode === 'BIKE' ? 'Cycle' : 'Walk'} ${formatWalkSegment(segment)}` : segment.routeName ? `${segment.mode} ${segment.routeName}` : segment.mode}>
 								<div class="flex h-6 w-full min-w-0 items-center gap-1">
 									{#if !segment.transfer}
 										{#if segment.walking}
-											<span class="material-symbols-outlined shrink-0 text-black dark:text-white" style:font-size="18px" aria-hidden="true">directions_walk</span>
+											<span class="material-symbols-outlined shrink-0 text-black dark:text-white" style:font-size="18px" aria-hidden="true">{segment.mode === 'BIKE' ? 'directions_bike' : 'directions_walk'}</span>
 										{:else}
 											<span class="sbb-mode-icon shrink-0 bg-black dark:bg-white" class:sbb-bus={segment.icon === 'bus'} class:sbb-metro={segment.icon === 'metro'} class:sbb-tram={segment.icon === 'tram'} class:sbb-train={segment.icon === 'train' || !segment.icon} aria-hidden="true"></span>
 										{/if}

@@ -5,7 +5,7 @@
 	import { get } from 'svelte/store';
 	import { data_stack_store, geolocation_store, map_pointer_store } from '$root/globalstores';
 	import { TripPlannerStack } from '$components/stackenum';
-	import { queryEdelweiss, resolveDepartureUnixSeconds, type EdelweissItinerary, isValidPoint } from '$lib/features/directions/edelweiss';
+	import { queryEdelweiss, resolveDepartureUnixSeconds, type EdelweissItinerary, isValidPoint, DEFAULT_STREET_ROUTING_SETTINGS, formatWalkingPace, walkingPaceToKilometresPerHour, walkingPaceToSliderPosition, walkingSliderPositionToPace, WALKING_PACE_MIN_SECONDS_PER_KM, WALKING_PACE_MAX_SECONDS_PER_KM, type StreetMode } from '$lib/features/directions/edelweiss';
 	import DatePicker from '$components/DatePicker.svelte';
 	import TripItineraryDetails from '$components/TripItineraryDetails.svelte';
 	import JourneyPreviewTimeline from '$components/JourneyPreviewTimeline.svelte';
@@ -43,6 +43,29 @@
 	let departure = Math.floor(Date.now() / 1000);
 	let departNow = true;
 	let timeMode: 'depart' | 'arrive' = 'depart';
+	let streetMode: StreetMode = DEFAULT_STREET_ROUTING_SETTINGS.mode;
+	let walkingPace = DEFAULT_STREET_ROUTING_SETTINGS.walkingPaceSecondsPerKm;
+	let cyclingSpeed = DEFAULT_STREET_ROUTING_SETTINGS.cyclingSpeedKmH;
+	let speedChangeDebounce: ReturnType<typeof setTimeout> | null = null;
+	function selectStreetMode(mode: StreetMode): void {
+		if (streetMode === mode) return;
+		streetMode = mode;
+		void routeSelectedCoordinates();
+	}
+	function onSpeedInput(): void {
+		if (speedChangeDebounce !== null) clearTimeout(speedChangeDebounce);
+		speedChangeDebounce = setTimeout(() => {
+			speedChangeDebounce = null;
+			void routeSelectedCoordinates();
+		}, 300);
+	}
+	function onSpeedCommit(): void {
+		if (speedChangeDebounce !== null) {
+			clearTimeout(speedChangeDebounce);
+			speedChangeDebounce = null;
+		}
+		void routeSelectedCoordinates();
+	}
 	const stackData = get(data_stack_store).at(-1)?.data;
 	if (stackData instanceof TripPlannerStack) {
 		timeMode = stackData.timeMode === 'arrive' ? 'arrive' : 'depart';
@@ -184,7 +207,7 @@
 		routeController = current;
 		routingLoading = true;
 		try {
-			const found = await queryEdelweiss(originSelection, destinationSelection, resolveDepartureUnixSeconds(departure, departNow), current.signal, timeMode === 'arrive');
+			const found = await queryEdelweiss(originSelection, destinationSelection, resolveDepartureUnixSeconds(departure, departNow), current.signal, timeMode === 'arrive', { mode: streetMode, walkingPaceSecondsPerKm: walkingPace, cyclingSpeedKmH: cyclingSpeed });
 			if (current.signal.aborted || id !== routeRequestId) return;
 			routes = found;
 			activeItineraries.set(found);
@@ -388,6 +411,7 @@
 	}
 
 	onDestroy(() => {
+		if (speedChangeDebounce !== null) clearTimeout(speedChangeDebounce);
 		clearRoutes();
 		requestId++;
 		cancelSearch();
@@ -503,6 +527,54 @@
 			timezone="Local Time"
 			on:change={onDepartureChange}
 		/>
+	</div>
+	<div class="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800/60" aria-label="First and last mile travel settings">
+		<div class="mb-2 flex items-center justify-between gap-2">
+			<h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100">To and from transit</h3>
+			<span class="text-xs text-gray-500 dark:text-gray-400">First &amp; last mile</span>
+		</div>
+		<div class="relative grid grid-cols-2 rounded-full bg-gray-200 p-1 dark:bg-gray-700" role="group" aria-label="Walking or cycling">
+			<div class="pointer-events-none absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-full bg-white shadow-sm transition-transform duration-200 ease-out dark:bg-gray-600" class:translate-x-full={streetMode === 'BIKE'} aria-hidden="true"></div>
+			<button type="button" class="relative z-10 inline-flex items-center justify-center gap-1.5 rounded-full px-2 py-2 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700" class:text-gray-900={streetMode === 'WALK'} class:dark:text-white={streetMode === 'WALK'} class:text-gray-500={streetMode !== 'WALK'} aria-pressed={streetMode === 'WALK'} on:click={() => selectStreetMode('WALK')}>
+				<span class="material-symbols-outlined text-xl" aria-hidden="true">directions_walk</span>Walk / run
+			</button>
+			<button type="button" class="relative z-10 inline-flex items-center justify-center gap-1.5 rounded-full px-2 py-2 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700" class:text-gray-900={streetMode === 'BIKE'} class:dark:text-white={streetMode === 'BIKE'} class:text-gray-500={streetMode !== 'BIKE'} aria-pressed={streetMode === 'BIKE'} on:click={() => selectStreetMode('BIKE')}>
+				<span class="material-symbols-outlined text-xl" aria-hidden="true">directions_bike</span>Cycle
+			</button>
+		</div>
+		<div class="mt-3 flex items-center justify-between gap-3">
+			<label for="street-speed" class="text-sm font-medium text-gray-700 dark:text-gray-200">{streetMode === 'WALK' ? 'Walking / running pace' : 'Cycling speed'}</label>
+			{#if streetMode === 'WALK'}
+				<output for="street-speed" class="flex shrink-0 flex-col items-end text-sm font-semibold tabular-nums text-cyan-800 dark:text-cyan-300">
+					<span>{formatWalkingPace(walkingPace)}</span>
+					<span class="text-xs font-medium text-gray-500 dark:text-gray-400">{walkingPaceToKilometresPerHour(walkingPace).toFixed(1)} km/h</span>
+				</output>
+			{:else}
+				<output for="street-speed" class="text-sm font-semibold tabular-nums text-cyan-800 dark:text-cyan-300">{cyclingSpeed.toFixed(1)} km/h</output>
+			{/if}
+		</div>
+		{#if streetMode === 'WALK'}
+			<input
+				id="street-speed"
+				class="mt-2 w-full accent-cyan-700 dark:accent-cyan-400"
+				type="range"
+				min={WALKING_PACE_MIN_SECONDS_PER_KM}
+				max={WALKING_PACE_MAX_SECONDS_PER_KM}
+				step="15"
+				value={walkingPaceToSliderPosition(walkingPace)}
+				on:input={(event) => {
+					walkingPace = walkingSliderPositionToPace(Number(event.currentTarget.value));
+					onSpeedInput();
+				}}
+				on:change={onSpeedCommit}
+				aria-label="Walking or running speed, slower on the left and faster on the right"
+			/>
+			<div class="flex justify-between text-xs text-gray-500 dark:text-gray-400"><span>20:00 min/km · slower</span><span>4:00 min/km · faster</span></div>
+		{:else}
+			<input id="street-speed" class="mt-2 w-full accent-cyan-700 dark:accent-cyan-400" type="range" min="5" max="45" step="0.5" bind:value={cyclingSpeed} on:input={onSpeedInput} on:change={onSpeedCommit} aria-label="Cycling speed in kilometres per hour" />
+			<div class="flex justify-between text-xs text-gray-500 dark:text-gray-400"><span>5 km/h · slower</span><span>45 km/h · faster</span></div>
+		{/if}
+		<p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Applies to both ends of a public transit trip. Walking transfers between vehicles remain on foot.</p>
 	</div>
 	<div class="mt-5 flex flex-col gap-3 pb-8" aria-label="Available routes">
 		{#if routingLoading}<p role="status" class="text-sm text-gray-500">Finding routes…</p>{/if}

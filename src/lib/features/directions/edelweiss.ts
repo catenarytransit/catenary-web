@@ -67,6 +67,75 @@ export interface EdelweissPlan {
 
 export type TransitIcon = 'bus' | 'metro' | 'train' | 'tram' | 'ferry' | null;
 
+export type StreetMode = 'WALK' | 'BIKE';
+
+export interface StreetRoutingSettings {
+	/** Apply the selected access mode to both the first and last mile. */
+	mode: StreetMode;
+	/** Walking/running pace in seconds per kilometre. */
+	walkingPaceSecondsPerKm: number;
+	/** Cycling speed in kilometres per hour. */
+	cyclingSpeedKmH: number;
+}
+
+export const DEFAULT_STREET_ROUTING_SETTINGS: Readonly<StreetRoutingSettings> = {
+	mode: 'WALK',
+	walkingPaceSecondsPerKm: 840,
+	cyclingSpeedKmH: 15
+};
+
+/** Convert a walking/running pace to the SI units expected by Edelweiss. */
+export function walkingPaceToMetersPerSecond(secondsPerKm: number): number {
+	if (!Number.isFinite(secondsPerKm) || secondsPerKm <= 0) throw new RangeError('Invalid walking pace');
+	return 1000 / secondsPerKm;
+}
+
+/** Convert cycling speed from km/h to the SI units expected by Edelweiss. */
+export function cyclingKmhToMetersPerSecond(kmPerHour: number): number {
+	if (!Number.isFinite(kmPerHour) || kmPerHour <= 0) throw new RangeError('Invalid cycling speed');
+	return kmPerHour / 3.6;
+}
+
+export function formatWalkingPace(secondsPerKm: number): string {
+	const seconds = Math.round(secondsPerKm);
+	return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')} min/km`;
+}
+
+/** Walking/running speed derived from pace, for the supplementary km/h label. */
+export function walkingPaceToKilometresPerHour(secondsPerKm: number): number {
+	return walkingPaceToMetersPerSecond(secondsPerKm) * 3.6;
+}
+
+export const WALKING_PACE_MIN_SECONDS_PER_KM = 240;
+export const WALKING_PACE_MAX_SECONDS_PER_KM = 1200;
+
+/**
+ * UI slider position increases from slow to fast, while seconds/km decreases.
+ * These functions are symmetric, so the backend continues receiving the exact
+ * seconds/km pace and the slider always has right = higher speed.
+ */
+export function walkingPaceToSliderPosition(secondsPerKm: number): number {
+	return WALKING_PACE_MIN_SECONDS_PER_KM + WALKING_PACE_MAX_SECONDS_PER_KM - secondsPerKm;
+}
+
+export function walkingSliderPositionToPace(position: number): number {
+	return WALKING_PACE_MIN_SECONDS_PER_KM + WALKING_PACE_MAX_SECONDS_PER_KM - position;
+}
+
+/** Keep the street budget explicit and matched to the selected mode. */
+export function streetRoutingRequest(settings: StreetRoutingSettings) {
+	const budget = settings.mode === 'BIKE' ? 1800 : 900;
+	return {
+		preTransitModes: [settings.mode],
+		postTransitModes: [settings.mode],
+		pedestrianSpeed: walkingPaceToMetersPerSecond(settings.walkingPaceSecondsPerKm),
+		cyclingSpeed: cyclingKmhToMetersPerSecond(settings.cyclingSpeedKmH),
+		maxPreTransitTime: budget,
+		maxPostTransitTime: budget
+	};
+}
+
+
 export interface ItinerarySegment {
 	mode: string;
 	color: string;
@@ -118,14 +187,14 @@ export function itineraryTimeRow(itinerary: EdelweissItinerary): ItineraryTimeIt
 /** Show access/egress times only for journeys starting with a walk. */
 export function itineraryTimeMarkers(itinerary: EdelweissItinerary): ItineraryTimeMarker[] {
 	const firstLeg = itinerary.legs[0];
-	const startsWithWalk = !!firstLeg && isWalkingLeg(firstLeg.mode);
+	const startsWithWalk = !!firstLeg && isStreetLeg(firstLeg.mode);
 	const defaultMarkers = [
 		{ time: itinerary.startTime, transit: !startsWithWalk },
 		{ time: itinerary.endTime, transit: !startsWithWalk }
 	];
 	if (!startsWithWalk) return defaultMarkers;
 
-	const transitIndices = itinerary.legs.flatMap((leg, index) => isWalkingLeg(leg.mode) ? [] : [index]);
+	const transitIndices = itinerary.legs.flatMap((leg, index) => isStreetLeg(leg.mode) ? [] : [index]);
 	if (!transitIndices.length) return defaultMarkers;
 	const firstIndex = transitIndices[0];
 	const lastIndex = transitIndices[transitIndices.length - 1];
@@ -141,7 +210,7 @@ export function itineraryTimeMarkers(itinerary: EdelweissItinerary): ItineraryTi
 	add(itinerary.startTime, false);
 	add(transitStart, true);
 	add(transitEnd, true);
-	if (isWalkingLeg(itinerary.legs[itinerary.legs.length - 1].mode)) add(itinerary.endTime, false);
+	if (isStreetLeg(itinerary.legs[itinerary.legs.length - 1].mode)) add(itinerary.endTime, false);
 	return markers;
 }
 
@@ -198,6 +267,11 @@ export function isValidPoint(p: Coordinate | null | undefined): p is Coordinate 
 
 export function isWalkingLeg(mode: string): boolean {
 	return ['WALK', 'FOOT', 'PEDESTRIAN'].includes(mode.toUpperCase());
+}
+
+/** Cycling and walking are street legs, not transit boardings. */
+export function isStreetLeg(mode: string): boolean {
+	return isWalkingLeg(mode) || mode.toUpperCase() === 'BIKE';
 }
 
 export function routeColor(value: unknown): string {
@@ -270,7 +344,7 @@ export function routeTextColor(raw: unknown, background: string): string {
 
 /** Haversine length of actual detailed walking geometry. Point count is not distance. */
 export function walkingLegDistanceMeters(leg: EdelweissLeg): number | null {
-	if (!isWalkingLeg(leg.mode) || !leg.legGeometry?.points) return null;
+	if (!isStreetLeg(leg.mode) || !leg.legGeometry?.points) return null;
 	// Disable the straight-line fallback; no path means no reliable walking length.
 	const points = legCoordinates({ ...leg, from: null, to: null });
 	if (points.length < 2) return null;
@@ -299,18 +373,18 @@ function legDurationSeconds(leg: EdelweissLeg): number {
 }
 
 export function itinerarySegments(itinerary: EdelweissItinerary): ItinerarySegment[] {
-	const transitIndices = itinerary.legs.flatMap((leg, index) => isWalkingLeg(leg.mode) ? [] : [index]);
+	const transitIndices = itinerary.legs.flatMap((leg, index) => isStreetLeg(leg.mode) ? [] : [index]);
 	const firstTransit = transitIndices[0] ?? -1;
 	const lastTransit = transitIndices.at(-1) ?? -1;
 	return itinerary.legs.map((leg, index) => ({
 		mode: leg.mode,
-		walking: isWalkingLeg(leg.mode),
+		walking: isStreetLeg(leg.mode),
 		transfer: isWalkingLeg(leg.mode) && firstTransit >= 0 && index > firstTransit && index < lastTransit,
-		color: isWalkingLeg(leg.mode) ? '#64748b' : routeColor(leg.routeColor),
+		color: isStreetLeg(leg.mode) ? '#64748b' : routeColor(leg.routeColor),
 		routeName: routeLabel(leg),
 		textColor: routeTextColor(leg.routeTextColor, routeColor(leg.routeColor)),
 		badgeKind: routeBadgeKind(leg),
-		icon: isWalkingLeg(leg.mode) ? null : legTransitIcon(leg),
+		icon: isStreetLeg(leg.mode) ? null : legTransitIcon(leg),
 		duration: legDurationSeconds(leg),
 		coordinates: legCoordinates(leg),
 		distanceMeters: walkingLegDistanceMeters(leg)
@@ -324,7 +398,7 @@ export function itinerarySegments(itinerary: EdelweissItinerary): ItinerarySegme
 export function itineraryDetailLegs(itinerary: EdelweissItinerary): ItineraryDetailLeg[] {
 	const displayed: ItineraryDetailLeg[] = [];
 	for (const [sourceIndex, leg] of itinerary.legs.entries()) {
-		if (!isWalkingLeg(leg.mode)) {
+		if (!isStreetLeg(leg.mode)) {
 			displayed.push({ leg, sourceIndex, walkingSeconds: null, walkingMeters: null });
 			continue;
 		}
@@ -337,7 +411,7 @@ export function itineraryDetailLegs(itinerary: EdelweissItinerary): ItineraryDet
 				: null;
 		const meters = walkingLegDistanceMeters(leg);
 		const previous = displayed.at(-1);
-		if (previous && isWalkingLeg(previous.leg.mode)) {
+		if (previous && isStreetLeg(previous.leg.mode) && previous.leg.mode.toUpperCase() === leg.mode.toUpperCase()) {
 			previous.walkingSeconds = previous.walkingSeconds !== null && seconds !== null
 				? previous.walkingSeconds + seconds : null;
 			previous.walkingMeters = previous.walkingMeters !== null && meters !== null
@@ -354,7 +428,7 @@ export function itineraryDisplaySegments(itinerary: EdelweissItinerary): Itinera
 	const displayed: ItinerarySegment[] = [];
 	for (const segment of itinerarySegments(itinerary)) {
 		const previous = displayed.at(-1);
-		if (segment.walking && previous?.walking && segment.transfer === previous.transfer) {
+		if (segment.walking && previous?.walking && segment.mode.toUpperCase() === previous.mode.toUpperCase() && segment.transfer === previous.transfer) {
 			previous.duration += segment.duration;
 			previous.distanceMeters = previous.distanceMeters !== null && segment.distanceMeters !== null
 				? previous.distanceMeters + segment.distanceMeters : null;
@@ -457,7 +531,8 @@ export async function queryEdelweiss(
 	destination: Coordinate,
 	timeUnixSeconds: number,
 	signal: AbortSignal,
-	arriveBy = false
+	arriveBy = false,
+	streetSettings: StreetRoutingSettings = DEFAULT_STREET_ROUTING_SETTINGS
 ): Promise<EdelweissItinerary[]> {
 	if (!isValidPoint(origin) || !isValidPoint(destination)) {
 		throw new Error('Select valid starting and finishing locations');
@@ -469,6 +544,7 @@ export async function queryEdelweiss(
 			from: { lat: origin.lat, lon: origin.lon },
 			to: { lat: destination.lat, lon: destination.lon },
 			...(arriveBy ? { arrival_unix_seconds: Math.floor(timeUnixSeconds) } : { departure_unix_seconds: Math.floor(timeUnixSeconds) }),
+			...streetRoutingRequest(streetSettings),
 			detailed_legs: true
 		}),
 		signal

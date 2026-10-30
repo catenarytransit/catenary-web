@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import JourneyPreviewTimeline from '$components/JourneyPreviewTimeline.svelte';
 	import {
-		formatJourneyTime, isWalkingLeg, itinerarySegments, itineraryDetailLegs,
+		formatJourneyTime, isStreetLeg, itinerarySegments, itineraryDetailLegs,
 		routeLabel,
 		type EdelweissItinerary, type EdelweissLeg, type EdelweissIntermediateStop
 	} from '$lib/features/directions/edelweiss';
@@ -96,12 +96,12 @@
 		{#each detailLegs as detail (detail.sourceIndex)}
 			{@const leg = detail.leg}
 			{@const index = detail.sourceIndex}
-			{#if isWalkingLeg(leg.mode)}
+			{#if isStreetLeg(leg.mode)}
 				<div class="rounded-xl border border-gray-400 bg-transparent px-4 py-3 text-gray-800 dark:border-gray-600 dark:text-white" aria-label="Walking connection">
 					<div class="connection-row">
 						<span class="text-right text-sm font-semibold tabular-nums">{walkingMinutes(detail.walkingSeconds)}</span>
 						<span class="pearl-rail walk-rail" aria-hidden="true"></span>
-						<span class="min-w-0 text-left text-sm font-medium">Walk: {walkingDistance(detail.walkingMeters)}</span>
+						<span class="min-w-0 text-left text-sm font-medium">{leg.mode.toUpperCase() === 'BIKE' ? 'Cycle' : 'Walk'}: {walkingDistance(detail.walkingMeters)}</span>
 						<span></span>
 					</div>
 				</div>
