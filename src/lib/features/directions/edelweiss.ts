@@ -565,9 +565,9 @@ export function formatWalkSegment(segment: ItinerarySegment): string {
 	if (distance === null || !Number.isFinite(distance)) return `${minutes}'`;
 	if (distance >= 1000) {
 		const kilometers = Math.round(distance / 100) / 10;
-		return `${minutes}' - ${kilometers}km`;
+		return `${minutes}'`;
 	}
-	return `${minutes}' - ${Math.round(distance / 10) * 10}m`;
+	return `${minutes}'`;
 }
 
 export function formatJourneyDuration(itinerary: EdelweissItinerary): string {
