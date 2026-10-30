@@ -5,7 +5,7 @@
 	import { get } from 'svelte/store';
 	import { data_stack_store, geolocation_store, map_pointer_store } from '$root/globalstores';
 	import { TripPlannerStack } from '$components/stackenum';
-	import { queryEdelweiss, resolveDepartureUnixSeconds, type EdelweissItinerary, isValidPoint, DEFAULT_STREET_ROUTING_SETTINGS, formatWalkingPace, walkingPaceToKilometresPerHour, walkingPaceToSliderPosition, walkingSliderPositionToPace, WALKING_PACE_MIN_SECONDS_PER_KM, WALKING_PACE_MAX_SECONDS_PER_KM, type StreetMode } from '$lib/features/directions/edelweiss';
+	import { queryEdelweiss, resolveDepartureUnixSeconds, type EdelweissItinerary, isValidPoint, DEFAULT_STREET_ROUTING_SETTINGS, DEFAULT_DIRECT_TRAVEL_TIME_SECONDS, defaultTransitAccessTimeSeconds, formatWalkingPace, walkingPaceToKilometresPerHour, walkingPaceToSliderPosition, walkingSliderPositionToPace, WALKING_PACE_MIN_SECONDS_PER_KM, WALKING_PACE_MAX_SECONDS_PER_KM, type StreetMode } from '$lib/features/directions/edelweiss';
 	import DatePicker from '$components/DatePicker.svelte';
 	import TripItineraryDetails from '$components/TripItineraryDetails.svelte';
 	import JourneyPreviewTimeline from '$components/JourneyPreviewTimeline.svelte';
@@ -46,6 +46,21 @@
 	let streetMode: StreetMode = DEFAULT_STREET_ROUTING_SETTINGS.mode;
 	let walkingPace = DEFAULT_STREET_ROUTING_SETTINGS.walkingPaceSecondsPerKm;
 	let cyclingSpeed = DEFAULT_STREET_ROUTING_SETTINGS.cyclingSpeedKmH;
+	let travelOptionsExpanded = false;
+	// Null means the mode-specific 15-minute walking / 30-minute cycling default.
+	let maxPreTransitMinutesOverride: number | null = null;
+	let maxPostTransitMinutesOverride: number | null = null;
+	let maxDirectMinutes = DEFAULT_DIRECT_TRAVEL_TIME_SECONDS / 60;
+	$: defaultTransitMinutes = defaultTransitAccessTimeSeconds(streetMode) / 60;
+	$: maxPreTransitMinutes = maxPreTransitMinutesOverride ?? defaultTransitMinutes;
+	$: maxPostTransitMinutes = maxPostTransitMinutesOverride ?? defaultTransitMinutes;
+	$: travelOptionsCustomized =
+		streetMode !== DEFAULT_STREET_ROUTING_SETTINGS.mode ||
+		walkingPace !== DEFAULT_STREET_ROUTING_SETTINGS.walkingPaceSecondsPerKm ||
+		cyclingSpeed !== DEFAULT_STREET_ROUTING_SETTINGS.cyclingSpeedKmH ||
+		maxPreTransitMinutes !== defaultTransitMinutes ||
+		maxPostTransitMinutes !== defaultTransitMinutes ||
+		maxDirectMinutes !== DEFAULT_DIRECT_TRAVEL_TIME_SECONDS / 60;
 	let speedChangeDebounce: ReturnType<typeof setTimeout> | null = null;
 	function selectStreetMode(mode: StreetMode): void {
 		if (streetMode === mode) return;
@@ -207,7 +222,14 @@
 		routeController = current;
 		routingLoading = true;
 		try {
-			const found = await queryEdelweiss(originSelection, destinationSelection, resolveDepartureUnixSeconds(departure, departNow), current.signal, timeMode === 'arrive', { mode: streetMode, walkingPaceSecondsPerKm: walkingPace, cyclingSpeedKmH: cyclingSpeed });
+			const found = await queryEdelweiss(originSelection, destinationSelection, resolveDepartureUnixSeconds(departure, departNow), current.signal, timeMode === 'arrive', {
+				mode: streetMode,
+				walkingPaceSecondsPerKm: walkingPace,
+				cyclingSpeedKmH: cyclingSpeed,
+				maxPreTransitTimeSeconds: maxPreTransitMinutes * 60,
+				maxPostTransitTimeSeconds: maxPostTransitMinutes * 60,
+				maxDirectTimeSeconds: maxDirectMinutes * 60
+			});
 			if (current.signal.aborted || id !== routeRequestId) return;
 			routes = found;
 			activeItineraries.set(found);
@@ -528,53 +550,104 @@
 			on:change={onDepartureChange}
 		/>
 	</div>
-	<div class="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800/60" aria-label="First and last mile travel settings">
-		<div class="mb-2 flex items-center justify-between gap-2">
-			<h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100">To and from transit</h3>
-			<span class="text-xs text-gray-500 dark:text-gray-400">First &amp; last mile</span>
-		</div>
-		<div class="relative grid grid-cols-2 rounded-full bg-gray-200 p-1 dark:bg-gray-700" role="group" aria-label="Walking or cycling">
-			<div class="pointer-events-none absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-full bg-white shadow-sm transition-transform duration-200 ease-out dark:bg-gray-600" class:translate-x-full={streetMode === 'BIKE'} aria-hidden="true"></div>
-			<button type="button" class="relative z-10 inline-flex items-center justify-center gap-1.5 rounded-full px-2 py-2 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700" class:text-gray-900={streetMode === 'WALK'} class:dark:text-white={streetMode === 'WALK'} class:text-gray-500={streetMode !== 'WALK'} aria-pressed={streetMode === 'WALK'} on:click={() => selectStreetMode('WALK')}>
-				<span class="material-symbols-outlined text-xl" aria-hidden="true">directions_walk</span>Walk / run
-			</button>
-			<button type="button" class="relative z-10 inline-flex items-center justify-center gap-1.5 rounded-full px-2 py-2 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700" class:text-gray-900={streetMode === 'BIKE'} class:dark:text-white={streetMode === 'BIKE'} class:text-gray-500={streetMode !== 'BIKE'} aria-pressed={streetMode === 'BIKE'} on:click={() => selectStreetMode('BIKE')}>
-				<span class="material-symbols-outlined text-xl" aria-hidden="true">directions_bike</span>Cycle
-			</button>
-		</div>
-		<div class="mt-3 flex items-center justify-between gap-3">
-			<label for="street-speed" class="text-sm font-medium text-gray-700 dark:text-gray-200">{streetMode === 'WALK' ? 'Walking / running pace' : 'Cycling speed'}</label>
-			{#if streetMode === 'WALK'}
-				<output for="street-speed" class="flex shrink-0 flex-col items-end text-sm font-semibold tabular-nums text-cyan-800 dark:text-cyan-300">
-					<span>{formatWalkingPace(walkingPace)}</span>
-					<span class="text-xs font-medium text-gray-500 dark:text-gray-400">{walkingPaceToKilometresPerHour(walkingPace).toFixed(1)} km/h</span>
-				</output>
-			{:else}
-				<output for="street-speed" class="text-sm font-semibold tabular-nums text-cyan-800 dark:text-cyan-300">{cyclingSpeed.toFixed(1)} km/h</output>
-			{/if}
-		</div>
-		{#if streetMode === 'WALK'}
-			<input
-				id="street-speed"
-				class="mt-2 w-full accent-cyan-700 dark:accent-cyan-400"
-				type="range"
-				min={WALKING_PACE_MIN_SECONDS_PER_KM}
-				max={WALKING_PACE_MAX_SECONDS_PER_KM}
-				step="15"
-				value={walkingPaceToSliderPosition(walkingPace)}
-				on:input={(event) => {
-					walkingPace = walkingSliderPositionToPace(Number(event.currentTarget.value));
-					onSpeedInput();
-				}}
-				on:change={onSpeedCommit}
-				aria-label="Walking or running speed, slower on the left and faster on the right"
-			/>
-			<div class="flex justify-between text-xs text-gray-500 dark:text-gray-400"><span>20:00 min/km · slower</span><span>4:00 min/km · faster</span></div>
-		{:else}
-			<input id="street-speed" class="mt-2 w-full accent-cyan-700 dark:accent-cyan-400" type="range" min="5" max="45" step="0.5" bind:value={cyclingSpeed} on:input={onSpeedInput} on:change={onSpeedCommit} aria-label="Cycling speed in kilometres per hour" />
-			<div class="flex justify-between text-xs text-gray-500 dark:text-gray-400"><span>5 km/h · slower</span><span>45 km/h · faster</span></div>
+	<!-- Compact, unobtrusive entry point immediately below the date/time picker. -->
+	<div class="mt-3">
+		<button
+			type="button"
+			on:click={() => (travelOptionsExpanded = !travelOptionsExpanded)}
+			aria-expanded={travelOptionsExpanded}
+			aria-controls="routing-travel-options"
+			class="flex w-full items-center gap-2 rounded-xl border border-gray-200 bg-transparent px-3 py-2 text-left transition-colors hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700 dark:border-gray-700 dark:hover:bg-gray-800"
+		>
+			<span class="inline-flex shrink-0 items-center gap-1" aria-hidden="true">
+				<span class="inline-flex items-center -space-x-1" class:text-cyan-700={streetMode === 'WALK'} class:dark:text-cyan-300={streetMode === 'WALK'} class:font-semibold={streetMode === 'WALK'} class:text-gray-400={streetMode !== 'WALK'}>
+					<span class="material-symbols-outlined text-lg">directions_walk</span>
+					<span class="material-symbols-outlined text-lg">directions_run</span>
+				</span>
+				<span class="text-xs text-gray-400">/</span>
+				<span class="material-symbols-outlined text-lg" class:text-cyan-700={streetMode === 'BIKE'} class:dark:text-cyan-300={streetMode === 'BIKE'} class:text-gray-400={streetMode !== 'BIKE'}>directions_bike</span>
+			</span>
+			<span class="relative min-w-0 text-sm font-medium text-gray-700 dark:text-gray-200">
+				Speed &amp; distance options
+				{#if travelOptionsCustomized}<span class="absolute -right-2 -top-1 h-1.5 w-1.5 rounded-full bg-blue-500" aria-hidden="true"></span>{/if}
+			</span>
+			<span class="material-symbols-outlined ml-auto text-lg text-gray-500 dark:text-gray-400" aria-hidden="true">{travelOptionsExpanded ? 'expand_less' : 'expand_more'}</span>
+		</button>
+		{#if travelOptionsExpanded}
+			<div id="routing-travel-options" transition:slide={{ duration: 180 }} class="mt-2 rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800/60" aria-label="Travel speed and distance options">
+				<div class="mb-3 flex items-center justify-between gap-2">
+					<h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100">Travel options</h3>
+					<button type="button" on:click={() => (travelOptionsExpanded = false)} aria-label="Collapse travel options" title="Collapse travel options" class="flex h-7 w-7 items-center justify-center rounded-full text-gray-500 hover:bg-gray-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-700 dark:text-gray-300 dark:hover:bg-gray-700">
+						<span class="material-symbols-outlined text-lg" aria-hidden="true">keyboard_arrow_up</span>
+					</button>
+				</div>
+				<div class="relative grid grid-cols-2 rounded-full bg-gray-200 p-1 dark:bg-gray-700" role="group" aria-label="Walking or cycling">
+					<div class="pointer-events-none absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-full bg-white shadow-sm transition-transform duration-200 ease-out dark:bg-gray-600" class:translate-x-full={streetMode === 'BIKE'} aria-hidden="true"></div>
+					<button type="button" class="relative z-10 inline-flex items-center justify-center gap-1 rounded-full px-2 py-2 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700" class:text-gray-900={streetMode === 'WALK'} class:dark:text-white={streetMode === 'WALK'} class:text-gray-500={streetMode !== 'WALK'} aria-pressed={streetMode === 'WALK'} on:click={() => selectStreetMode('WALK')}>
+						<span class="material-symbols-outlined text-xl" aria-hidden="true">directions_walk</span><span class="material-symbols-outlined text-xl" aria-hidden="true">directions_run</span>Walk / run
+					</button>
+					<button type="button" class="relative z-10 inline-flex items-center justify-center gap-1.5 rounded-full px-2 py-2 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700" class:text-gray-900={streetMode === 'BIKE'} class:dark:text-white={streetMode === 'BIKE'} class:text-gray-500={streetMode !== 'BIKE'} aria-pressed={streetMode === 'BIKE'} on:click={() => selectStreetMode('BIKE')}>
+						<span class="material-symbols-outlined text-xl" aria-hidden="true">directions_bike</span>Cycle
+					</button>
+				</div>
+				<div class="mt-3 flex items-center justify-between gap-3">
+					<label for="street-speed" class="text-sm font-medium text-gray-700 dark:text-gray-200">{streetMode === 'WALK' ? 'Walking / running pace' : 'Cycling speed'}</label>
+					{#if streetMode === 'WALK'}
+						<output for="street-speed" class="flex shrink-0 flex-col items-end text-sm font-semibold tabular-nums text-cyan-800 dark:text-cyan-300">
+							<span>{formatWalkingPace(walkingPace)}</span>
+							<span class="text-xs font-medium text-gray-500 dark:text-gray-400">{walkingPaceToKilometresPerHour(walkingPace).toFixed(1)} km/h</span>
+						</output>
+					{:else}
+						<output for="street-speed" class="text-sm font-semibold tabular-nums text-cyan-800 dark:text-cyan-300">{cyclingSpeed.toFixed(1)} km/h</output>
+					{/if}
+				</div>
+				{#if streetMode === 'WALK'}
+					<input
+						id="street-speed"
+						class="mt-2 w-full accent-cyan-700 dark:accent-cyan-400"
+						type="range"
+						min={WALKING_PACE_MIN_SECONDS_PER_KM}
+						max={WALKING_PACE_MAX_SECONDS_PER_KM}
+						step="15"
+						value={walkingPaceToSliderPosition(walkingPace)}
+						on:input={(event) => {
+							walkingPace = walkingSliderPositionToPace(Number(event.currentTarget.value));
+							onSpeedInput();
+						}}
+						on:change={onSpeedCommit}
+						aria-label="Walking or running speed, slower on the left and faster on the right"
+					/>
+					<div class="flex justify-between text-xs text-gray-500 dark:text-gray-400"><span>20:00 min/km · slower</span><span>4:00 min/km · faster</span></div>
+				{:else}
+					<input id="street-speed" class="mt-2 w-full accent-cyan-700 dark:accent-cyan-400" type="range" min="5" max="45" step="0.5" bind:value={cyclingSpeed} on:input={onSpeedInput} on:change={onSpeedCommit} aria-label="Cycling speed in kilometres per hour" />
+					<div class="flex justify-between text-xs text-gray-500 dark:text-gray-400"><span>5 km/h · slower</span><span>45 km/h · faster</span></div>
+				{/if}
+				<div class="mt-4 space-y-3 border-t border-gray-200 pt-3 dark:border-gray-700">
+					<div>
+						<div class="flex items-center justify-between gap-2">
+							<label for="routing-access-time" class="text-sm font-medium text-gray-700 dark:text-gray-200">Maximum time to reach transit</label>
+							<output for="routing-access-time" class="shrink-0 text-sm font-semibold tabular-nums text-cyan-800 dark:text-cyan-300">{maxPreTransitMinutes} min</output>
+						</div>
+						<input id="routing-access-time" type="range" min="1" max="60" step="1" value={maxPreTransitMinutes} on:input={(event) => { maxPreTransitMinutesOverride = Number(event.currentTarget.value); onSpeedInput(); }} on:change={onSpeedCommit} class="mt-1 w-full accent-cyan-700 dark:accent-cyan-400" aria-label="Maximum minutes before boarding transit" />
+					</div>
+					<div>
+						<div class="flex items-center justify-between gap-2">
+							<label for="routing-egress-time" class="text-sm font-medium text-gray-700 dark:text-gray-200">Maximum time after transit</label>
+							<output for="routing-egress-time" class="shrink-0 text-sm font-semibold tabular-nums text-cyan-800 dark:text-cyan-300">{maxPostTransitMinutes} min</output>
+						</div>
+						<input id="routing-egress-time" type="range" min="1" max="60" step="1" value={maxPostTransitMinutes} on:input={(event) => { maxPostTransitMinutesOverride = Number(event.currentTarget.value); onSpeedInput(); }} on:change={onSpeedCommit} class="mt-1 w-full accent-cyan-700 dark:accent-cyan-400" aria-label="Maximum minutes after alighting from transit" />
+					</div>
+					<div>
+						<div class="flex items-center justify-between gap-2">
+							<label for="routing-direct-time" class="text-sm font-medium text-gray-700 dark:text-gray-200">Maximum direct {streetMode === 'BIKE' ? 'cycling' : 'walking'} time</label>
+							<output for="routing-direct-time" class="shrink-0 text-sm font-semibold tabular-nums text-cyan-800 dark:text-cyan-300">{maxDirectMinutes} min</output>
+						</div>
+						<input id="routing-direct-time" type="range" min="1" max="60" step="1" bind:value={maxDirectMinutes} on:input={onSpeedInput} on:change={onSpeedCommit} class="mt-1 w-full accent-cyan-700 dark:accent-cyan-400" aria-label="Maximum minutes for a direct walk or cycle without transit" />
+					</div>
+				</div>
+				<p class="mt-3 text-xs text-gray-500 dark:text-gray-400">Limits apply to the selected travel mode. Transfers between transit vehicles remain on foot.</p>
+			</div>
 		{/if}
-		<p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Applies to both ends of a public transit trip. Walking transfers between vehicles remain on foot.</p>
 	</div>
 	<div class="mt-5 flex flex-col gap-3 pb-8" aria-label="Available routes">
 		{#if routingLoading}<p role="status" class="text-sm text-gray-500">Finding routes…</p>{/if}
