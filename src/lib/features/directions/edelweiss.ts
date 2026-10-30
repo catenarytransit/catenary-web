@@ -101,6 +101,27 @@ export function formatWalkingPace(secondsPerKm: number): string {
 	return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')} min/km`;
 }
 
+/** Walking/running speed derived from pace, for the supplementary km/h label. */
+export function walkingPaceToKilometresPerHour(secondsPerKm: number): number {
+	return walkingPaceToMetersPerSecond(secondsPerKm) * 3.6;
+}
+
+export const WALKING_PACE_MIN_SECONDS_PER_KM = 240;
+export const WALKING_PACE_MAX_SECONDS_PER_KM = 1200;
+
+/**
+ * UI slider position increases from slow to fast, while seconds/km decreases.
+ * These functions are symmetric, so the backend continues receiving the exact
+ * seconds/km pace and the slider always has right = higher speed.
+ */
+export function walkingPaceToSliderPosition(secondsPerKm: number): number {
+	return WALKING_PACE_MIN_SECONDS_PER_KM + WALKING_PACE_MAX_SECONDS_PER_KM - secondsPerKm;
+}
+
+export function walkingSliderPositionToPace(position: number): number {
+	return WALKING_PACE_MIN_SECONDS_PER_KM + WALKING_PACE_MAX_SECONDS_PER_KM - position;
+}
+
 /** Keep the street budget explicit and matched to the selected mode. */
 export function streetRoutingRequest(settings: StreetRoutingSettings) {
 	const budget = settings.mode === 'BIKE' ? 1800 : 900;
