@@ -27,13 +27,13 @@
 	<div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-2" aria-label="Journey times">
 		<div class="flex min-w-0 items-baseline justify-start gap-x-2.5 sm:gap-x-3">
 			{#each timeGroups.departure as marker}
-				<time datetime={marker.time} class="shrink-0 whitespace-nowrap" class:font-bold={marker.transit} class:font-normal={!marker.transit} class:text-sm={marker.transit} class:text-xs={!marker.transit} class:text-gray-600={!marker.transit} class:dark:text-gray-300={!marker.transit}>{formatJourneyTime(marker.time)}</time>
+				<time datetime={marker.time} class={`shrink-0 whitespace-nowrap ${marker.transit ? 'text-sm font-bold' : 'text-xs font-normal text-gray-600 dark:text-gray-300'}`}>{formatJourneyTime(marker.time)}</time>
 			{/each}
 		</div>
 		<span class="shrink-0 whitespace-nowrap text-center text-xs font-medium text-gray-600 dark:text-gray-300">{formatJourneyDuration(itinerary)}</span>
 		<div class="flex min-w-0 items-baseline justify-end gap-x-2.5 sm:gap-x-3">
 			{#each timeGroups.arrival as marker}
-				<time datetime={marker.time} class="shrink-0 whitespace-nowrap" class:font-bold={marker.transit} class:font-normal={!marker.transit} class:text-sm={marker.transit} class:text-xs={!marker.transit} class:text-gray-600={!marker.transit} class:dark:text-gray-300={!marker.transit}>{formatJourneyTime(marker.time)}</time>
+				<time datetime={marker.time} class={`shrink-0 whitespace-nowrap ${marker.transit ? 'text-sm font-bold' : 'text-xs font-normal text-gray-600 dark:text-gray-300'}`}>{formatJourneyTime(marker.time)}</time>
 			{/each}
 		</div>
 	</div>
