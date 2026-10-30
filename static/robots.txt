@@ -42,5 +42,26 @@ User-agent: Kangaroo Bot
 User-agent: Crawlspace
 Disallow: /
 
+# Exclude major legitimate search engines from synthetic transit decoy.
+User-agent: Googlebot
+User-agent: Googlebot-Image
+User-agent: Googlebot-News
+User-agent: GoogleOther
+User-agent: Google-InspectionTool
+User-agent: AdsBot-Google
+User-agent: bingbot
+User-agent: BingPreview
+User-agent: DuckDuckBot
+User-agent: Slurp
+User-agent: Applebot
+User-agent: YandexBot
+User-agent: Baiduspider
+User-agent: PetalBot
+User-agent: MojeekBot
+User-agent: SeznamBot
+User-agent: Qwantify
+User-agent: Bravebot
+Disallow: /seau-de-sirop-derable-data-index/
+
 User-agent: *
 Disallow: /cdn-cgi/
