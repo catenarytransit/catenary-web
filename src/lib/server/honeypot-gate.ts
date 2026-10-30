@@ -2,6 +2,8 @@
 // Fail closed unless trusted edge metadata positively identifies suspicious automation.
 // We use UA only as an additional opt-out for legitimate search engines, never
 // as positive proof that a request is automated.
+import { claimsGoogleCrawler, type GoogleDnsVerification } from './google-crawler-dns';
+
 export type BotSignals = {
 	botManagement?: {
 		score?: number;
@@ -15,9 +17,13 @@ const SEARCH_ENGINE_UA =
 
 export function shouldExposeHoneypotLinks(
 	signals: BotSignals | undefined,
-	userAgent: string | null
+	userAgent: string | null,
+	googleDnsVerification?: GoogleDnsVerification
 ): boolean {
-	if (SEARCH_ENGINE_UA.test(userAgent ?? '')) return false;
+	if (claimsGoogleCrawler(userAgent)) {
+		// Verified Google traffic is excluded. DNS errors fail closed.
+		if (googleDnsVerification !== 'unverified') return false;
+	} else if (SEARCH_ENGINE_UA.test(userAgent ?? '')) return false;
 
 	const bot = signals?.botManagement;
 	if (!bot || bot.verifiedBot !== false) return false;
