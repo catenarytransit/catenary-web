@@ -1,7 +1,7 @@
 import { writable } from 'svelte/store';
 import type { FeatureCollection, LineString, Point } from 'geojson';
 import type { Map, GeoJSONSource } from 'maplibre-gl';
-import { isValidPoint, isWalkingLeg, itinerarySegments, type EdelweissItinerary } from './edelweiss';
+import { isValidPoint, isStreetLeg, itinerarySegments, type EdelweissItinerary } from './edelweiss';
 
 export const activeItineraries = writable<EdelweissItinerary[]>([]);
 export const activeItineraryIndex = writable(0);
@@ -34,7 +34,7 @@ const emptyStops = (): StopFeatures => ({ type: 'FeatureCollection', features: [
 export function itineraryStopGeoJson(itinerary: EdelweissItinerary | undefined): StopFeatures {
 	const features: StopFeatures['features'] = [];
 	if (!itinerary) return emptyStops();
-	const transit = itinerary.legs.filter((leg) => !isWalkingLeg(leg.mode));
+	const transit = itinerary.legs.filter((leg) => !isStreetLeg(leg.mode));
 	const seen = new Set<string>();
 	for (let i = 1; i < transit.length; i++) {
 		// Both sides of an interchange can be distinct stops when walking is required.
