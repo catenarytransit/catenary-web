@@ -6,6 +6,7 @@ import {
     itineraryDisplaySegments,
     allocateTimelinePercentages,
     itineraryTimeMarkers,
+    itineraryPreviewTimeGroups,
     itineraryTimeRow,
     formatWalkSegment,
     formatJourneyDuration,
@@ -220,6 +221,50 @@ describe('Edelweiss geometry and itinerary presentation', () => {
 			{time:timed.startTime, transit:false}, {time:timed.endTime, transit:false}
 		]);
 	});
+	it('groups access and egress times around a standalone duration', () => {
+		const trip: EdelweissItinerary = {
+			startTime:'2026-10-23T17:00:00Z', endTime:'2026-10-23T17:30:00Z',
+			legs:[
+				{mode:'WALK',endTime:'2026-10-23T17:05:00Z'},
+				{mode:'BUS',startTime:'2026-10-23T17:05:00Z',endTime:'2026-10-23T17:25:00Z'},
+				{mode:'WALK',startTime:'2026-10-23T17:25:00Z'}
+			]
+		};
+		expect(itineraryPreviewTimeGroups(trip)).toEqual({
+			departure:[{time:trip.startTime,transit:false},{time:trip.legs[1].startTime,transit:true}],
+			arrival:[{time:trip.legs[1].endTime,transit:true},{time:trip.endTime,transit:false}]
+		});
+		const transitFirst = {...trip, legs:trip.legs.slice(1)};
+		expect(itineraryPreviewTimeGroups(transitFirst)).toEqual({
+			departure:[{time:trip.startTime,transit:true}],
+			arrival:[{time:trip.legs[1].endTime,transit:true},{time:trip.endTime,transit:false}]
+		});
+	});
+
+	it('uses only bold endpoints when access and egress walks are shorter than 25m', () => {
+		const shortPath = polyline.encode([[34,-118],[34,-117.9999]],6);
+		const trip: EdelweissItinerary = {
+			startTime:'2026-10-23T17:00:00Z', endTime:'2026-10-23T17:30:00Z',
+			legs:[
+				{mode:'WALK',legGeometry:{points:shortPath,precision:6}},
+				{mode:'RAIL',startTime:'2026-10-23T17:01:00Z',endTime:'2026-10-23T17:29:00Z'},
+				{mode:'WALK',legGeometry:{points:shortPath,precision:6}}
+			]
+		};
+		expect(itineraryPreviewTimeGroups(trip)).toEqual({
+			departure:[{time:trip.startTime,transit:true}],
+			arrival:[{time:trip.endTime,transit:true}]
+		});
+		const noGeometry = {...trip, legs:[{mode:'WALK'},trip.legs[1],{mode:'WALK'}]};
+		expect(itineraryPreviewTimeGroups(noGeometry).departure).toHaveLength(2);
+		expect(itineraryPreviewTimeGroups(noGeometry).arrival).toHaveLength(2);
+		const directWalk = {...trip,legs:[{mode:'WALK'}]};
+		expect(itineraryPreviewTimeGroups(directWalk)).toEqual({
+			departure:[{time:trip.startTime,transit:false}],
+			arrival:[{time:trip.endTime,transit:false}]
+		});
+	});
+
 	it('does not invent unknown boarding times', () => {
 		const times = itineraryTimeMarkers({...itinerary, legs: [
 			{mode:'WALK'}, {mode:'BUS', endTime:'2026-10-23T17:25:00Z'}, {mode:'WALK'}
