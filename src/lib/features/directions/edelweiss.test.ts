@@ -22,6 +22,9 @@ import {
     walkingPaceToMetersPerSecond,
     cyclingKmhToMetersPerSecond,
     formatWalkingPace,
+    walkingPaceToKilometresPerHour,
+    walkingPaceToSliderPosition,
+    walkingSliderPositionToPace,
     isStreetLeg,
     type EdelweissItinerary
 } from './edelweiss';
@@ -50,7 +53,22 @@ describe('Edelweiss geometry and itinerary presentation', () => {
 		expect(cyclingKmhToMetersPerSecond(18)).toBeCloseTo(5, 8);
 		expect(formatWalkingPace(345)).toBe('5:45 min/km');
 		expect(formatWalkingPace(840)).toBe('14:00 min/km');
+		expect(walkingPaceToKilometresPerHour(600)).toBeCloseTo(6, 8);
+		expect(walkingPaceToKilometresPerHour(840)).toBeCloseTo(3600 / 840, 8);
 		expect(() => walkingPaceToMetersPerSecond(0)).toThrow(RangeError);
+	});
+
+	it('uses increasing walking slider values for faster walking speeds', () => {
+		const slowPace = walkingSliderPositionToPace(240);
+		const fastPace = walkingSliderPositionToPace(1200);
+		expect(slowPace).toBe(1200); // 20:00 min/km, 3 km/h
+		expect(fastPace).toBe(240); // 4:00 min/km, 15 km/h
+		expect(walkingPaceToKilometresPerHour(fastPace))
+			.toBeGreaterThan(walkingPaceToKilometresPerHour(slowPace));
+		expect(walkingPaceToSliderPosition(840)).toBe(600);
+		for (const pace of [240, 600, 840, 1200]) {
+			expect(walkingSliderPositionToPace(walkingPaceToSliderPosition(pace))).toBe(pace);
+		}
 	});
 
 	it('serializes walking and cycling mode and SI speed for both transit ends', () => {
