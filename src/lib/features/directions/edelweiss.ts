@@ -70,19 +70,32 @@ export type TransitIcon = 'bus' | 'metro' | 'train' | 'tram' | 'ferry' | null;
 export type StreetMode = 'WALK' | 'BIKE';
 
 export interface StreetRoutingSettings {
-	/** Apply the selected access mode to both the first and last mile. */
+	/** Apply the selected access mode to both the origin and destination. */
 	mode: StreetMode;
 	/** Walking/running pace in seconds per kilometre. */
 	walkingPaceSecondsPerKm: number;
 	/** Cycling speed in kilometres per hour. */
 	cyclingSpeedKmH: number;
+	/** Maximum time allowed before boarding, in seconds. */
+	maxPreTransitTimeSeconds?: number;
+	/** Maximum time allowed after alighting, in seconds. */
+	maxPostTransitTimeSeconds?: number;
+	/** Maximum time for a direct walk or cycle, in seconds. Requires Edelweiss maxDirectTime support. */
+	maxDirectTimeSeconds?: number;
 }
 
 export const DEFAULT_STREET_ROUTING_SETTINGS: Readonly<StreetRoutingSettings> = {
 	mode: 'WALK',
 	walkingPaceSecondsPerKm: 840,
-	cyclingSpeedKmH: 15
+	cyclingSpeedKmH: 16
 };
+
+export const DEFAULT_DIRECT_TRAVEL_TIME_SECONDS = 1800;
+
+/** Cycling permits longer access and egress than walking by default. */
+export function defaultTransitAccessTimeSeconds(mode: StreetMode): number {
+	return mode === 'BIKE' ? 1800 : 900;
+}
 
 /** Convert a walking/running pace to the SI units expected by Edelweiss. */
 export function walkingPaceToMetersPerSecond(secondsPerKm: number): number {
@@ -122,16 +135,17 @@ export function walkingSliderPositionToPace(position: number): number {
 	return WALKING_PACE_MIN_SECONDS_PER_KM + WALKING_PACE_MAX_SECONDS_PER_KM - position;
 }
 
-/** Keep the street budget explicit and matched to the selected mode. */
+/** Express all limits in seconds, the units accepted by Edelweiss. */
 export function streetRoutingRequest(settings: StreetRoutingSettings) {
-	const budget = settings.mode === 'BIKE' ? 1800 : 900;
+	const budget = defaultTransitAccessTimeSeconds(settings.mode);
 	return {
 		preTransitModes: [settings.mode],
 		postTransitModes: [settings.mode],
 		pedestrianSpeed: walkingPaceToMetersPerSecond(settings.walkingPaceSecondsPerKm),
 		cyclingSpeed: cyclingKmhToMetersPerSecond(settings.cyclingSpeedKmH),
-		maxPreTransitTime: budget,
-		maxPostTransitTime: budget
+		maxPreTransitTime: settings.maxPreTransitTimeSeconds ?? budget,
+		maxPostTransitTime: settings.maxPostTransitTimeSeconds ?? budget,
+		maxDirectTime: settings.maxDirectTimeSeconds ?? DEFAULT_DIRECT_TRAVEL_TIME_SECONDS
 	};
 }
 
