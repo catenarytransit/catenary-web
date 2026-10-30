@@ -19,6 +19,7 @@ import {
     resolveDepartureUnixSeconds,
     queryEdelweiss,
     streetRoutingRequest,
+    DEFAULT_STREET_ROUTING_SETTINGS,
     walkingPaceToMetersPerSecond,
     cyclingKmhToMetersPerSecond,
     formatWalkingPace,
@@ -77,14 +78,23 @@ describe('Edelweiss geometry and itinerary presentation', () => {
 		})).toMatchObject({
 			preTransitModes: ['WALK'], postTransitModes: ['WALK'],
 			pedestrianSpeed: 1000 / 600, cyclingSpeed: 5,
-			maxPreTransitTime: 900, maxPostTransitTime: 900
+			maxPreTransitTime: 900, maxPostTransitTime: 900, maxDirectTime: 1800
 		});
 		expect(streetRoutingRequest({
 			mode: 'BIKE', walkingPaceSecondsPerKm: 600, cyclingSpeedKmH: 18
 		})).toMatchObject({
 			preTransitModes: ['BIKE'], postTransitModes: ['BIKE'],
 			pedestrianSpeed: 1000 / 600, cyclingSpeed: 5,
-			maxPreTransitTime: 1800, maxPostTransitTime: 1800
+			maxPreTransitTime: 1800, maxPostTransitTime: 1800, maxDirectTime: 1800
+		});
+		expect(DEFAULT_STREET_ROUTING_SETTINGS.cyclingSpeedKmH).toBe(16);
+		expect(streetRoutingRequest({
+			mode: 'BIKE', walkingPaceSecondsPerKm: 840, cyclingSpeedKmH: 16,
+			maxPreTransitTimeSeconds: 600, maxPostTransitTimeSeconds: 1200,
+			maxDirectTimeSeconds: 2400
+		})).toMatchObject({
+			maxPreTransitTime: 600, maxPostTransitTime: 1200, maxDirectTime: 2400,
+			cyclingSpeed: 16 / 3.6
 		});
 		expect(isStreetLeg('BIKE')).toBe(true);
 		expect(isStreetLeg('WALK')).toBe(true);
@@ -102,12 +112,12 @@ describe('Edelweiss geometry and itinerary presentation', () => {
 			await queryEdelweiss(
 				{lat:34,lon:-118}, {lat:34.1,lon:-118.1},
 				1800000000, new AbortController().signal, false,
-				{mode:'BIKE',walkingPaceSecondsPerKm:480,cyclingSpeedKmH:21.6}
+				{mode:'BIKE',walkingPaceSecondsPerKm:480,cyclingSpeedKmH:21.6,maxPreTransitTimeSeconds:720,maxPostTransitTimeSeconds:1320,maxDirectTimeSeconds:1800}
 			);
 			expect(payload).toMatchObject({
 				preTransitModes:['BIKE'], postTransitModes:['BIKE'],
 				pedestrianSpeed:1000 / 480, cyclingSpeed:6,
-				maxPreTransitTime:1800, maxPostTransitTime:1800
+				maxPreTransitTime:720, maxPostTransitTime:1320, maxDirectTime:1800
 			});
 		} finally {
 			globalThis.fetch = oldFetch;
