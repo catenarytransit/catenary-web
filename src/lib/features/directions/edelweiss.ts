@@ -198,6 +198,63 @@ export function itineraryTimeRow(itinerary: EdelweissItinerary): ItineraryTimeIt
 	return items;
 }
 
+export interface ItineraryPreviewTimeGroups {
+	departure: ItineraryTimeMarker[];
+	arrival: ItineraryTimeMarker[];
+}
+
+/**
+ * Match the preview's 25-metre access/egress cutoff. Unknown lengths must
+ * remain visible: we cannot infer a negligible walk from missing geometry.
+ */
+function isAtTransitStop(streetLegs: EdelweissLeg[]): boolean {
+	if (!streetLegs.length) return true;
+	let distanceMeters = 0;
+	for (const leg of streetLegs) {
+		const meters = walkingLegDistanceMeters(leg);
+		if (meters === null || !Number.isFinite(meters)) return false;
+		distanceMeters += meters;
+	}
+	return distanceMeters < 25;
+}
+
+/** Return compact, independently grouped departure and arrival timeline times. */
+export function itineraryPreviewTimeGroups(itinerary: EdelweissItinerary): ItineraryPreviewTimeGroups {
+	const firstTransit = itinerary.legs.findIndex(leg => !isStreetLeg(leg.mode));
+	if (firstTransit < 0) {
+		return {
+			departure: [{ time: itinerary.startTime, transit: false }],
+			arrival: [{ time: itinerary.endTime, transit: false }]
+		};
+	}
+	const lastTransit = itinerary.legs.findLastIndex(leg => !isStreetLeg(leg.mode));
+	const atOriginStop = isAtTransitStop(itinerary.legs.slice(0, firstTransit));
+	const atDestinationStop = isAtTransitStop(itinerary.legs.slice(lastTransit + 1));
+	const boarding = itinerary.legs[firstTransit].startTime ?? itinerary.legs[firstTransit - 1]?.endTime;
+	const alighting = itinerary.legs[lastTransit].endTime ?? itinerary.legs[lastTransit + 1]?.startTime ??
+		(lastTransit === itinerary.legs.length - 1 ? itinerary.endTime : undefined);
+	const isValidTime = (time: string | undefined): time is string =>
+		!!time && Number.isFinite(Date.parse(time));
+	const sameInstant = (a: string, b: string): boolean => Date.parse(a) === Date.parse(b);
+
+	// Short access/egress: show only the actual origin/destination time in bold.
+	// Longer walks: show smaller endpoint time alongside the transit time.
+	const departure: ItineraryTimeMarker[] = [{ time: itinerary.startTime, transit: atOriginStop }];
+	if (!atOriginStop && isValidTime(boarding)) {
+		if (sameInstant(boarding, itinerary.startTime)) departure[0].transit = true;
+		else departure.push({ time: boarding, transit: true });
+	}
+	const arrival: ItineraryTimeMarker[] = [];
+	if (!atDestinationStop && isValidTime(alighting) && !sameInstant(alighting, itinerary.endTime)) {
+		arrival.push({ time: alighting, transit: true });
+	}
+	arrival.push({
+		time: itinerary.endTime,
+		transit: atDestinationStop || (isValidTime(alighting) && sameInstant(alighting, itinerary.endTime))
+	});
+	return { departure, arrival };
+}
+
 /** Show access/egress times only for journeys starting with a walk. */
 export function itineraryTimeMarkers(itinerary: EdelweissItinerary): ItineraryTimeMarker[] {
 	const firstLeg = itinerary.legs[0];
