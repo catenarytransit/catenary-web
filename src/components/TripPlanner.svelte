@@ -5,7 +5,7 @@
 	import { get } from 'svelte/store';
 	import { data_stack_store, geolocation_store, map_pointer_store } from '$root/globalstores';
 	import { TripPlannerStack } from '$components/stackenum';
-	import { queryEdelweiss, resolveDepartureUnixSeconds, type EdelweissItinerary, isValidPoint, DEFAULT_STREET_ROUTING_SETTINGS, formatWalkingPace, type StreetMode } from '$lib/features/directions/edelweiss';
+	import { queryEdelweiss, resolveDepartureUnixSeconds, type EdelweissItinerary, isValidPoint, DEFAULT_STREET_ROUTING_SETTINGS, formatWalkingPace, walkingPaceToKilometresPerHour, walkingPaceToSliderPosition, walkingSliderPositionToPace, WALKING_PACE_MIN_SECONDS_PER_KM, WALKING_PACE_MAX_SECONDS_PER_KM, type StreetMode } from '$lib/features/directions/edelweiss';
 	import DatePicker from '$components/DatePicker.svelte';
 	import TripItineraryDetails from '$components/TripItineraryDetails.svelte';
 	import JourneyPreviewTimeline from '$components/JourneyPreviewTimeline.svelte';
@@ -542,13 +542,34 @@
 				<span class="material-symbols-outlined text-xl" aria-hidden="true">directions_bike</span>Cycle
 			</button>
 		</div>
-		<div class="mt-3 flex items-baseline justify-between">
+		<div class="mt-3 flex items-center justify-between gap-3">
 			<label for="street-speed" class="text-sm font-medium text-gray-700 dark:text-gray-200">{streetMode === 'WALK' ? 'Walking / running pace' : 'Cycling speed'}</label>
-			<output for="street-speed" class="text-sm font-semibold tabular-nums text-cyan-800 dark:text-cyan-300">{streetMode === 'WALK' ? formatWalkingPace(walkingPace) : `${cyclingSpeed.toFixed(1)} km/h`}</output>
+			{#if streetMode === 'WALK'}
+				<output for="street-speed" class="flex shrink-0 flex-col items-end text-sm font-semibold tabular-nums text-cyan-800 dark:text-cyan-300">
+					<span>{formatWalkingPace(walkingPace)}</span>
+					<span class="text-xs font-medium text-gray-500 dark:text-gray-400">{walkingPaceToKilometresPerHour(walkingPace).toFixed(1)} km/h</span>
+				</output>
+			{:else}
+				<output for="street-speed" class="text-sm font-semibold tabular-nums text-cyan-800 dark:text-cyan-300">{cyclingSpeed.toFixed(1)} km/h</output>
+			{/if}
 		</div>
 		{#if streetMode === 'WALK'}
-			<input id="street-speed" class="mt-2 w-full accent-cyan-700 dark:accent-cyan-400" type="range" min="240" max="1200" step="15" bind:value={walkingPace} on:input={onSpeedInput} on:change={onSpeedCommit} aria-label="Walking or running pace in seconds per kilometre" />
-			<div class="flex justify-between text-xs text-gray-500 dark:text-gray-400"><span>4:00 min/km · faster</span><span>20:00 min/km · slower</span></div>
+			<input
+				id="street-speed"
+				class="mt-2 w-full accent-cyan-700 dark:accent-cyan-400"
+				type="range"
+				min={WALKING_PACE_MIN_SECONDS_PER_KM}
+				max={WALKING_PACE_MAX_SECONDS_PER_KM}
+				step="15"
+				value={walkingPaceToSliderPosition(walkingPace)}
+				on:input={(event) => {
+					walkingPace = walkingSliderPositionToPace(Number(event.currentTarget.value));
+					onSpeedInput();
+				}}
+				on:change={onSpeedCommit}
+				aria-label="Walking or running speed, slower on the left and faster on the right"
+			/>
+			<div class="flex justify-between text-xs text-gray-500 dark:text-gray-400"><span>20:00 min/km · slower</span><span>4:00 min/km · faster</span></div>
 		{:else}
 			<input id="street-speed" class="mt-2 w-full accent-cyan-700 dark:accent-cyan-400" type="range" min="5" max="45" step="0.5" bind:value={cyclingSpeed} on:input={onSpeedInput} on:change={onSpeedCommit} aria-label="Cycling speed in kilometres per hour" />
 			<div class="flex justify-between text-xs text-gray-500 dark:text-gray-400"><span>5 km/h · slower</span><span>45 km/h · faster</span></div>
