@@ -27,11 +27,11 @@ export interface DebugFootpaths {
   truncated: boolean;
 }
 export async function inspectFootpaths(stop: DebugStop, signal: AbortSignal): Promise<DebugFootpaths> {
-  if (!Number.isInteger(stop.stopIndex) || (stop.stopIndex ?? -1) < 0) throw new Error('This stop has no compiled timetable index.');
+  if (stop.stopIndex !== undefined && (!Number.isInteger(stop.stopIndex) || stop.stopIndex < 0)) throw new Error('Invalid timetable stop index.');
   const response = await fetch('https://edelweiss.catenarymaps.org/v1/debug/footpaths', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ stopIndex: stop.stopIndex, lat: stop.lat, lon: stop.lon, maxEdges: 256 }),
+    body: JSON.stringify({ ...(stop.stopIndex === undefined ? {} : { stopIndex: stop.stopIndex }), lat: stop.lat, lon: stop.lon, maxEdges: 256 }),
     signal
   });
   if (!response.ok) {
