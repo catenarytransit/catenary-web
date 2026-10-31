@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { onMount, onDestroy, tick } from 'svelte';
 	import HomeButton from './SidebarParts/home_button.svelte';
+	import FootpathDebugPanel from './FootpathDebugPanel.svelte';
+	import { footpathDebugEnabled, loadFootpathDebugPreference, type DebugStop } from '$lib/features/directions/footpathDebug';
+	let debugStop: DebugStop | null = null;
 	import DirectionsActions from './DirectionsActions.svelte';
 	import { writable, get } from 'svelte/store';
 	import { timezone_to_locale } from './timezone_to_locale';
@@ -71,6 +74,7 @@
 	}
 
 	export let buildUrl: (startSec: number, endSec: number) => string;
+	onMount(() => { loadFootpathDebugPreference(); });
 	export let key: any; // Unique identifier to trigger reset (e.g. stop_id or osm_id)
 
 	// Optional display props - used as fallbacks when data_meta.primary is not available
@@ -1060,6 +1064,7 @@
 					/>
 				</p>
 			</div>
+			{#if $footpathDebugEnabled && typeof displayLat === 'number' && typeof displayLon === 'number'}<button type="button" class="rounded-lg border border-amber-600 px-2 py-1 text-xs text-amber-700 dark:text-amber-300" on:click={() => { debugStop = { name: displayName, lat: displayLat, lon: displayLon }; }}>Inspect footpaths</button>{/if}
 			<DirectionsActions name={displayName} lat={displayLat} lon={displayLon} kind={osm_id ? 'station' : 'stop'} locationKey={osm_id ? 'station:' + osm_id : 'stop:' + chateau + ':' + key} />
 			<p class="text-sm ml-1 mb-0">
 				{displayTimezone}
