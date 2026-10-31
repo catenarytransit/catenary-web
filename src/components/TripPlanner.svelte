@@ -7,6 +7,8 @@
 	import { TripPlannerStack } from '$components/stackenum';
 	import { queryEdelweiss, resolveDepartureUnixSeconds, type EdelweissItinerary, isValidPoint, DEFAULT_STREET_ROUTING_SETTINGS, DEFAULT_DIRECT_TRAVEL_TIME_SECONDS, defaultTransitAccessTimeSeconds, formatWalkingPace, walkingPaceToKilometresPerHour, walkingPaceToSliderPosition, walkingSliderPositionToPace, WALKING_PACE_MIN_SECONDS_PER_KM, WALKING_PACE_MAX_SECONDS_PER_KM, type StreetMode } from '$lib/features/directions/edelweiss';
 	import DatePicker from '$components/DatePicker.svelte';
+	import FootpathDebugPanel from '$components/FootpathDebugPanel.svelte';
+	import { footpathDebugEnabled, loadFootpathDebugPreference, type DebugStop } from '$lib/features/directions/footpathDebug';
 	import TripItineraryDetails from '$components/TripItineraryDetails.svelte';
 	import JourneyPreviewTimeline from '$components/JourneyPreviewTimeline.svelte';
 	import { activeItineraries, activeItineraryIndex, selectedTransferItineraryIndex, fitDirectionsItinerary } from '$lib/features/directions/mapRoutes';
@@ -37,6 +39,7 @@
 	let selectedRoute = 0;
 	let expandedRoute: number | null = null;
 	let detailsIndex: number | null = null;
+	let debugStop: DebugStop | null = null;
 	let originMarker: Marker | null = null;
 	let destinationMarker: Marker | null = null;
 	let markerMap: MapLibreMap | null = null;
@@ -168,6 +171,7 @@
 	}
 
 	onMount(() => {
+		loadFootpathDebugPreference();
 		const unsubscribe = map_pointer_store.subscribe(() => syncEndpointMarkers());
 		return () => {
 			unsubscribe();
@@ -209,6 +213,7 @@
 		selectedRoute = 0;
 		expandedRoute = null;
 		detailsIndex = null;
+		debugStop = null;
 		activeItineraries.set([]);
 		activeItineraryIndex.set(0);
 		selectedTransferItineraryIndex.set(null);
@@ -670,7 +675,7 @@
 	</div>
 	</div>
 	{#if detailsIndex !== null && routes[detailsIndex]}
-		<TripItineraryDetails itinerary={routes[detailsIndex]} originName={originSelection?.name || origin} destinationName={destinationSelection?.name || destination} onBack={() => { detailsIndex = null; }} />
+		<TripItineraryDetails onInspectFootpaths={(stop) => { debugStop = stop; }} itinerary={routes[detailsIndex]} originName={originSelection?.name || origin} destinationName={destinationSelection?.name || destination} onBack={() => { detailsIndex = null; }} />
 	{/if}
 </section>
 
