@@ -6,12 +6,16 @@
 		routeLabel,
 		type EdelweissItinerary, type EdelweissLeg, type EdelweissIntermediateStop
 	} from '$lib/features/directions/edelweiss';
+	import { footpathDebugEnabled, type DebugStop } from '$lib/features/directions/footpathDebug';
+	import { isValidPoint } from '$lib/features/directions/edelweiss';
 	import { connectionRailColor } from '$lib/features/directions/connectionRailColor';
 
 	export let itinerary: EdelweissItinerary;
 	export let originName: string;
 	export let destinationName: string;
 	export let onBack: () => void;
+	export let onInspectFootpaths: (stop: DebugStop) => void = () => {};
+	function inspectStop(stop: DebugStop | null | undefined): void { if (stop && isValidPoint(stop)) onInspectFootpaths(stop); }
 
 	let backButton: HTMLButtonElement;
 	let expandedStops: Record<number, boolean> = {};
@@ -111,7 +115,7 @@
 					<div class="connection-row">
 						<time class="min-w-0 text-right text-sm font-semibold tabular-nums leading-5" datetime={leg.startTime || itinerary.startTime}>{legTime(leg, 'start')}</time>
 						<span class="pearl-rail rail-first" aria-hidden="true"><span class="pearl"></span></span>
-						<span class="min-w-0 text-left text-sm font-medium leading-5">{placeName(leg, 'from', index)}</span>
+						<span class="min-w-0 text-left text-sm font-medium leading-5">{placeName(leg, 'from', index)}{#if $footpathDebugEnabled && leg.from && isValidPoint(leg.from)} <button type="button" class="ml-1 text-xs text-amber-700 underline" on:click={() => inspectStop(leg.from)}>Footpaths</button>{/if}</span>
 						<span class="min-w-0 break-words text-right text-xs text-gray-600 dark:text-gray-300">{platform(leg, 'from')}</span>
 					</div>
 
@@ -139,7 +143,7 @@
 								<div class="connection-row">
 									<span class="min-w-0 text-right text-xs tabular-nums leading-5 text-gray-500 dark:text-gray-400">{stopTime(stop)}</span>
 									<span class="pearl-rail" aria-hidden="true"><span class="pearl"></span></span>
-									<span class="min-w-0 text-left text-xs leading-5 text-gray-500 dark:text-gray-400">{stop.name}</span>
+									<span class="min-w-0 text-left text-xs leading-5 text-gray-500 dark:text-gray-400">{stop.name}{#if $footpathDebugEnabled && isValidPoint(stop)} <button type="button" class="ml-1 text-amber-700 underline" on:click={() => inspectStop(stop)}>Footpaths</button>{/if}</span>
 									<span class="min-w-0 text-right text-xs text-gray-500 dark:text-gray-400">{stop.platform || stop.platformCode || ''}</span>
 								</div>
 							{/each}
@@ -149,7 +153,7 @@
 					<div class="connection-row">
 						<time class="min-w-0 text-right text-sm font-semibold tabular-nums leading-5" datetime={leg.endTime || itinerary.endTime}>{legTime(leg, 'end')}</time>
 						<span class="pearl-rail rail-last" aria-hidden="true"><span class="pearl"></span></span>
-						<span class="min-w-0 text-left text-sm font-medium leading-5">{placeName(leg, 'to', index)}</span>
+						<span class="min-w-0 text-left text-sm font-medium leading-5">{placeName(leg, 'to', index)}{#if $footpathDebugEnabled && leg.to && isValidPoint(leg.to)} <button type="button" class="ml-1 text-xs text-amber-700 underline" on:click={() => inspectStop(leg.to)}>Footpaths</button>{/if}</span>
 						<span class="min-w-0 break-words text-right text-xs text-gray-600 dark:text-gray-300">{platform(leg, 'to')}</span>
 					</div>
 				</article>
