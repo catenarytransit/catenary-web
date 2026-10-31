@@ -53,7 +53,7 @@
     const key = `${stop.stopIndex}:${stop.lat}:${stop.lon}`;
     if (key !== previousKey) { previousKey = key; void load(stop); }
   }
-  $: if (result) redraw();
+  $: if (result && typeof incoming === 'boolean' && typeof outgoing === 'boolean') redraw();
   $: if (!$footpathDebugEnabled) onClose();
   onMount(() => {
     unsub = map_pointer_store.subscribe(changeMap);
