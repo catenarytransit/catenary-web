@@ -677,5 +677,6 @@
 	{#if detailsIndex !== null && routes[detailsIndex]}
 		<TripItineraryDetails onInspectFootpaths={(stop) => { debugStop = stop; }} itinerary={routes[detailsIndex]} originName={originSelection?.name || origin} destinationName={destinationSelection?.name || destination} onBack={() => { detailsIndex = null; }} />
 	{/if}
+	{#if $footpathDebugEnabled && debugStop}<div class="absolute bottom-3 left-3 right-3 z-40 max-h-[55%] overflow-y-auto"><FootpathDebugPanel stop={debugStop} onClose={() => { debugStop = null; }} /></div>{/if}
 </section>
 
