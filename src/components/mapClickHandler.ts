@@ -103,6 +103,14 @@ export function setup_click_handler(
 				typeof (feature.properties?.name || feature.properties?.name_en) === 'string' &&
 				(feature.properties?.name || feature.properties?.name_en).trim()
 			);
+			const gtfsStop = selectedFeatures.find((feature: any) =>
+				['busstops', 'railstops', 'otherstops', 'stops_context'].includes(feature.source) &&
+				typeof (feature.properties?.displayname || feature.properties?.label || feature.properties?.name) === 'string' &&
+				(feature.properties?.displayname || feature.properties?.label || feature.properties?.name).trim() &&
+				feature.geometry?.type === 'Point' &&
+				Array.isArray(feature.geometry.coordinates) &&
+				feature.geometry.coordinates.length >= 2
+			);
 			const osmPlace = osmStation || osmPoi;
 			const location: DirectionsLocation = osmPlace
 				? (() => {
@@ -120,14 +128,29 @@ export function setup_click_handler(
 						lon: coordinates[0]
 					};
 				})()
-				: {
-					key: 'map:coordinate:' + e.lngLat.lat + ',' + e.lngLat.lng,
-					kind: 'place',
-					name: 'Dropped pin',
-					address: '',
-					lat: e.lngLat.lat,
-					lon: e.lngLat.lng
-				};
+				: gtfsStop
+					? (() => {
+						const coordinates = gtfsStop.geometry.coordinates as number[];
+						const stopId = gtfsStop.properties?.gtfs_id ??
+							gtfsStop.properties?.stop_id ?? gtfsStop.id ??
+							coordinates[1] + ',' + coordinates[0];
+						return {
+							key: 'map:gtfs:' + gtfsStop.source + ':' + String(stopId),
+							kind: 'stop',
+							name: String(gtfsStop.properties?.displayname || gtfsStop.properties?.label || gtfsStop.properties?.name).trim(),
+							address: String(gtfsStop.properties?.stop_code || gtfsStop.properties?.code || ''),
+							lat: coordinates[1],
+							lon: coordinates[0]
+						};
+					})()
+					: {
+						key: 'map:coordinate:' + e.lngLat.lat + ',' + e.lngLat.lng,
+						kind: 'place',
+						name: 'Dropped pin',
+						address: '',
+						lat: e.lngLat.lat,
+						lon: e.lngLat.lng
+					};
 			if (dispatchDirectionsMapSelection(location)) return;
 
 			const selected_vehicles_raw = selectedFeatures.filter(
