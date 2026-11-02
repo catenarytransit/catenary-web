@@ -446,6 +446,16 @@
 	if (originSelection && destinationSelection) void routeSelectedCoordinates();
 </script>
 
+<svelte:head>
+	<link rel="preload" as="image" href="/icons/bus-right-fill-color.svg" />
+	<link rel="preload" as="image" href="/icons/metro-right-fill-color.svg" />
+	<link rel="preload" as="image" href="/icons/tram-right-fill-color.svg" />
+	<link rel="preload" as="image" href="/icons/train-right-fill-color.svg" />
+	<link rel="preload" as="image" href="/icons/sbb/SBB_IC_Logo.svg" />
+	<link rel="preload" as="image" href="/icons/sbb/SBB_IR_Logo.svg" />
+	<link rel="preload" as="image" href="/icons/sbb/SBB_EC_Logo.svg" />
+</svelte:head>
+
 <section aria-label="Directions / Trip Planner" class="relative flex h-full min-h-0 flex-col overflow-hidden">
 	<div class="min-h-0 flex-1 overflow-y-auto px-4 py-4" class:hidden={detailsIndex !== null} aria-hidden={detailsIndex !== null}>
 	<div class="mb-4 flex items-center justify-between">

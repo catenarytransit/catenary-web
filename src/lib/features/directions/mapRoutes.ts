@@ -97,7 +97,8 @@ export function raiseDirectionsLayers(map: Map): void {
 }
 
 export function refreshDirectionsSource(map: Map, itineraries: EdelweissItinerary[], selected: number, selectedTransfers: number | null = null): void {
-	if (!map.isStyleLoaded()) return;
+	// Existing GeoJSON sources can be updated while tiles or source data are loading.
+	// Waiting for isStyleLoaded() here can leave the previous journey visible on exit.
 	ensureDirectionsLayers(map);
 	(map.getSource(SOURCE) as GeoJSONSource | undefined)?.setData(itineraryGeoJson(itineraries, selected));
 	(map.getSource(STOPS_SOURCE) as GeoJSONSource | undefined)?.setData(
@@ -118,4 +119,15 @@ export function fitDirectionsItinerary(map: Map, itinerary: EdelweissItinerary):
 		padding: { top: 85, bottom: 65, left: Math.min(window.innerWidth * 0.42, 520), right: 45 },
 		maxZoom: 15, duration: 550
 	});
+}
+
+/** Clear overlays left by the stop, route, trip, and search screens on entry. */
+export function clearDirectionsContext(map: Map): void {
+	for (const id of [
+		'walking_shape_context', 'stops_context', 'transit_shape_context',
+		'transit_shape_context_for_stop', 'transit_shape_context_detour',
+		'livedots_context', 'cypress_results', 'redpin'
+	]) {
+		(map.getSource(id) as GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: [] });
+	}
 }

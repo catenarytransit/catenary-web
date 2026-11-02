@@ -132,7 +132,7 @@
 
 					{#if stops(leg).length > 0}
 						<!-- The click target spans the entire card, not just the stop-name column. -->
-						<button type="button" class="connection-row w-full rounded py-1 text-left text-xs text-gray-600 hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-600 dark:text-gray-300 dark:hover:bg-gray-700" aria-expanded={!!expandedStops[index]} aria-label={(expandedStops[index] ? 'Hide ' : 'Show ') + stops(leg).length + ' intermediate stops'} on:click={() => toggleStops(index)}>
+						<button type="button" class="connection-row w-full rounded text-left text-xs text-gray-600 hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-600 dark:text-gray-300 dark:hover:bg-gray-700" aria-expanded={!!expandedStops[index]} aria-label={(expandedStops[index] ? 'Hide ' : 'Show ') + stops(leg).length + ' intermediate stops'} on:click={() => toggleStops(index)}>
 							<span></span>
 							<span class="pearl-rail" aria-hidden="true"></span>
 							<span class="min-w-0 text-left">{stops(leg).length} {stops(leg).length === 1 ? 'stop' : 'stops'} · {Math.max(1, Math.round((leg.duration ?? ((Date.parse(leg.endTime ?? '') - Date.parse(leg.startTime ?? '')) / 1000)) / 60))} min</span>
