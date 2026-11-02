@@ -2,6 +2,8 @@
  * Directions-only location autocomplete. Keep the regular search API, ranking,
  * result previews and stores untouched. Each provider publishes independently.
  */
+import { parseCoordinateInput } from '../coordinates';
+
 export interface DirectionsSearchFocus {
 	mapLat: number;
 	mapLon: number;
@@ -228,6 +230,18 @@ export async function streamDirectionsLocations(
 	onUpdate: (locations: DirectionsLocation[]) => void
 ): Promise<void> {
 	if (!text.trim() || signal.aborted) return;
+	const coordinate = parseCoordinateInput(text);
+	if (coordinate) {
+		onUpdate([{
+			key: 'coordinate:' + coordinate.label,
+			kind: 'place',
+			name: coordinate.label,
+			address: 'Coordinate',
+			lat: coordinate.lat,
+			lon: coordinate.lon
+		}]);
+		return;
+	}
 	const hosts = ['cypress', 'cypress1', 'cypress2'];
 	const urls = buildDirectionsSearchUrls(text, focus, hosts[Math.floor(Math.random() * hosts.length)]);
 

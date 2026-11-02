@@ -1,5 +1,6 @@
 import type { GeoJSONSource, Map } from 'maplibre-gl';
 import { parseCypressOsmId } from '$lib/features/osm/osmPoiId';
+import { parseCoordinateInput } from '../coordinates';
 import { recordOsmItemVisit } from './stationHistory';
 import { rememberDirectionsLocation, searchHistoryLocation } from '$lib/features/directions/recentLocations';
 import { get, writable, type Writable } from 'svelte/store';
@@ -74,7 +75,7 @@ interface CypressFeatureCollection {
 }
 
 export interface SearchResultItem {
-	type: 'cypress' | 'route' | 'stop' | 'osm_station' | 'osm_item';
+	type: 'coordinate' | 'cypress' | 'route' | 'stop' | 'osm_station' | 'osm_item';
 	data: any;
 	chateau?: string;
 	gtfs_id?: string;
@@ -154,6 +155,11 @@ export function selectResult(item: SearchResultItem): void {
 	if (recentLocation) rememberDirectionsLocation(recentLocation);
 
 	switch (item.type) {
+		case 'coordinate': {
+			const coordinate = item.data as { lat: number; lon: number };
+			map?.flyTo({ center: [coordinate.lon, coordinate.lat], zoom: 16 });
+			break;
+		}
 		case 'cypress': {
 			const feature = item.data as CypressFeature;
 			const osm = parseCypressOsmId(feature.properties.id);
