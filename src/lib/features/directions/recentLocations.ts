@@ -52,6 +52,12 @@ export function searchHistoryLocation(item: SearchResultItem): DirectionsLocatio
 			kind: 'place', name: data.name ?? '', address: data.address ?? '',
 			lat: data.lat, lon: data.lon
 		};
+	} else if (item.type === 'coordinate') {
+		location = {
+			key: 'coordinate:' + data.label,
+			kind: 'place', name: data.label, address: 'Coordinate',
+			lat: data.lat, lon: data.lon
+		};
 	} else if (item.type === 'cypress') {
 		const coordinates = data.geometry?.coordinates;
 		location = {

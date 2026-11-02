@@ -3,6 +3,7 @@
 	import RouteResultItem from './RouteResultItem.svelte';
 	import StopRankingInfo from './StopRankingInfo.svelte';
 	import { getTopHistory } from '../state/stationHistory';
+	import { parseCoordinateInput } from '../coordinates';
 	import {
 		displayedResults,
 		latestCypressResults,
@@ -44,6 +45,9 @@
 		const items: SearchResultItem[] = [];
 
 		if ($searchText.length > 0) {
+			const coordinate = parseCoordinateInput($searchText);
+			if (coordinate) items.push({ type: 'coordinate', data: coordinate });
+
 			for (const station of $latestOsmStationResults?.results?.slice(0, length) ?? []) {
 				items.push({ type: 'osm_station', data: station });
 			}
@@ -89,7 +93,19 @@
 <div id="search-autocomplete" class="flex flex-col">
 	{#if visibleItems.length > 0}
 		{#each visibleItems as item, index}
-			{#if item.type === 'osm_item'}
+			{#if item.type === 'coordinate'}
+				<button
+					type="button"
+					on:click={() => selectResult(item)}
+					class="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left {index === $selectedResultIndex ? 'bg-gray-200 dark:bg-gray-700' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}"
+				>
+					<span class="material-symbols-outlined text-gray-600 dark:text-gray-300" aria-hidden="true">grid_on</span>
+					<span class="min-w-0">
+						<span class="block font-medium dark:text-white">{item.data.label}</span>
+						<span class="block text-xs text-gray-600 dark:text-gray-400">Coordinate</span>
+					</span>
+				</button>
+			{:else if item.type === 'osm_item'}
 				<button
 					type="button"
 					on:click={() => selectResult(item)}

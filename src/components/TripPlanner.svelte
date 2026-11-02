@@ -536,7 +536,7 @@
 						on:click={() => chooseSuggestion(suggestion)}
 					>
 						<span class="material-symbols-outlined shrink-0 {suggestion.key === 'user:location' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}" aria-hidden="true">
-							{suggestion.key === 'user:location' ? 'my_location' : suggestion.kind === 'station' ? 'train' : suggestion.kind === 'stop' ? 'directions_bus' : 'place'}
+							{suggestion.key === 'user:location' ? 'my_location' : suggestion.key.startsWith('coordinate:') ? 'grid_on' : suggestion.kind === 'station' ? 'train' : suggestion.kind === 'stop' ? 'directions_bus' : 'place'}
 						</span>
 						<span class="min-w-0 flex-1 truncate">
 							<span class="font-medium">{suggestion.name}</span>
