@@ -273,3 +273,20 @@ export async function streamDirectionsLocations(
 		throw new Error('All location search endpoints failed');
 	}
 }
+
+
+type DirectionsMapSelectionHandler = (location: DirectionsLocation) => boolean;
+
+let directionsMapSelectionHandler: DirectionsMapSelectionHandler | null = null;
+
+/** Install the trip planner's endpoint picker while it is mounted. */
+export function setDirectionsMapSelectionHandler(
+	handler: DirectionsMapSelectionHandler | null
+): void {
+	directionsMapSelectionHandler = handler;
+}
+
+/** Return true when an active trip planner field consumed this map click. */
+export function dispatchDirectionsMapSelection(location: DirectionsLocation): boolean {
+	return directionsMapSelectionHandler?.(location) ?? false;
+}

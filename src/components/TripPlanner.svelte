@@ -15,6 +15,7 @@
 	import { getRecentDirectionsLocations, rememberDirectionsLocation } from '$lib/features/directions/recentLocations';
 	import {
 		streamDirectionsLocations,
+		setDirectionsMapSelectionHandler,
 		type DirectionsLocation,
 		type DirectionsSearchFocus
 	} from '$lib/features/search/state/directionsSearch';
@@ -172,8 +173,14 @@
 
 	onMount(() => {
 		loadFootpathDebugPreference();
+		setDirectionsMapSelectionHandler((location) => {
+			if (!activeField) return false;
+			chooseSuggestion(location);
+			return true;
+		});
 		const unsubscribe = map_pointer_store.subscribe(() => syncEndpointMarkers());
 		return () => {
+			setDirectionsMapSelectionHandler(null);
 			unsubscribe();
 			originMarker?.remove();
 			destinationMarker?.remove();
@@ -487,7 +494,7 @@
 					aria-autocomplete="list"
 					aria-expanded={activeField === 'origin'}
 					aria-controls="directions-suggestions"
-					placeholder="Choose start"
+					placeholder="Search start or click on the map"
 					class="w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700"
 				/>
 			</div>
@@ -504,7 +511,7 @@
 					aria-autocomplete="list"
 					aria-expanded={activeField === 'destination'}
 					aria-controls="directions-suggestions"
-					placeholder="Choose destination"
+					placeholder="Search destination or click on the map"
 					class="w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700"
 				/>
 			</div>
