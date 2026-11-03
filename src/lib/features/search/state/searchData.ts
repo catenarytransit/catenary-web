@@ -1,3 +1,4 @@
+import { flyToSearchLocation } from '$lib/features/map/flyToSearchLocation';
 import type { GeoJSONSource, Map } from 'maplibre-gl';
 import { parseCypressOsmId } from '$lib/features/osm/osmPoiId';
 import { parseCoordinateInput } from '../coordinates';
@@ -157,7 +158,7 @@ export function selectResult(item: SearchResultItem): void {
 	switch (item.type) {
 		case 'coordinate': {
 			const coordinate = item.data as { lat: number; lon: number };
-			map?.flyTo({ center: [coordinate.lon, coordinate.lat], zoom: 16 });
+			flyToSearchLocation(map, [coordinate.lon, coordinate.lat], 16);
 			break;
 		}
 		case 'cypress': {
@@ -172,7 +173,7 @@ export function selectResult(item: SearchResultItem): void {
 			recordOsmItemVisit(place);
 			pushScreen(place);
 			if (Number.isFinite(lon) && Number.isFinite(lat)) {
-				map?.flyTo({ center: [lon, lat], zoom: 16 });
+				flyToSearchLocation(map, [lon, lat], 16);
 			}
 			break;
 		}
@@ -186,7 +187,7 @@ export function selectResult(item: SearchResultItem): void {
 			recordOsmItemVisit(screen);
 			pushScreen(screen);
 			if (Number.isFinite(place.lon) && Number.isFinite(place.lat)) {
-				map?.flyTo({ center: [place.lon, place.lat], zoom: 16 });
+				flyToSearchLocation(map, [place.lon, place.lat], 16);
 			}
 			break;
 		}
@@ -212,7 +213,7 @@ export function selectResult(item: SearchResultItem): void {
 				)
 			);
 			if (point) {
-				map?.flyTo({ center: [point.x, point.y], zoom: 16 });
+				flyToSearchLocation(map, [point.x, point.y], 16);
 			}
 			break;
 		}

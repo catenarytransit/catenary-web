@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { flyToSearchLocation } from '$lib/features/map/flyToSearchLocation';
 	import { onMount, onDestroy, tick } from 'svelte';
 	import HomeButton from './SidebarParts/home_button.svelte';
 	import FootpathDebugPanel from './FootpathDebugPanel.svelte';
@@ -742,10 +743,7 @@
 		if (!global_map_pointer || displayLat == null || displayLon == null) return;
 
 		if (!fly_to_already) {
-			global_map_pointer.flyTo({
-				center: [displayLon, displayLat],
-				zoom: 14
-			});
+			flyToSearchLocation(global_map_pointer, [displayLon, displayLat], 14);
 			fly_to_already = true;
 		}
 
