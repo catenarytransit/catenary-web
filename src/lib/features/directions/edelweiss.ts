@@ -159,7 +159,9 @@ export interface ItinerarySegment {
 	duration: number;
 	routeName: string | null;
 	textColor: string;
-	badgeKind: 'standard' | 'mta' | 'ratp' | 'sbahn' | 'sbb';
+	badgeKind: 'standard' | 'mta' | 'ratp' | 'lametro' | 'sbahn' | 'sbb';
+	/** Line identifier for a network symbol, independent of the train number. */
+	badgeName?: string | null;
 	icon: TransitIcon;
 	coordinates: [number, number][];
 	/** Calculated from detailed OSR walking geometry; null if unavailable. */
@@ -373,31 +375,56 @@ export function legCoordinates(leg: EdelweissLeg): [number, number][] {
 	return [];
 }
 
+/** Remove only a trailing route-name suffix; train identifiers stay untouched. */
+function cleanRouteName(value: string | null | undefined): string | null {
+	return value?.trim().replace(/ Line$/i, '').trim() || null;
+}
+
+function lineName(leg: EdelweissLeg): string | null {
+	return cleanRouteName(leg.routeShortName) || cleanRouteName(leg.routeLongName);
+}
+
 /** Apply special badges only when the source chateau confirms the network. */
 export function routeBadgeKind(leg: EdelweissLeg): ItinerarySegment['badgeKind'] {
 	const chateau = leg.chateau || '';
-	const shortName = (leg.routeShortName || '').trim();
-	const mode = leg.mode.toUpperCase();
-	if (chateau === MTA_CHATEAU_ID && mode === 'SUBWAY' &&
-		isSubwayRouteId(shortName) && isSubwayRouteId(leg.routeId || shortName)) return 'mta';
-	if (chateau === IDFM_CHATEAU_ID && isRatpRoute(shortName) && (
-		(mode === 'SUBWAY' && /^(?:[1-9]|1[0-9]|[37]bis|[37]b)$/i.test(shortName)) ||
-		(mode === 'TRAM' && /^T\d+[A-Za-z]?$/i.test(shortName)) ||
-		(mode === 'RAIL' && /^[A-EHJKLNPRUV]$/i.test(shortName))
+	const name = lineName(leg) || '';
+	const icon = legTransitIcon(leg);
+	if (chateau === MTA_CHATEAU_ID && icon === 'metro' && isSubwayRouteId(name)) return 'mta';
+	if (chateau === 'metro~losangeles' && ['tram', 'metro'].includes(icon) &&
+		/^[ABCDEK]$/i.test(name)) return 'lametro';
+	if (chateau === IDFM_CHATEAU_ID && isRatpRoute(name) && (
+		(icon === 'metro' && /^(?:[1-9]|1[0-9]|[37]bis|[37]b)$/i.test(name)) ||
+		(icon === 'tram' && /^T\d+[A-Za-z]?$/i.test(name)) ||
+		(icon === 'train' && /^[A-EHJKLNPRUV]$/i.test(name))
 	)) return 'ratp';
-	if (['deutschland','vbb'].includes(chateau) && ['RAIL','TRAIN'].includes(mode) &&
-		/^S\d+[A-Za-z]?$/i.test(shortName)) return 'sbahn';
-	if (chateau === 'schweiz' && ['RAIL','TRAIN'].includes(mode) &&
-		/^(?:IC|IR)(?:\d+)?$|^EC$/i.test(shortName)) return 'sbb';
+	// A train number uses the ordinary text badge rather than line-specific styling.
+	if (icon === 'train' && leg.tripShortName?.trim()) return 'standard';
+	if (['deutschland','vbb'].includes(chateau) && icon === 'train' &&
+		/^S\d+[A-Za-z]?$/i.test(name)) return 'sbahn';
+	if (chateau === 'schweiz' && icon === 'train' &&
+		/^(?:IC|IR)(?:\d+)?$|^EC$/i.test(name)) return 'sbb';
 	return 'standard';
 }
 
+/** Match the named urban rail exceptions used by the station and route views. */
+function isNationalRailLineException(leg: EdelweissLeg): boolean {
+	const names = [leg.routeShortName, leg.routeLongName, leg.routeId];
+	return names.some(value => value && (
+		/^(?:TW|ME|LO|XR|HX)(?:-|$)/i.test(value.trim()) ||
+		/^(?:London Overground|Elizabeth(?: Line)?|Merseyrail|Tyne (?:and|&) Wear Metro|Heathrow Express)$/i.test(value.trim())
+	));
+}
+
 export function routeLabel(leg: EdelweissLeg): string | null {
-	// UK rail route names are often generic operator labels, not a useful train ID.
-	if (leg.chateau === 'nationalrailuk' && ['RAIL','TRAIN'].includes(leg.mode.toUpperCase())) {
-		return leg.tripShortName?.trim() || null;
+	const name = lineName(leg);
+	const tripName = leg.tripShortName?.trim() || null;
+	if (legTransitIcon(leg) === 'train') {
+		if (leg.chateau === 'nationalrailuk') {
+			return isNationalRailLineException(leg) ? name || tripName : tripName;
+		}
+		if (tripName) return tripName;
 	}
-	return leg.routeShortName?.trim() || leg.routeLongName?.trim() || leg.tripShortName?.trim() || leg.routeId?.trim() || null;
+	return name || tripName || cleanRouteName(leg.routeId);
 }
 
 /** Use GTFS text color when supplied; otherwise select contrast against route color. */
@@ -455,6 +482,7 @@ export function itinerarySegments(itinerary: EdelweissItinerary): ItinerarySegme
 		routeName: routeLabel(leg),
 		textColor: routeTextColor(leg.routeTextColor, routeColor(leg.routeColor)),
 		badgeKind: routeBadgeKind(leg),
+		badgeName: lineName(leg),
 		icon: isStreetLeg(leg.mode) ? null : legTransitIcon(leg),
 		duration: legDurationSeconds(leg),
 		coordinates: legCoordinates(leg),

@@ -386,7 +386,45 @@ describe('Edelweiss geometry and itinerary presentation', () => {
 	it('uses only trip short name for UK National Rail', () => {
 		expect(routeLabel({mode:'RAIL',chateau:'nationalrailuk',routeShortName:'GWR',tripShortName:'1A23'})).toBe('1A23');
 		expect(routeLabel({mode:'RAIL',chateau:'nationalrailuk',routeShortName:'GWR'})).toBeNull();
-		expect(routeLabel({mode:'RAIL',chateau:'deutschland',routeShortName:'RE1',tripShortName:'6'})).toBe('RE1');
+		expect(routeLabel({mode:'RAIL',chateau:'deutschland',routeShortName:'RE1',tripShortName:'6'})).toBe('6');
+	});
+	it('recognizes LA Metro symbols only for its tram and metro lines', () => {
+		for (const line of ['A','B','C','D','E','K']) {
+			for (const mode of ['TRAM','METRO','SUBWAY','LIGHT_RAIL']) {
+				expect(routeBadgeKind({mode,chateau:'metro~losangeles',routeShortName:`${line} Line`})).toBe('lametro');
+			}
+		}
+		expect(routeBadgeKind({mode:'BUS',chateau:'metro~losangeles',routeShortName:'A'})).toBe('standard');
+		expect(routeBadgeKind({mode:'TRAM',chateau:'other',routeShortName:'A'})).toBe('standard');
+		expect(routeBadgeKind({mode:'METRO',chateau:'metro~losangeles',routeShortName:'G'})).toBe('standard');
+	});
+	it('recognizes RATP and NYC mode aliases and cleans line suffixes', () => {
+		expect(routeBadgeKind({mode:'METRO',chateau:'nyct',routeShortName:'A Line',routeId:'opaque-id'})).toBe('mta');
+		expect(routeBadgeKind({mode:'METRO',chateau:'île~de~france~mobilités',routeShortName:'14'})).toBe('ratp');
+		expect(routeBadgeKind({mode:'TRAIN',chateau:'île~de~france~mobilités',routeShortName:'B',tripShortName:'1234'})).toBe('ratp');
+		expect(routeBadgeKind({mode:'BUS',chateau:'île~de~france~mobilités',routeShortName:'14'})).toBe('standard');
+	});
+	it('keeps RATP line symbols independent of train numbers in the preview', () => {
+		const [segment] = itinerarySegments({...itinerary, legs:[{mode:'TRAIN',chateau:'île~de~france~mobilités',routeShortName:'B',tripShortName:'1234'}]});
+		expect(segment).toMatchObject({routeName:'1234',badgeName:'B',badgeKind:'ratp'});
+	});
+	it('prefers train identifiers across rail aliases and GTFS type fallbacks', () => {
+		for (const leg of [{mode:'COMMUTER_RAIL'}, {mode:'INTERCITY_RAIL'}, {mode:'TRANSIT',routeType:2}]) {
+			expect(routeLabel({...leg,routeShortName:'Regional Line',tripShortName:' 123 '})).toBe('123');
+			expect(routeLabel({...leg,chateau:'nationalrailuk',routeLongName:'Great Western Railway',routeId:'GW-1'})).toBeNull();
+		}
+		expect(routeLabel({mode:'RAIL',routeShortName:'RE1',tripShortName:' '})).toBe('RE1');
+	});
+	it('preserves the established UK urban rail route-name exceptions', () => {
+		for (const name of ['TW-METRO','ME-WIRRAL','LO-MILDMAY','XR-ELIZABETH','HX-HEATHROW','London Overground']) {
+			expect(routeLabel({mode:'TRAIN',chateau:'nationalrailuk',routeShortName:name,tripShortName:'1A23'})).toBe(name);
+		}
+		expect(routeLabel({mode:'RAIL',chateau:'nationalrailuk',routeLongName:'Elizabeth Line',tripShortName:'123'})).toBe('Elizabeth');
+	});
+	it('removes only trailing Line from route names', () => {
+		expect(routeLabel({mode:'BUS',routeShortName:' Orange Line '})).toBe('Orange');
+		expect(routeLabel({mode:'BUS',routeLongName:'Line Road Line'})).toBe('Line Road');
+		expect(routeLabel({mode:'TRAIN',tripShortName:'Special Line'})).toBe('Special Line');
 	});
 	it('does not invent straight transit alignments when geometry is missing', () => {
 		expect(legCoordinates({mode:'RAIL',from:{lat:34,lon:-118,name:'A'},to:{lat:35,lon:-117,name:'B'}})).toEqual([]);
