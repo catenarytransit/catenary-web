@@ -22,14 +22,11 @@
 	import OsmItemInfo from '$components/OsmItemInfo.svelte';
 	import OsmSearchResultInfo from '$components/OsmSearchResultInfo.svelte';
 	import RouteScreen from '$components/RouteScreen.svelte';
-	import DonationPopup from '$components/DonationPopup.svelte';
 	import VehicleInfo from '$components/vehicle_info.svelte';
 
 	export let latest_item_on_stack: StackInterface | null;
 	export let darkMode: boolean;
 	export let usunits: boolean;
-	export let showDonationPopup = false;
-	export let dismissDonationPopup: () => void = () => {};
 </script>
 
 {#if !(latest_item_on_stack?.data instanceof TripPlannerStack)}
