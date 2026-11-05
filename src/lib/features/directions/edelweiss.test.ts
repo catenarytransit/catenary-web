@@ -398,6 +398,28 @@ describe('Edelweiss geometry and itinerary presentation', () => {
 		expect(routeBadgeKind({mode:'TRAM',chateau:'other',routeShortName:'A'})).toBe('standard');
 		expect(routeBadgeKind({mode:'METRO',chateau:'metro~losangeles',routeShortName:'G'})).toBe('standard');
 	});
+	it('resolves LA Metro long names with null short names to bundled symbol letters', () => {
+		for (const line of ['A', 'B', 'C', 'D', 'E', 'K']) {
+			for (const chateau of ['metro~losangeles', undefined]) {
+				const [segment] = itinerarySegments({...itinerary, legs:[{
+					mode: 'TRAM', routeType: 0, chateau,
+					routeShortName: null, routeLongName: `Metro ${line} Line`,
+					routeId: '803', routeColor: '#58A738', routeTextColor: '#FFFFFF'
+				}]});
+				expect(segment).toMatchObject({badgeKind: 'lametro', badgeName: line, routeName: line});
+			}
+		}
+	});
+	it('limits LA Metro name normalization to its rail services', () => {
+		for (const leg of [
+			{mode:'BUS', chateau:'metro~losangeles', routeLongName:'Metro C Line'},
+			{mode:'TRAM', chateau:'other', routeLongName:'Metro C Line'},
+			{mode:'TRAM', routeShortName:'C'},
+			{mode:'TRAM', routeLongName:'C Line'},
+			{mode:'TRAM', routeId:'803'},
+			{mode:'TRAM', routeLongName:'Metro G Line'}
+		]) expect(routeBadgeKind(leg)).toBe('standard');
+	});
 	it('recognizes RATP and NYC mode aliases and cleans line suffixes', () => {
 		expect(routeBadgeKind({mode:'METRO',chateau:'nyct',routeShortName:'A Line',routeId:'opaque-id'})).toBe('mta');
 		expect(routeBadgeKind({mode:'METRO',chateau:'île~de~france~mobilités',routeShortName:'14'})).toBe('ratp');
