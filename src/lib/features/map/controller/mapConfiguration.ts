@@ -1,48 +1,15 @@
-import type maplibregl from 'maplibre-gl';
+import type * as maplibregl from 'maplibre-gl';
 import { getLocationFromLocalStorage } from '$components/previously_known_location';
 import { chateaus_store } from '$root/globalstores';
 
-const DEFAULT_CENTER: [number, number] = [10.46, 51.89];
+import { selectInitialCamera, type InitialCamera } from '../initialCamera';
 
-export function getInitialCenter(): [number, number] {
-	const previousLocation = getLocationFromLocalStorage();
-	if (previousLocation) {
-		return [previousLocation.longitude, previousLocation.latitude];
-	}
-
-	const cachedIpLocation = localStorage.getItem('cacheipgeolocation');
-	if (cachedIpLocation) {
-		const [longitude, latitude] = cachedIpLocation.split(',').map(Number);
-		if (Number.isFinite(longitude) && Number.isFinite(latitude)) {
-			return [longitude, latitude];
-		}
-	}
-
-	return DEFAULT_CENTER;
-}
-
-export async function updateCenterFromIp(map: maplibregl.Map): Promise<void> {
-	if (getLocationFromLocalStorage() || localStorage.getItem('cacheipgeolocation')) {
-		return;
-	}
-
+export function getInitialCamera(server: InitialCamera | null): InitialCamera {
 	try {
-		const response = await fetch('https://birch.catenarymaps.org/ip_addr_to_geo/');
-		if (!response.ok) {
-			return;
-		}
-
-		const payload = await response.json();
-		const location = payload?.geo_resp;
-		if (!location || !Number.isFinite(location.longitude) || !Number.isFinite(location.latitude)) {
-			return;
-		}
-
-		const center: [number, number] = [location.longitude, location.latitude];
-		localStorage.setItem('cacheipgeolocation', center.join(','));
-		map.setCenter(center);
-	} catch (error) {
-		console.warn('Unable to determine an approximate map center from the IP address.', error);
+		return selectInitialCamera(getLocationFromLocalStorage(), server);
+	} catch {
+		// Storage can be blocked or contain malformed JSON. The server camera still works.
+		return selectInitialCamera(null, server);
 	}
 }
 
