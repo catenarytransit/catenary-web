@@ -9,11 +9,15 @@
 	import AppOverlays from './AppOverlays.svelte';
 	import { initializeApplicationModules, startBrowserRuntime } from './bootstrap';
 	import { dismissDonationPopup, showDonationPopup } from './state/overlays';
+	import type { InitialCamera } from '$lib/features/map/initialCamera';
+
+	export let initialCamera: InitialCamera | null = null;
 
 	initializeApplicationModules();
 
 	const sidebarController = createSidebarController();
 	const mapController = createMapController({
+		initialCamera,
 		recomputeSidebarPadding: sidebarController.recomputeMapPadding,
 		openSidebar: sidebarController.open
 	});
