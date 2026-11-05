@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import JourneyRouteBadge from '$components/JourneyRouteBadge.svelte';
 	import JourneyPreviewTimeline from '$components/JourneyPreviewTimeline.svelte';
 	import {
 		formatJourneyTime, isStreetLeg, itinerarySegments, itineraryDetailLegs,
-		routeLabel,
 		type EdelweissItinerary, type EdelweissLeg, type EdelweissIntermediateStop
 	} from '$lib/features/directions/edelweiss';
 	import { footpathDebugEnabled, type DebugStop } from '$lib/features/directions/footpathDebug';
@@ -124,7 +124,7 @@
 						<span class="pearl-rail" aria-hidden="true"></span>
 						<div class="flex min-w-0 flex-wrap items-center gap-2 py-1">
 							<span class="connection-mode-icon" class:mode-bus={segments[index].icon === 'bus'} class:mode-metro={segments[index].icon === 'metro'} class:mode-tram={segments[index].icon === 'tram'} class:mode-train={segments[index].icon === 'train'} aria-label={leg.mode}></span>
-							<span class="inline-flex max-w-full items-center rounded px-1.5 py-0.5 text-xs font-semibold" style:background-color={segments[index].color} style:color={segments[index].textColor}>{routeLabel(leg) || leg.mode}</span>
+							<JourneyRouteBadge segment={segments[index]} />
 							{#if leg.routeLongName}<span class="min-w-0 text-xs text-gray-600 dark:text-gray-300">{leg.routeLongName}</span>{/if}
 						</div>
 						<span></span>

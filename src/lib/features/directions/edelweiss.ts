@@ -380,18 +380,31 @@ function cleanRouteName(value: string | null | undefined): string | null {
 	return value?.trim().replace(/ Line$/i, '').trim() || null;
 }
 
-function lineName(leg: EdelweissLeg): string | null {
-	return cleanRouteName(leg.routeShortName) || cleanRouteName(leg.routeLongName);
+/** Resolve the letter used by the bundled LA Metro rail symbols. */
+function laMetroLineName(leg: EdelweissLeg): string | null {
+	if (!['tram', 'metro'].includes(legTransitIcon(leg))) return null;
+	if (leg.chateau && leg.chateau !== 'metro~losangeles') return null;
+	for (const value of [leg.routeShortName, leg.routeLongName]) {
+		// Older responses can omit chateau: require the full branded name then.
+		const match = value?.trim().match(leg.chateau
+			? /^(?:Metro\s+)?([ABCDEK])(?:\s+Line)?$/i
+			: /^Metro\s+([ABCDEK])\s+Line$/i);
+		if (match) return match[1].toUpperCase();
+	}
+	return null;
 }
 
-/** Apply special badges only when the source chateau confirms the network. */
+function lineName(leg: EdelweissLeg): string | null {
+	return laMetroLineName(leg) || cleanRouteName(leg.routeShortName) || cleanRouteName(leg.routeLongName);
+}
+
+/** Use source-network metadata, with a branded-name fallback for LA Metro. */
 export function routeBadgeKind(leg: EdelweissLeg): ItinerarySegment['badgeKind'] {
 	const chateau = leg.chateau || '';
 	const name = lineName(leg) || '';
 	const icon = legTransitIcon(leg);
 	if (chateau === MTA_CHATEAU_ID && icon === 'metro' && isSubwayRouteId(name)) return 'mta';
-	if (chateau === 'metro~losangeles' && ['tram', 'metro'].includes(icon) &&
-		/^[ABCDEK]$/i.test(name)) return 'lametro';
+	if (laMetroLineName(leg)) return 'lametro';
 	if (chateau === IDFM_CHATEAU_ID && isRatpRoute(name) && (
 		(icon === 'metro' && /^(?:[1-9]|1[0-9]|[37]bis|[37]b)$/i.test(name)) ||
 		(icon === 'tram' && /^T\d+[A-Za-z]?$/i.test(name)) ||
