@@ -6,8 +6,6 @@
 
 	export let controller: SidebarController;
 	export let darkMode: boolean;
-	export let showDonationPopup = false;
-	export let dismissDonationPopup: () => void;
 
 	const state = controller.state;
 	$: latestItem = $data_stack_store[$data_stack_store.length - 1] ?? null;
@@ -47,7 +45,5 @@
 		usunits={$usunits_store}
 		latest_item_on_stack={latestItem}
 		{darkMode}
-		{showDonationPopup}
-		{dismissDonationPopup}
 	/>
 </aside>
