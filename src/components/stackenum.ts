@@ -26,7 +26,9 @@ export class StackInterface {
 			| BlockStack
 			| VehicleHistoryStack
 			| OsmItemStack
-			| OsmStationStack
+			| OsmStationStack,
+		// Preserve the camera for selections made directly on the map or its chooser.
+		public openedFromMap = false
 	) {
 		this.data = data;
 	}
