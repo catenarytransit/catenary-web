@@ -18,7 +18,7 @@
 
 {#if !showingDirections}
 	<div
-		class="fixed top-2 right-3 left-3 z-40 bg-white shadow-lg sm:right-auto sm:w-2/5 md:w-[350px] xl:w-[456px] dark:bg-gray-900 dark:text-white {$autocompleteFocus ? 'rounded-xl' : 'rounded-full'}"
+		class="fixed top-2 right-3 left-3 z-40 border border-gray-200 bg-white shadow-lg sm:right-auto sm:w-2/5 md:w-[350px] xl:w-[456px] dark:border-gray-700 dark:bg-gray-900 dark:text-white {$autocompleteFocus ? 'rounded-xl' : 'rounded-full'}"
 		id="search_bar_outer"
 		style={`transform: translateY(${$sidebarState.searchTranslateY}px);`}
 	>
