@@ -33,8 +33,8 @@
 							String(data.osm_station_id),
 							data.osm_station_info?.name || null,
 							data.osm_station_info?.mode_type || null,
-							null,
-							null,
+							data.osm_station_info?.lat ?? null,
+							data.osm_station_info?.lon ?? null,
 							initial_is_now,
 							initial_selected_unix_time
 						)
