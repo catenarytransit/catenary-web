@@ -49,10 +49,10 @@
 
 	function blurInput(event: FocusEvent): void {
 		if (window.innerWidth >= 768) {
-			const autocomplete = document.getElementById('desktop_autocomplete_box');
+			const searchPanel = document.getElementById('search_bar_outer');
 			const destination = event.relatedTarget;
 
-			if (!autocomplete || !(destination instanceof Node) || !autocomplete.contains(destination)) {
+			if (!searchPanel || !(destination instanceof Node) || !searchPanel.contains(destination)) {
 				autocompleteFocus.set(false);
 			}
 		}
@@ -106,7 +106,7 @@
 </script>
 
 <div
-	class="w-full rounded-full border border-gray-500 bg-white px-2 py-1 sm:w-2/5 md:w-[350px] xl:w-[456px] dark:bg-gray-900 dark:text-white"
+	class="w-full px-2 py-1"
 >
 	<div class="flex flex-row items-center gap-x-1 align-middle">
 		{#if $showBackButton}
