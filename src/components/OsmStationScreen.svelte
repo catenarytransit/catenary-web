@@ -1,5 +1,6 @@
 <script lang="ts">
 	import GenericStopScreen from './GenericStopScreen.svelte';
+	export let preserveCamera = false;
 	export let osm_id: string;
 	export let stationName: string | null = null;
 	export let stationLat: number | null = null;
@@ -19,7 +20,7 @@
 	};
 </script>
 
-<GenericStopScreen
+<GenericStopScreen {preserveCamera}
 	{buildUrl}
 	key={osm_id}
 	{osm_id}

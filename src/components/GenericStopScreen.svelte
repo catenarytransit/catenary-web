@@ -49,6 +49,7 @@
 	import ServiceAlerts from './serviceAlerts.svelte';
 	import db_train_lookup from '../../src/fernverkehr_2026_train_lookup.json';
 
+	export let preserveCamera = false;
 	export let initial_is_now: boolean = true;
 	export let initial_selected_unix_time: number = Date.now() / 1000;
 	export let osm_id: string | null = null;
@@ -573,7 +574,8 @@
 									last.data.lon,
 									last.data.is_now,
 									last.data.selected_unix_time
-								)
+								),
+								last.openedFromMap
 							);
 						}
 					}
@@ -743,7 +745,7 @@
 		const global_map_pointer = get(map_pointer_store);
 		if (!global_map_pointer || displayLat == null || displayLon == null) return;
 
-		if (!fly_to_already) {
+		if (!fly_to_already && !preserveCamera) {
 			flyToSearchLocation(global_map_pointer, [displayLon, displayLat], 14);
 			fly_to_already = true;
 		}

@@ -3,6 +3,7 @@
 	import { data_stack_store } from '../globalstores';
 	import { StackInterface, OsmStationStack } from './stackenum';
 
+	export let preserveCamera = false;
 	export let chateau: string;
 	export let stop_id: string;
 	export let initial_is_now: boolean = true;
@@ -37,7 +38,8 @@
 							data.osm_station_info?.lon ?? null,
 							initial_is_now,
 							initial_selected_unix_time
-						)
+						),
+						preserveCamera
 					);
 					stack.pop();
 					stack.push(newStackItem);
@@ -54,4 +56,4 @@
 	}
 </script>
 
-<GenericStopScreen {buildUrl} key={stop_id} {chateau} {initial_is_now} {initial_selected_unix_time} />
+<GenericStopScreen {preserveCamera} {buildUrl} key={stop_id} {chateau} {initial_is_now} {initial_selected_unix_time} />

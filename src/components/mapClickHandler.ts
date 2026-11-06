@@ -409,7 +409,7 @@ export function setup_click_handler(
 						id.osmId, id.osmClass, id.osmType, name, address, lat, lon
 					);
 					recordOsmItemVisit(stack);
-					data_stack_store.update((items) => [...items, new StackInterface(stack)].slice(-25));
+					data_stack_store.update((items) => [...items, new StackInterface(stack, true)].slice(-25));
 					on_sidebar_trigger_store.update((x) => x + 1);
 					setSidebarOpen();
 					return;
@@ -456,13 +456,15 @@ export function setup_click_handler(
 									option.data.mode_type,
 									option.data.lat,
 									option.data.lon
-								)
+								),
+								true
 							)
 						);
 					} else if (option.data instanceof StopMapSelector) {
 						data_stack.push(
 							new StackInterface(
-								new StopStack(option.data.chateau_id, option.data.stop_id)
+								new StopStack(option.data.chateau_id, option.data.stop_id),
+								true
 							)
 						);
 					} else if (option.data instanceof RouteMapSelector) {

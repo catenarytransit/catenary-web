@@ -276,7 +276,8 @@
 										option.data.mode_type,
 										option.data.lat,
 										option.data.lon
-									)
+									),
+									true
 								)
 							);
 							return data_stack;
@@ -332,7 +333,7 @@
 					on:click={() => {
 						data_stack_store.update((data_stack) => {
 							data_stack.push(
-								new StackInterface(new StopStack(option.data.chateau_id, option.data.stop_id))
+								new StackInterface(new StopStack(option.data.chateau_id, option.data.stop_id), true)
 							);
 
 							return data_stack;
