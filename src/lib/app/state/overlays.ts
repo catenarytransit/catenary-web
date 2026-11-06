@@ -1,15 +1,13 @@
-import { get, writable } from 'svelte/store';
+import { writable } from 'svelte/store';
 import { hasActiveExpiry, setExpiry } from '$lib/shared/browser/expiringStorage';
 
 const ANDROID_DISMISSAL_KEY = 'androidPopupDismissedUntil';
 const IOS_DISMISSAL_KEY = 'iosPopupDismissedUntil';
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-const DONATION_DISMISSAL_KEY = 'serverDonationPopupDismissedUntil';
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 export const showAndroidDownloadPopup = writable(false);
 export const showIosDownloadPopup = writable(false);
-export const showDonationPopup = writable(false);
 
 function migrateLegacyAndroidDismissal(): boolean {
 	const legacyDismissed =
@@ -31,12 +29,6 @@ export function initializeOverlayState(
 	userAgent: string,
 	maxTouchPoints = 0
 ): void {
-	const donationPreview =
-		searchParams.get('donation_preview') === 'true' ||
-		searchParams.get('ios_donation_preview') === 'true';
-
-	showDonationPopup.set(donationPreview || !hasActiveExpiry(DONATION_DISMISSAL_KEY));
-
 	const androidPreview = searchParams.has('androidpopup');
 	const isIos =
 		/iPad|iPhone|iPod/i.test(userAgent) || (/Macintosh/i.test(userAgent) && maxTouchPoints > 1);
@@ -47,15 +39,6 @@ export function initializeOverlayState(
 		hasActiveExpiry(ANDROID_DISMISSAL_KEY) || migrateLegacyAndroidDismissal();
 
 	showAndroidDownloadPopup.set(androidPreview || (isAndroid && !androidDismissed));
-}
-
-export function dismissDonationPopup(): void {
-	if (!get(showDonationPopup)) {
-		return;
-	}
-
-	showDonationPopup.set(false);
-	setExpiry(DONATION_DISMISSAL_KEY, ONE_DAY_MS);
 }
 
 export function dismissAndroidDownloadPopup(): void {

@@ -6,6 +6,7 @@ import {
     itineraryDisplaySegments,
     allocateTimelinePercentages,
     itineraryTimeMarkers,
+    itineraryPreviewTimeGroups,
     itineraryTimeRow,
     formatWalkSegment,
     formatJourneyDuration,
@@ -18,6 +19,15 @@ import {
     routeLabel,
     resolveDepartureUnixSeconds,
     queryEdelweiss,
+    streetRoutingRequest,
+    DEFAULT_STREET_ROUTING_SETTINGS,
+    walkingPaceToMetersPerSecond,
+    cyclingKmhToMetersPerSecond,
+    formatWalkingPace,
+    walkingPaceToKilometresPerHour,
+    walkingPaceToSliderPosition,
+    walkingSliderPositionToPace,
+    isStreetLeg,
     type EdelweissItinerary
 } from './edelweiss';
 
@@ -38,6 +48,81 @@ describe('Edelweiss geometry and itinerary presentation', () => {
 	it('uses a fresh now timestamp or the exact selected departure time', () => {
 		expect(resolveDepartureUnixSeconds(1_790_000_000, true, 1_800_000_010.9)).toBe(1_800_000_010);
 		expect(resolveDepartureUnixSeconds(1_790_000_000.8, false, 1_800_000_010)).toBe(1_790_000_000);
+	});
+
+	it('converts walking/running pace and cycling speed without unit errors', () => {
+		expect(walkingPaceToMetersPerSecond(600)).toBeCloseTo(1000 / 600, 8);
+		expect(cyclingKmhToMetersPerSecond(18)).toBeCloseTo(5, 8);
+		expect(formatWalkingPace(345)).toBe('5:45 min/km');
+		expect(formatWalkingPace(840)).toBe('14:00 min/km');
+		expect(walkingPaceToKilometresPerHour(600)).toBeCloseTo(6, 8);
+		expect(walkingPaceToKilometresPerHour(840)).toBeCloseTo(3600 / 840, 8);
+		expect(() => walkingPaceToMetersPerSecond(0)).toThrow(RangeError);
+	});
+
+	it('uses increasing walking slider values for faster walking speeds', () => {
+		const slowPace = walkingSliderPositionToPace(240);
+		const fastPace = walkingSliderPositionToPace(1200);
+		expect(slowPace).toBe(1200); // 20:00 min/km, 3 km/h
+		expect(fastPace).toBe(240); // 4:00 min/km, 15 km/h
+		expect(walkingPaceToKilometresPerHour(fastPace))
+			.toBeGreaterThan(walkingPaceToKilometresPerHour(slowPace));
+		expect(walkingPaceToSliderPosition(840)).toBe(600);
+		for (const pace of [240, 600, 840, 1200]) {
+			expect(walkingSliderPositionToPace(walkingPaceToSliderPosition(pace))).toBe(pace);
+		}
+	});
+
+	it('serializes walking and cycling mode and SI speed for both transit ends', () => {
+		expect(streetRoutingRequest({
+			mode: 'WALK', walkingPaceSecondsPerKm: 600, cyclingSpeedKmH: 18
+		})).toMatchObject({
+			preTransitModes: ['WALK'], postTransitModes: ['WALK'],
+			pedestrianSpeed: 1000 / 600, cyclingSpeed: 5,
+			maxPreTransitTime: 900, maxPostTransitTime: 900, maxDirectTime: 1800
+		});
+		expect(streetRoutingRequest({
+			mode: 'BIKE', walkingPaceSecondsPerKm: 600, cyclingSpeedKmH: 18
+		})).toMatchObject({
+			preTransitModes: ['BIKE'], postTransitModes: ['BIKE'],
+			pedestrianSpeed: 1000 / 600, cyclingSpeed: 5,
+			maxPreTransitTime: 1800, maxPostTransitTime: 1800, maxDirectTime: 1800
+		});
+		expect(DEFAULT_STREET_ROUTING_SETTINGS.cyclingSpeedKmH).toBe(16);
+		expect(streetRoutingRequest({
+			mode: 'BIKE', walkingPaceSecondsPerKm: 840, cyclingSpeedKmH: 16,
+			maxPreTransitTimeSeconds: 600, maxPostTransitTimeSeconds: 1200,
+			maxDirectTimeSeconds: 2400
+		})).toMatchObject({
+			maxPreTransitTime: 600, maxPostTransitTime: 1200, maxDirectTime: 2400,
+			cyclingSpeed: 16 / 3.6
+		});
+		expect(isStreetLeg('BIKE')).toBe(true);
+		expect(isStreetLeg('WALK')).toBe(true);
+		expect(isStreetLeg('BUS')).toBe(false);
+	});
+
+	it('passes walking/cycling speed preferences through the API request', async () => {
+		let payload: Record<string, unknown> | undefined;
+		const oldFetch = globalThis.fetch;
+		globalThis.fetch = (async (_url, init) => {
+			payload = JSON.parse(String(init?.body));
+			return new Response(JSON.stringify({itineraries: [], direct: []}), {status: 200});
+		}) as typeof fetch;
+		try {
+			await queryEdelweiss(
+				{lat:34,lon:-118}, {lat:34.1,lon:-118.1},
+				1800000000, new AbortController().signal, false,
+				{mode:'BIKE',walkingPaceSecondsPerKm:480,cyclingSpeedKmH:21.6,maxPreTransitTimeSeconds:720,maxPostTransitTimeSeconds:1320,maxDirectTimeSeconds:1800}
+			);
+			expect(payload).toMatchObject({
+				preTransitModes:['BIKE'], postTransitModes:['BIKE'],
+				pedestrianSpeed:1000 / 480, cyclingSpeed:6,
+				maxPreTransitTime:720, maxPostTransitTime:1320, maxDirectTime:1800
+			});
+		} finally {
+			globalThis.fetch = oldFetch;
+		}
 	});
 
 	it('sends an exclusive departure or arrival time field according to the mode', async () => {
@@ -136,6 +221,50 @@ describe('Edelweiss geometry and itinerary presentation', () => {
 			{time:timed.startTime, transit:false}, {time:timed.endTime, transit:false}
 		]);
 	});
+	it('groups access and egress times around a standalone duration', () => {
+		const trip: EdelweissItinerary = {
+			startTime:'2026-10-23T17:00:00Z', endTime:'2026-10-23T17:30:00Z',
+			legs:[
+				{mode:'WALK',endTime:'2026-10-23T17:05:00Z'},
+				{mode:'BUS',startTime:'2026-10-23T17:05:00Z',endTime:'2026-10-23T17:25:00Z'},
+				{mode:'WALK',startTime:'2026-10-23T17:25:00Z'}
+			]
+		};
+		expect(itineraryPreviewTimeGroups(trip)).toEqual({
+			departure:[{time:trip.startTime,transit:false},{time:trip.legs[1].startTime,transit:true}],
+			arrival:[{time:trip.legs[1].endTime,transit:true},{time:trip.endTime,transit:false}]
+		});
+		const transitFirst = {...trip, legs:trip.legs.slice(1)};
+		expect(itineraryPreviewTimeGroups(transitFirst)).toEqual({
+			departure:[{time:trip.startTime,transit:true}],
+			arrival:[{time:trip.legs[1].endTime,transit:true},{time:trip.endTime,transit:false}]
+		});
+	});
+
+	it('uses only bold endpoints when access and egress walks are shorter than 25m', () => {
+		const shortPath = polyline.encode([[34,-118],[34,-117.9999]],6);
+		const trip: EdelweissItinerary = {
+			startTime:'2026-10-23T17:00:00Z', endTime:'2026-10-23T17:30:00Z',
+			legs:[
+				{mode:'WALK',legGeometry:{points:shortPath,precision:6}},
+				{mode:'RAIL',startTime:'2026-10-23T17:01:00Z',endTime:'2026-10-23T17:29:00Z'},
+				{mode:'WALK',legGeometry:{points:shortPath,precision:6}}
+			]
+		};
+		expect(itineraryPreviewTimeGroups(trip)).toEqual({
+			departure:[{time:trip.startTime,transit:true}],
+			arrival:[{time:trip.endTime,transit:true}]
+		});
+		const noGeometry = {...trip, legs:[{mode:'WALK'},trip.legs[1],{mode:'WALK'}]};
+		expect(itineraryPreviewTimeGroups(noGeometry).departure).toHaveLength(2);
+		expect(itineraryPreviewTimeGroups(noGeometry).arrival).toHaveLength(2);
+		const directWalk = {...trip,legs:[{mode:'WALK'}]};
+		expect(itineraryPreviewTimeGroups(directWalk)).toEqual({
+			departure:[{time:trip.startTime,transit:false}],
+			arrival:[{time:trip.endTime,transit:false}]
+		});
+	});
+
 	it('does not invent unknown boarding times', () => {
 		const times = itineraryTimeMarkers({...itinerary, legs: [
 			{mode:'WALK'}, {mode:'BUS', endTime:'2026-10-23T17:25:00Z'}, {mode:'WALK'}
@@ -254,10 +383,77 @@ describe('Edelweiss geometry and itinerary presentation', () => {
 		expect(routeBadgeKind({mode:'RAIL',chateau:'schweiz',routeShortName:'IC5'})).toBe('sbb');
 		expect(routeBadgeKind({mode:'SUBWAY',chateau:'other',routeShortName:'14'})).toBe('standard');
 	});
+	it.each(['schweiz', 'ch'])('preserves Swiss line labels and badges for %s', (chateau) => {
+		const leg = {mode: 'RAIL', chateau, routeShortName: 'IC5', tripShortName: '1234'};
+		expect(routeLabel(leg)).toBe('IC5');
+		expect(routeBadgeKind(leg)).toBe('sbb');
+		const [segment] = itinerarySegments({...itinerary, legs: [leg]});
+		expect(segment).toMatchObject({routeName: 'IC5', badgeKind: 'sbb', badgeName: 'IC5'});
+	});
 	it('uses only trip short name for UK National Rail', () => {
 		expect(routeLabel({mode:'RAIL',chateau:'nationalrailuk',routeShortName:'GWR',tripShortName:'1A23'})).toBe('1A23');
 		expect(routeLabel({mode:'RAIL',chateau:'nationalrailuk',routeShortName:'GWR'})).toBeNull();
-		expect(routeLabel({mode:'RAIL',chateau:'deutschland',routeShortName:'RE1',tripShortName:'6'})).toBe('RE1');
+		expect(routeLabel({mode:'RAIL',chateau:'deutschland',routeShortName:'RE1',tripShortName:'6'})).toBe('6');
+	});
+	it('recognizes LA Metro symbols only for its tram and metro lines', () => {
+		for (const line of ['A','B','C','D','E','K']) {
+			for (const mode of ['TRAM','METRO','SUBWAY','LIGHT_RAIL']) {
+				expect(routeBadgeKind({mode,chateau:'metro~losangeles',routeShortName:`${line} Line`})).toBe('lametro');
+			}
+		}
+		expect(routeBadgeKind({mode:'BUS',chateau:'metro~losangeles',routeShortName:'A'})).toBe('standard');
+		expect(routeBadgeKind({mode:'TRAM',chateau:'other',routeShortName:'A'})).toBe('standard');
+		expect(routeBadgeKind({mode:'METRO',chateau:'metro~losangeles',routeShortName:'G'})).toBe('standard');
+	});
+	it('resolves LA Metro long names with null short names to bundled symbol letters', () => {
+		for (const line of ['A', 'B', 'C', 'D', 'E', 'K']) {
+			for (const chateau of ['metro~losangeles', undefined]) {
+				const [segment] = itinerarySegments({...itinerary, legs:[{
+					mode: 'TRAM', routeType: 0, chateau,
+					routeShortName: null, routeLongName: `Metro ${line} Line`,
+					routeId: '803', routeColor: '#58A738', routeTextColor: '#FFFFFF'
+				}]});
+				expect(segment).toMatchObject({badgeKind: 'lametro', badgeName: line, routeName: line});
+			}
+		}
+	});
+	it('limits LA Metro name normalization to its rail services', () => {
+		for (const leg of [
+			{mode:'BUS', chateau:'metro~losangeles', routeLongName:'Metro C Line'},
+			{mode:'TRAM', chateau:'other', routeLongName:'Metro C Line'},
+			{mode:'TRAM', routeShortName:'C'},
+			{mode:'TRAM', routeLongName:'C Line'},
+			{mode:'TRAM', routeId:'803'},
+			{mode:'TRAM', routeLongName:'Metro G Line'}
+		]) expect(routeBadgeKind(leg)).toBe('standard');
+	});
+	it('recognizes RATP and NYC mode aliases and cleans line suffixes', () => {
+		expect(routeBadgeKind({mode:'METRO',chateau:'nyct',routeShortName:'A Line',routeId:'opaque-id'})).toBe('mta');
+		expect(routeBadgeKind({mode:'METRO',chateau:'île~de~france~mobilités',routeShortName:'14'})).toBe('ratp');
+		expect(routeBadgeKind({mode:'TRAIN',chateau:'île~de~france~mobilités',routeShortName:'B',tripShortName:'1234'})).toBe('ratp');
+		expect(routeBadgeKind({mode:'BUS',chateau:'île~de~france~mobilités',routeShortName:'14'})).toBe('standard');
+	});
+	it('keeps RATP line symbols independent of train numbers in the preview', () => {
+		const [segment] = itinerarySegments({...itinerary, legs:[{mode:'TRAIN',chateau:'île~de~france~mobilités',routeShortName:'B',tripShortName:'1234'}]});
+		expect(segment).toMatchObject({routeName:'1234',badgeName:'B',badgeKind:'ratp'});
+	});
+	it('prefers train identifiers across rail aliases and GTFS type fallbacks', () => {
+		for (const leg of [{mode:'COMMUTER_RAIL'}, {mode:'INTERCITY_RAIL'}, {mode:'TRANSIT',routeType:2}]) {
+			expect(routeLabel({...leg,routeShortName:'Regional Line',tripShortName:' 123 '})).toBe('123');
+			expect(routeLabel({...leg,chateau:'nationalrailuk',routeLongName:'Great Western Railway',routeId:'GW-1'})).toBeNull();
+		}
+		expect(routeLabel({mode:'RAIL',routeShortName:'RE1',tripShortName:' '})).toBe('RE1');
+	});
+	it('preserves the established UK urban rail route-name exceptions', () => {
+		for (const name of ['TW-METRO','ME-WIRRAL','LO-MILDMAY','XR-ELIZABETH','HX-HEATHROW','London Overground']) {
+			expect(routeLabel({mode:'TRAIN',chateau:'nationalrailuk',routeShortName:name,tripShortName:'1A23'})).toBe(name);
+		}
+		expect(routeLabel({mode:'RAIL',chateau:'nationalrailuk',routeLongName:'Elizabeth Line',tripShortName:'123'})).toBe('Elizabeth');
+	});
+	it('removes only trailing Line from route names', () => {
+		expect(routeLabel({mode:'BUS',routeShortName:' Orange Line '})).toBe('Orange');
+		expect(routeLabel({mode:'BUS',routeLongName:'Line Road Line'})).toBe('Line Road');
+		expect(routeLabel({mode:'TRAIN',tripShortName:'Special Line'})).toBe('Special Line');
 	});
 	it('does not invent straight transit alignments when geometry is missing', () => {
 		expect(legCoordinates({mode:'RAIL',from:{lat:34,lon:-118,name:'A'},to:{lat:35,lon:-117,name:'B'}})).toEqual([]);

@@ -6,6 +6,8 @@
 
 	$: {
 		let imageName = route_short_name.toLowerCase();
+		if (imageName === 'gs') imageName = 's';
+		if (imageName === 'fs') imageName = 'sf';
 		if (imageName.endsWith('x')) {
 			imageName = imageName.slice(0, -1) + 'd';
 		}

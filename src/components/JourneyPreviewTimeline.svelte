@@ -1,8 +1,6 @@
 <script lang="ts">
-	import { itineraryDisplaySegments, allocateTimelinePercentages, itineraryTimeMarkers, formatJourneyDuration, formatWalkSegment, formatJourneyTime, type EdelweissItinerary } from '$lib/features/directions/edelweiss';
-	import MtaBullet from '$components/mtabullet.svelte';
-	import RatpBullet from '$components/ratpbullet.svelte';
-	import SbbLogo from '$components/SbbLogo.svelte';
+	import { itineraryDisplaySegments, allocateTimelinePercentages, itineraryPreviewTimeGroups, formatJourneyDuration, formatWalkSegment, formatJourneyTime, type EdelweissItinerary } from '$lib/features/directions/edelweiss';
+	import JourneyRouteBadge from '$components/JourneyRouteBadge.svelte';
 
 	export let itinerary: EdelweissItinerary;
 	/** Use only endpoint times on the compact details summary. */
@@ -10,6 +8,9 @@
 	let timelineWidth = 320;
 	$: segments = itineraryDisplaySegments(itinerary);
 	$: widths = allocateTimelinePercentages(segments, timelineWidth);
+	$: timeGroups = summary
+		? { departure: [{ time: itinerary.startTime, transit: true }], arrival: [{ time: itinerary.endTime, transit: true }] }
+		: itineraryPreviewTimeGroups(itinerary);
 
 	function measureTimeline(node: HTMLDivElement) {
 		const measure = () => { timelineWidth = node.clientWidth || 320; };
@@ -21,26 +22,27 @@
 </script>
 
 <div class="min-w-0 w-full">
-	{#if summary}
-		<div class="flex justify-between gap-2 text-sm font-semibold" aria-label="Journey departure and arrival">
-			<time datetime={itinerary.startTime}>{formatJourneyTime(itinerary.startTime)}</time>
-			<time datetime={itinerary.endTime}>{formatJourneyTime(itinerary.endTime)}</time>
-		</div>
-	{:else}
-		<div class="flex items-center justify-between gap-1.5 text-sm sm:text-base" aria-label="Journey departure and arrival times">
-			{#each itineraryTimeMarkers(itinerary) as marker}
-				<time datetime={marker.time} class:font-semibold={marker.transit} class:font-normal={!marker.transit} class="shrink-0 whitespace-nowrap">{formatJourneyTime(marker.time)}</time>
+	<div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-2" aria-label="Journey times">
+		<div class="flex min-w-0 items-baseline justify-start gap-x-2.5 sm:gap-x-3">
+			{#each timeGroups.departure as marker}
+				<time datetime={marker.time} class={`shrink-0 whitespace-nowrap ${marker.transit ? 'text-sm font-bold' : 'text-xs font-normal text-gray-600 dark:text-gray-300'}`}>{formatJourneyTime(marker.time)}</time>
 			{/each}
 		</div>
-	{/if}
+		<span class="shrink-0 whitespace-nowrap text-center text-xs font-medium text-gray-600 dark:text-gray-300">{formatJourneyDuration(itinerary)}</span>
+		<div class="flex min-w-0 items-baseline justify-end gap-x-2.5 sm:gap-x-3">
+			{#each timeGroups.arrival as marker}
+				<time datetime={marker.time} class={`shrink-0 whitespace-nowrap ${marker.transit ? 'text-sm font-bold' : 'text-xs font-normal text-gray-600 dark:text-gray-300'}`}>{formatJourneyTime(marker.time)}</time>
+			{/each}
+		</div>
+	</div>
 				<div class="mt-3 w-full max-w-full" use:measureTimeline aria-label="Journey segments">
 					<div class="flex w-full min-w-0 items-start overflow-hidden">
 						{#each segments as segment, segmentIndex}
-							<div class="min-w-0 shrink-0 overflow-visible" style:width={`${widths[segmentIndex]}%`} role="group" aria-label={segment.transfer ? 'Transfer' : segment.walking ? `Walk ${formatWalkSegment(segment)}` : segment.routeName ? `${segment.mode} ${segment.routeName}` : segment.mode}>
+							<div class="min-w-0 shrink-0 overflow-visible" style:width={`${widths[segmentIndex]}%`} role="group" aria-label={segment.transfer ? 'Transfer' : segment.walking ? `${segment.mode === 'BIKE' ? 'Cycle' : 'Walk'} ${formatWalkSegment(segment)}` : segment.routeName ? `${segment.mode} ${segment.routeName}` : segment.mode}>
 								<div class="flex h-6 w-full min-w-0 items-center gap-1">
 									{#if !segment.transfer}
 										{#if segment.walking}
-											<span class="material-symbols-outlined shrink-0 text-black dark:text-white" style:font-size="18px" aria-hidden="true">directions_walk</span>
+											<span class="material-symbols-outlined shrink-0 text-black dark:text-white" style:font-size="18px" aria-hidden="true">{segment.mode === 'BIKE' ? 'directions_bike' : 'directions_walk'}</span>
 										{:else}
 											<span class="sbb-mode-icon shrink-0 bg-black dark:bg-white" class:sbb-bus={segment.icon === 'bus'} class:sbb-metro={segment.icon === 'metro'} class:sbb-tram={segment.icon === 'tram'} class:sbb-train={segment.icon === 'train' || !segment.icon} aria-hidden="true"></span>
 										{/if}
@@ -56,19 +58,7 @@
 										{#if segment.walking}
 											<span class="truncate text-gray-600 dark:text-gray-300">{formatWalkSegment(segment)}</span>
 										{:else}
-											{#if segment.routeName && segment.badgeKind === 'mta'}
-												<MtaBullet route_short_name={segment.routeName} matchTextHeight={true} />
-											{:else if segment.routeName && segment.badgeKind === 'ratp'}
-												<RatpBullet route_short_name={segment.routeName} matchTextHeight={true} />
-											{:else}
-												<span class="inline-flex max-w-full items-center justify-center overflow-hidden text-ellipsis whitespace-nowrap px-1.5 py-0.5 text-xs font-semibold leading-none" class:rounded-full={segment.badgeKind === 'sbahn'} class:rounded-sm={segment.badgeKind !== 'sbahn'} style:background-color={segment.color} style:color={segment.textColor}>
-													{#if segment.badgeKind === 'sbb' && segment.routeName}
-														<SbbLogo text={segment.routeName} chateau="schweiz" />
-													{:else}
-														{segment.routeName || segment.mode}
-													{/if}
-												</span>
-											{/if}
+											<JourneyRouteBadge {segment} />
 										{/if}
 									</div>
 								{/if}
@@ -77,11 +67,6 @@
 					</div>
 				</div>
 
-	<div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-gray-600 dark:text-gray-300" aria-label="Journey duration and transfers">
-		<span>Total travel time: {formatJourneyDuration(itinerary)}</span>
-		<span aria-hidden="true">·</span>
-		<span>{itinerary.transfers ?? 0} {(itinerary.transfers ?? 0) === 1 ? 'transfer' : 'transfers'}</span>
-	</div>
 </div>
 
 <style>

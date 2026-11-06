@@ -23,6 +23,7 @@
 	import { getLocaleStorageOrNav } from '../i18n';
 	import { getOptimalPixelRatio } from './maplibre_starter';
 	import { init_stores } from './init_stores';
+import { footpathDebugEnabled, loadFootpathDebugPreference, setFootpathDebugEnabled } from '$lib/features/directions/footpathDebug';
 	init_stores();
 
 	import { consentGiven } from '../globalstores';
@@ -39,6 +40,7 @@
 
 	onMount(() => {
 		pixelRatioChosen = getOptimalPixelRatio();
+		loadFootpathDebugPreference();
 		const consent = localStorage.getItem('cookie_consent');
 		if (consent === 'true') {
 			consentGiven.set(true);
@@ -152,6 +154,7 @@
 <HomeButton />
 <div class="px-3 pt-1 flex flex-col h-full select-text">
 	<h1 class="text-3xl font-medium mb-2">{$_('settings')}</h1>
+	<details class="mb-3 rounded-md border border-gray-300 p-2 dark:border-gray-700"><summary class="cursor-pointer text-xs text-gray-500">Developer / routing diagnostics</summary><label class="mt-2 flex items-center gap-2 text-sm"><input type="checkbox" checked={$footpathDebugEnabled} on:change={(e) => setFootpathDebugEnabled(e.currentTarget.checked)} /> Enable footpath debugger</label><p class="mt-1 text-xs text-gray-500">Requires an Edelweiss server started with --enable-footpath-debug.</p></details>
 	<span class="text-xl block">{$_('language')}</span>
 	<p>{$locale}</p>
 	<select

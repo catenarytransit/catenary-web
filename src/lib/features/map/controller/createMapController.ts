@@ -1,7 +1,8 @@
 import * as maplibregl from 'maplibre-gl';
 import type { InitialCamera } from '../initialCamera';
-import { activeItineraries, activeItineraryIndex, selectedTransferItineraryIndex, refreshDirectionsSource, raiseDirectionsLayers } from '$lib/features/directions/mapRoutes';
+import { activeItineraries, activeItineraryIndex, selectedTransferItineraryIndex, refreshDirectionsSource, raiseDirectionsLayers, clearDirectionsContext } from '$lib/features/directions/mapRoutes';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { TripPlannerStack } from '$components/stackenum';
 import { configureMapLibreWorkers } from '../configureMapLibreWorkers';
 import { get, writable, type Readable, type Writable } from 'svelte/store';
 import { getOptimalPixelRatio } from '$components/maplibre_starter';
@@ -14,6 +15,7 @@ import { startSantaTracking } from '$components/santa_tracker';
 import { additional_filter_for_vehicles_store } from '$components/filterState';
 import {
 	current_orm_layer_type_store,
+	data_stack_store,
 	geolocation_store,
 	lock_on_gps_store,
 	map_pointer_store,
@@ -160,10 +162,19 @@ export function createMapController(
 		}
 	}
 
+	function showingDirections(): boolean {
+		return get(data_stack_store).at(-1)?.data instanceof TripPlannerStack;
+	}
+
+	function refreshDirections(currentMap: maplibregl.Map): void {
+		refreshDirectionsSource(currentMap, showingDirections() ? get(activeItineraries) : [],
+			get(activeItineraryIndex), get(selectedTransferItineraryIndex));
+	}
+
 	function configureMapLoad(currentMap: maplibregl.Map): void {
 		currentMap.on('load', async () => {
 			loaded = true;
-			refreshDirectionsSource(currentMap, get(activeItineraries), get(activeItineraryIndex), get(selectedTransferItineraryIndex));
+			refreshDirections(currentMap);
 			checkClockSync();
 			add_image_pedestrian_pattern(currentMap);
 
@@ -246,14 +257,24 @@ export function createMapController(
 
 		const currentMap = map;
 		map_pointer_store.set(currentMap);
-		subscriptions.push(activeItineraries.subscribe((items) => refreshDirectionsSource(currentMap, items, get(activeItineraryIndex), get(selectedTransferItineraryIndex))));
-		subscriptions.push(activeItineraryIndex.subscribe((index) => refreshDirectionsSource(currentMap, get(activeItineraries), index, get(selectedTransferItineraryIndex))));
-		subscriptions.push(selectedTransferItineraryIndex.subscribe((index) => refreshDirectionsSource(currentMap, get(activeItineraries), get(activeItineraryIndex), index)));
-		currentMap.on('style.load', () => refreshDirectionsSource(currentMap, get(activeItineraries), get(activeItineraryIndex), get(selectedTransferItineraryIndex)));
+		subscriptions.push(activeItineraries.subscribe(() => refreshDirections(currentMap)));
+		subscriptions.push(activeItineraryIndex.subscribe(() => refreshDirections(currentMap)));
+		subscriptions.push(selectedTransferItineraryIndex.subscribe(() => refreshDirections(currentMap)));
+		let wasShowingDirections = false;
+		subscriptions.push(data_stack_store.subscribe(() => {
+			const visible = showingDirections();
+			if (visible && !wasShowingDirections) clearDirectionsContext(currentMap);
+			wasShowingDirections = visible;
+			refreshDirections(currentMap);
+		}));
+		currentMap.on('style.load', () => {
+			if (showingDirections()) clearDirectionsContext(currentMap);
+			refreshDirections(currentMap);
+		});
 		// setupMap adds other app layers asynchronously; promote the route after
 		// each completed style change instead of letting those layers bury it.
 		currentMap.on('idle', () => {
-			if (get(activeItineraries).length) raiseDirectionsLayers(currentMap);
+			if (showingDirections() && get(activeItineraries).length) raiseDirectionsLayers(currentMap);
 		});
 
 		subscribeToRuntimeState();

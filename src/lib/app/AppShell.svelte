@@ -8,7 +8,6 @@
 	import AppHead from './AppHead.svelte';
 	import AppOverlays from './AppOverlays.svelte';
 	import { initializeApplicationModules, startBrowserRuntime } from './bootstrap';
-	import { dismissDonationPopup, showDonationPopup } from './state/overlays';
 	import type { InitialCamera } from '$lib/features/map/initialCamera';
 
 	export let initialCamera: InitialCamera | null = null;
@@ -32,16 +31,10 @@
 	<main class="w-full">
 		<MapCanvas controller={mapController} />
 		<AppOverlays />
-		<SearchOverlay
-			sidebar={sidebarController}
-			showDonationPopup={$showDonationPopup}
-			{dismissDonationPopup}
-		/>
+		<SearchOverlay sidebar={sidebarController} />
 		<SidebarShell
 			controller={sidebarController}
 			darkMode={$darkMode}
-			showDonationPopup={$showDonationPopup}
-			{dismissDonationPopup}
 		/>
 
 		<MapControls controller={mapController} sidebar={sidebarController} />

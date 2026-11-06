@@ -1,17 +1,21 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import JourneyRouteBadge from '$components/JourneyRouteBadge.svelte';
 	import JourneyPreviewTimeline from '$components/JourneyPreviewTimeline.svelte';
 	import {
-		formatJourneyTime, isWalkingLeg, itinerarySegments, itineraryDetailLegs,
-		routeLabel,
+		formatJourneyTime, isStreetLeg, itinerarySegments, itineraryDetailLegs,
 		type EdelweissItinerary, type EdelweissLeg, type EdelweissIntermediateStop
 	} from '$lib/features/directions/edelweiss';
+	import { footpathDebugEnabled, type DebugStop } from '$lib/features/directions/footpathDebug';
+	import { isValidPoint } from '$lib/features/directions/edelweiss';
 	import { connectionRailColor } from '$lib/features/directions/connectionRailColor';
 
 	export let itinerary: EdelweissItinerary;
 	export let originName: string;
 	export let destinationName: string;
 	export let onBack: () => void;
+	export let onInspectFootpaths: (stop: DebugStop) => void = () => {};
+	function inspectStop(stop: DebugStop | null | undefined): void { if (stop && isValidPoint(stop)) onInspectFootpaths(stop); }
 
 	let backButton: HTMLButtonElement;
 	let expandedStops: Record<number, boolean> = {};
@@ -96,12 +100,12 @@
 		{#each detailLegs as detail (detail.sourceIndex)}
 			{@const leg = detail.leg}
 			{@const index = detail.sourceIndex}
-			{#if isWalkingLeg(leg.mode)}
+			{#if isStreetLeg(leg.mode)}
 				<div class="rounded-xl border border-gray-400 bg-transparent px-4 py-3 text-gray-800 dark:border-gray-600 dark:text-white" aria-label="Walking connection">
 					<div class="connection-row">
 						<span class="text-right text-sm font-semibold tabular-nums">{walkingMinutes(detail.walkingSeconds)}</span>
 						<span class="pearl-rail walk-rail" aria-hidden="true"></span>
-						<span class="min-w-0 text-left text-sm font-medium">Walk: {walkingDistance(detail.walkingMeters)}</span>
+						<span class="min-w-0 text-left text-sm font-medium">{leg.mode.toUpperCase() === 'BIKE' ? 'Cycle' : 'Walk'}: {walkingDistance(detail.walkingMeters)}</span>
 						<span></span>
 					</div>
 				</div>
@@ -111,7 +115,7 @@
 					<div class="connection-row">
 						<time class="min-w-0 text-right text-sm font-semibold tabular-nums leading-5" datetime={leg.startTime || itinerary.startTime}>{legTime(leg, 'start')}</time>
 						<span class="pearl-rail rail-first" aria-hidden="true"><span class="pearl"></span></span>
-						<span class="min-w-0 text-left text-sm font-medium leading-5">{placeName(leg, 'from', index)}</span>
+						<span class="min-w-0 text-left text-sm font-medium leading-5">{placeName(leg, 'from', index)}{#if $footpathDebugEnabled && leg.from && isValidPoint(leg.from)} <button type="button" class="ml-1 text-xs text-amber-700 underline" on:click={() => inspectStop(leg.from)}>Footpaths</button>{/if}</span>
 						<span class="min-w-0 break-words text-right text-xs text-gray-600 dark:text-gray-300">{platform(leg, 'from')}</span>
 					</div>
 
@@ -120,7 +124,7 @@
 						<span class="pearl-rail" aria-hidden="true"></span>
 						<div class="flex min-w-0 flex-wrap items-center gap-2 py-1">
 							<span class="connection-mode-icon" class:mode-bus={segments[index].icon === 'bus'} class:mode-metro={segments[index].icon === 'metro'} class:mode-tram={segments[index].icon === 'tram'} class:mode-train={segments[index].icon === 'train'} aria-label={leg.mode}></span>
-							<span class="inline-flex max-w-full items-center rounded px-1.5 py-0.5 text-xs font-semibold" style:background-color={segments[index].color} style:color={segments[index].textColor}>{routeLabel(leg) || leg.mode}</span>
+							<JourneyRouteBadge segment={segments[index]} />
 							{#if leg.routeLongName}<span class="min-w-0 text-xs text-gray-600 dark:text-gray-300">{leg.routeLongName}</span>{/if}
 						</div>
 						<span></span>
@@ -128,7 +132,7 @@
 
 					{#if stops(leg).length > 0}
 						<!-- The click target spans the entire card, not just the stop-name column. -->
-						<button type="button" class="connection-row w-full rounded py-1 text-left text-xs text-gray-600 hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-600 dark:text-gray-300 dark:hover:bg-gray-700" aria-expanded={!!expandedStops[index]} aria-label={(expandedStops[index] ? 'Hide ' : 'Show ') + stops(leg).length + ' intermediate stops'} on:click={() => toggleStops(index)}>
+						<button type="button" class="connection-row w-full rounded text-left text-xs text-gray-600 hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-600 dark:text-gray-300 dark:hover:bg-gray-700" aria-expanded={!!expandedStops[index]} aria-label={(expandedStops[index] ? 'Hide ' : 'Show ') + stops(leg).length + ' intermediate stops'} on:click={() => toggleStops(index)}>
 							<span></span>
 							<span class="pearl-rail" aria-hidden="true"></span>
 							<span class="min-w-0 text-left">{stops(leg).length} {stops(leg).length === 1 ? 'stop' : 'stops'} · {Math.max(1, Math.round((leg.duration ?? ((Date.parse(leg.endTime ?? '') - Date.parse(leg.startTime ?? '')) / 1000)) / 60))} min</span>
@@ -139,7 +143,7 @@
 								<div class="connection-row">
 									<span class="min-w-0 text-right text-xs tabular-nums leading-5 text-gray-500 dark:text-gray-400">{stopTime(stop)}</span>
 									<span class="pearl-rail" aria-hidden="true"><span class="pearl"></span></span>
-									<span class="min-w-0 text-left text-xs leading-5 text-gray-500 dark:text-gray-400">{stop.name}</span>
+									<span class="min-w-0 text-left text-xs leading-5 text-gray-500 dark:text-gray-400">{stop.name}{#if $footpathDebugEnabled && isValidPoint(stop)} <button type="button" class="ml-1 text-amber-700 underline" on:click={() => inspectStop(stop)}>Footpaths</button>{/if}</span>
 									<span class="min-w-0 text-right text-xs text-gray-500 dark:text-gray-400">{stop.platform || stop.platformCode || ''}</span>
 								</div>
 							{/each}
@@ -149,7 +153,7 @@
 					<div class="connection-row">
 						<time class="min-w-0 text-right text-sm font-semibold tabular-nums leading-5" datetime={leg.endTime || itinerary.endTime}>{legTime(leg, 'end')}</time>
 						<span class="pearl-rail rail-last" aria-hidden="true"><span class="pearl"></span></span>
-						<span class="min-w-0 text-left text-sm font-medium leading-5">{placeName(leg, 'to', index)}</span>
+						<span class="min-w-0 text-left text-sm font-medium leading-5">{placeName(leg, 'to', index)}{#if $footpathDebugEnabled && leg.to && isValidPoint(leg.to)} <button type="button" class="ml-1 text-xs text-amber-700 underline" on:click={() => inspectStop(leg.to)}>Footpaths</button>{/if}</span>
 						<span class="min-w-0 break-words text-right text-xs text-gray-600 dark:text-gray-300">{platform(leg, 'to')}</span>
 					</div>
 				</article>

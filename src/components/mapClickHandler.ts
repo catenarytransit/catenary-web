@@ -4,6 +4,7 @@ import { writable, get } from 'svelte/store';
 import { data_stack_store, on_sidebar_trigger_store } from '../globalstores';
 import { decodeOpenMapTilesPoiId } from '$lib/features/osm/osmPoiId';
 import { recordOsmItemVisit } from '$lib/features/search/state/stationHistory';
+import { dispatchDirectionsMapSelection, type DirectionsLocation } from '$lib/features/search/state/directionsSearch';
 import {
 	MapSelectionScreen,
 	StackInterface,
@@ -85,6 +86,72 @@ export function setup_click_handler(
 		try {
 			const selectedFeatures = map.queryRenderedFeatures(clickBbox, { layers: interactiveLayers });
 
+			// When a trip planner endpoint field is active, consume the map click as
+			// that field's location. Prefer an OSM station or POI under the pointer;
+			// use the clicked map coordinate when no OSM place was hit.
+			const osmStation = selectedFeatures.find((feature: any) =>
+				(feature.source === 'osmstations' || feature.source === 'osmstationsranked') &&
+				typeof feature.properties?.name === 'string' &&
+				feature.properties.name.trim() &&
+				feature.geometry?.type === 'Point' &&
+				Array.isArray(feature.geometry.coordinates)
+			);
+			const osmPoi = selectedFeatures.find((feature: any) =>
+				feature.source === 'openmaptiles' &&
+				feature.sourceLayer === 'poi' &&
+				decodeOpenMapTilesPoiId(feature.id ?? feature.properties?.id) !== null &&
+				typeof (feature.properties?.name || feature.properties?.name_en) === 'string' &&
+				(feature.properties?.name || feature.properties?.name_en).trim()
+			);
+			const gtfsStop = selectedFeatures.find((feature: any) =>
+				['busstops', 'railstops', 'otherstops', 'stops_context'].includes(feature.source) &&
+				typeof (feature.properties?.displayname || feature.properties?.label || feature.properties?.name) === 'string' &&
+				(feature.properties?.displayname || feature.properties?.label || feature.properties?.name).trim() &&
+				feature.geometry?.type === 'Point' &&
+				Array.isArray(feature.geometry.coordinates) &&
+				feature.geometry.coordinates.length >= 2
+			);
+			const osmPlace = osmStation || osmPoi;
+			const location: DirectionsLocation = osmPlace
+				? (() => {
+					const coordinates = osmPlace.geometry?.type === 'Point'
+						? osmPlace.geometry.coordinates as number[]
+						: [e.lngLat.lng, e.lngLat.lat];
+					const osmId = osmPlace.properties?.osm_id ??
+						decodeOpenMapTilesPoiId(osmPlace.id ?? osmPlace.properties?.id)?.osmId;
+					return {
+						key: 'map:osm:' + String(osmId ?? coordinates[1] + ',' + coordinates[0]),
+						kind: osmStation ? 'station' : 'place',
+						name: String(osmPlace.properties?.name || osmPlace.properties?.name_en).trim(),
+						address: String(osmPlace.properties?.address || ''),
+						lat: coordinates[1],
+						lon: coordinates[0]
+					};
+				})()
+				: gtfsStop
+					? (() => {
+						const coordinates = gtfsStop.geometry.coordinates as number[];
+						const stopId = gtfsStop.properties?.gtfs_id ??
+							gtfsStop.properties?.stop_id ?? gtfsStop.id ??
+							coordinates[1] + ',' + coordinates[0];
+						return {
+							key: 'map:gtfs:' + gtfsStop.source + ':' + String(stopId),
+							kind: 'stop',
+							name: String(gtfsStop.properties?.displayname || gtfsStop.properties?.label || gtfsStop.properties?.name).trim(),
+							address: String(gtfsStop.properties?.stop_code || gtfsStop.properties?.code || ''),
+							lat: coordinates[1],
+							lon: coordinates[0]
+						};
+					})()
+					: {
+						key: 'map:coordinate:' + e.lngLat.lat + ',' + e.lngLat.lng,
+						kind: 'place',
+						name: 'Dropped pin',
+						address: '',
+						lat: e.lngLat.lat,
+						lon: e.lngLat.lng
+					};
+			if (dispatchDirectionsMapSelection(location)) return;
 
 			const selected_vehicles_raw = selectedFeatures.filter(
 				(x: Record<string, any>) =>

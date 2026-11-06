@@ -1,5 +1,7 @@
+import { flyToSearchLocation } from '$lib/features/map/flyToSearchLocation';
 import type { GeoJSONSource, Map } from 'maplibre-gl';
 import { parseCypressOsmId } from '$lib/features/osm/osmPoiId';
+import { parseCoordinateInput } from '../coordinates';
 import { recordOsmItemVisit } from './stationHistory';
 import { rememberDirectionsLocation, searchHistoryLocation } from '$lib/features/directions/recentLocations';
 import { get, writable, type Writable } from 'svelte/store';
@@ -74,7 +76,7 @@ interface CypressFeatureCollection {
 }
 
 export interface SearchResultItem {
-	type: 'cypress' | 'route' | 'stop' | 'osm_station' | 'osm_item';
+	type: 'coordinate' | 'cypress' | 'route' | 'stop' | 'osm_station' | 'osm_item';
 	data: any;
 	chateau?: string;
 	gtfs_id?: string;
@@ -154,6 +156,11 @@ export function selectResult(item: SearchResultItem): void {
 	if (recentLocation) rememberDirectionsLocation(recentLocation);
 
 	switch (item.type) {
+		case 'coordinate': {
+			const coordinate = item.data as { lat: number; lon: number };
+			flyToSearchLocation(map, [coordinate.lon, coordinate.lat], 16);
+			break;
+		}
 		case 'cypress': {
 			const feature = item.data as CypressFeature;
 			const osm = parseCypressOsmId(feature.properties.id);
@@ -166,7 +173,7 @@ export function selectResult(item: SearchResultItem): void {
 			recordOsmItemVisit(place);
 			pushScreen(place);
 			if (Number.isFinite(lon) && Number.isFinite(lat)) {
-				map?.flyTo({ center: [lon, lat], zoom: 16 });
+				flyToSearchLocation(map, [lon, lat], 16);
 			}
 			break;
 		}
@@ -180,7 +187,7 @@ export function selectResult(item: SearchResultItem): void {
 			recordOsmItemVisit(screen);
 			pushScreen(screen);
 			if (Number.isFinite(place.lon) && Number.isFinite(place.lat)) {
-				map?.flyTo({ center: [place.lon, place.lat], zoom: 16 });
+				flyToSearchLocation(map, [place.lon, place.lat], 16);
 			}
 			break;
 		}
@@ -206,7 +213,7 @@ export function selectResult(item: SearchResultItem): void {
 				)
 			);
 			if (point) {
-				map?.flyTo({ center: [point.x, point.y], zoom: 16 });
+				flyToSearchLocation(map, [point.x, point.y], 16);
 			}
 			break;
 		}

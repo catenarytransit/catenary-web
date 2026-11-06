@@ -1,18 +1,14 @@
 <script lang="ts">
 	import { data_stack_store } from '$root/globalstores';
 	import { TripPlannerStack } from '$components/stackenum';
-	import DonationPopup from '$components/DonationPopup.svelte';
 	import type { SidebarController } from '$lib/features/sidebar/public';
 	import SearchAutocompleteList from './SearchAutocompleteList.svelte';
 	import SearchBar from './SearchBar.svelte';
 	import { autocompleteFocus } from '../state/searchData';
 
 	export let sidebar: SidebarController;
-	export let showDonationPopup = false;
-	export let dismissDonationPopup: () => void;
 
 	const sidebarState = sidebar.state;
-	$: hasSidebarScreen = $data_stack_store.length > 0;
 	$: showingDirections = $data_stack_store[$data_stack_store.length - 1]?.data instanceof TripPlannerStack;
 </script>
 
@@ -32,19 +28,5 @@
 				<p class="px-3 py-2 text-xs text-gray-600 md:hidden dark:text-gray-300">Catenary Search Beta.</p>
 			</div>
 		{/if}
-	</div>
-{/if}
-
-{#if showDonationPopup && !hasSidebarScreen && !$autocompleteFocus}
-	<div
-		class="fixed top-12 right-16 left-3 z-30 sm:right-auto sm:w-2/5 md:hidden"
-		style={`transform: translateY(${$sidebarState.searchTranslateY}px);`}
-	>
-		<DonationPopup
-			title="Help keep Catenary Maps running"
-			message="Our aging server is reaching its limits. Your support helps us replace it and add the computing power needed to release trip planning and navigation."
-			compact
-			on:dismiss={dismissDonationPopup}
-		/>
 	</div>
 {/if}
