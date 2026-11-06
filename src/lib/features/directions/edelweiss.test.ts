@@ -383,6 +383,13 @@ describe('Edelweiss geometry and itinerary presentation', () => {
 		expect(routeBadgeKind({mode:'RAIL',chateau:'schweiz',routeShortName:'IC5'})).toBe('sbb');
 		expect(routeBadgeKind({mode:'SUBWAY',chateau:'other',routeShortName:'14'})).toBe('standard');
 	});
+	it.each(['schweiz', 'ch'])('preserves Swiss line labels and badges for %s', (chateau) => {
+		const leg = {mode: 'RAIL', chateau, routeShortName: 'IC5', tripShortName: '1234'};
+		expect(routeLabel(leg)).toBe('IC5');
+		expect(routeBadgeKind(leg)).toBe('sbb');
+		const [segment] = itinerarySegments({...itinerary, legs: [leg]});
+		expect(segment).toMatchObject({routeName: 'IC5', badgeKind: 'sbb', badgeName: 'IC5'});
+	});
 	it('uses only trip short name for UK National Rail', () => {
 		expect(routeLabel({mode:'RAIL',chateau:'nationalrailuk',routeShortName:'GWR',tripShortName:'1A23'})).toBe('1A23');
 		expect(routeLabel({mode:'RAIL',chateau:'nationalrailuk',routeShortName:'GWR'})).toBeNull();

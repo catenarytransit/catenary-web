@@ -14,6 +14,7 @@ import {
 } from '$root/globalstores';
 import { start_location_watch } from '$root/user_location_lib';
 import { darkMode } from '$lib/shared/theme/theme';
+import { startLocationAfterDownloadPrompt } from './locationStartup';
 import { initializeOverlayState } from './state/overlays';
 
 let modulesInitialized = false;
@@ -33,10 +34,7 @@ export function initializeApplicationModules(): void {
 
 	if (typeof window !== 'undefined') {
 		applyDarkMode(
-			resolveDarkMode(
-				get(ui_theme_store),
-				window.matchMedia('(prefers-color-scheme: dark)')
-			)
+			resolveDarkMode(get(ui_theme_store), window.matchMedia('(prefers-color-scheme: dark)'))
 		);
 	}
 }
@@ -116,7 +114,7 @@ export function startBrowserRuntime(): () => void {
 	const colorScheme = window.matchMedia('(prefers-color-scheme: dark)');
 
 	initializeGoogleAnalytics();
-	initializeOverlayState(searchParams, navigator.userAgent);
+	initializeOverlayState(searchParams, navigator.userAgent, navigator.maxTouchPoints);
 	initializeUrlState(searchParams);
 	deep_link_url_reader(searchParams);
 	preloadFeatureScreens();
@@ -182,10 +180,7 @@ export function startBrowserRuntime(): () => void {
 		})
 	);
 
-	const stopLocationWatch = start_location_watch();
-	if (stopLocationWatch) {
-		cleanups.push(stopLocationWatch);
-	}
+	cleanups.push(startLocationAfterDownloadPrompt(start_location_watch));
 
 	return () => {
 		for (const cleanup of cleanups.reverse()) {

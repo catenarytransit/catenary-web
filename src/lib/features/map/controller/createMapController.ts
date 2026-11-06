@@ -1,4 +1,5 @@
 import * as maplibregl from 'maplibre-gl';
+import type { InitialCamera } from '../initialCamera';
 import { activeItineraries, activeItineraryIndex, selectedTransferItineraryIndex, refreshDirectionsSource, raiseDirectionsLayers, clearDirectionsContext } from '$lib/features/directions/mapRoutes';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { TripPlannerStack } from '$components/stackenum';
@@ -33,13 +34,13 @@ import { addTerrainSourcesAndLayers, applySky, applyTopography } from './mapAppe
 import {
 	addOpenRailwayMapSources,
 	fetchChateaus,
-	getInitialCenter,
+	getInitialCamera,
 	getMapStyle,
-	getMarkedPoint,
-	updateCenterFromIp
+	getMarkedPoint
 } from './mapConfiguration';
 
 export interface MapControllerDependencies {
+	initialCamera?: InitialCamera | null;
 	recomputeSidebarPadding(): void;
 	openSidebar(): void;
 }
@@ -232,6 +233,7 @@ export function createMapController(
 		configureMapLibreWorkers();
 
 		const isLowSpec = getOptimalPixelRatio() === 1;
+		const camera = getInitialCamera(dependencies.initialCamera ?? null);
 
 		map = new maplibregl.Map({
 			canvasContextAttributes: {
@@ -247,8 +249,10 @@ export function createMapController(
 			validateStyle: true,
 			fadeDuration: 100,
 			style: getMapStyle(searchParams, currentDarkMode),
-			center: getInitialCenter(),
-			zoom: 10
+			// MapLibre's hash option takes precedence over these defaults.
+			center: [camera.longitude, camera.latitude],
+			zoom: camera.zoom,
+			customAttribution: 'This product includes GeoLite2 data created by <a href="https://www.maxmind.com/">MaxMind</a>.'
 		} as any);
 
 		const currentMap = map;
@@ -289,7 +293,6 @@ export function createMapController(
 		}
 
 		void fetchChateaus(currentMap);
-		void updateCenterFromIp(currentMap);
 
 		void setupMap(
 			currentMap,

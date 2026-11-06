@@ -14,7 +14,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: oven-sh/setup-bun@v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: Install Node Dependency
         run: bun install
+      - name: Test IP geolocation
+        run: npm run test:geoip
       - name: Build
         run: bun run build

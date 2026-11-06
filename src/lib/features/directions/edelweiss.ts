@@ -411,10 +411,10 @@ export function routeBadgeKind(leg: EdelweissLeg): ItinerarySegment['badgeKind']
 		(icon === 'train' && /^[A-EHJKLNPRUV]$/i.test(name))
 	)) return 'ratp';
 	// A train number uses the ordinary text badge rather than line-specific styling.
-	if (icon === 'train' && leg.tripShortName?.trim()) return 'standard';
+	if (icon === 'train' && leg.tripShortName?.trim() && !['schweiz', 'ch'].includes(chateau)) return 'standard';
 	if (['deutschland','vbb'].includes(chateau) && icon === 'train' &&
 		/^S\d+[A-Za-z]?$/i.test(name)) return 'sbahn';
-	if (chateau === 'schweiz' && icon === 'train' &&
+	if (['schweiz', 'ch'].includes(chateau) && icon === 'train' &&
 		/^(?:IC|IR)(?:\d+)?$|^EC$/i.test(name)) return 'sbb';
 	return 'standard';
 }
@@ -432,6 +432,10 @@ export function routeLabel(leg: EdelweissLeg): string | null {
 	const name = lineName(leg);
 	const tripName = leg.tripShortName?.trim() || null;
 	if (legTransitIcon(leg) === 'train') {
+		// Swiss previews identify the line rather than the individual train number.
+		if (['schweiz', 'ch'].includes(leg.chateau ?? '')) {
+			return leg.routeShortName?.trim() || null;
+		}
 		if (leg.chateau === 'nationalrailuk') {
 			return isNationalRailLineException(leg) ? name || tripName : tripName;
 		}

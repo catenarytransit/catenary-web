@@ -143,10 +143,10 @@
 	let fly_to_already = false;
 	let data_meta: any = null; // primary/routes/shapes merged from any page
 
-	// Derived display info - uses data_meta.primary if available, otherwise falls back to props
-	$: displayName = data_meta?.primary?.stop_name ?? stationName ?? 'Loading...';
-	$: displayLat = data_meta?.primary?.stop_lat ?? stationLat;
-	$: displayLon = data_meta?.primary?.stop_lon ?? stationLon;
+	// GTFS departures use primary; OSM departures return station metadata separately.
+	$: displayName = data_meta?.primary?.stop_name ?? data_meta?.osm_station?.name ?? stationName ?? 'Loading...';
+	$: displayLat = data_meta?.primary?.stop_lat ?? data_meta?.osm_station?.lat ?? stationLat;
+	$: displayLon = data_meta?.primary?.stop_lon ?? data_meta?.osm_station?.lon ?? stationLon;
 	$: displayTimezone =
 		data_meta?.primary?.timezone ?? data_meta?.stops?.[0]?.timezone ?? stationTimezone ?? 'UTC';
 	let show_arrivals_only = false; // Add missing state variable
@@ -607,6 +607,7 @@
 					}
 				}
 				if (!data_meta.primary && data.primary) data_meta.primary = data.primary;
+				if (!data_meta.osm_station && data.osm_station) data_meta.osm_station = data.osm_station;
 
 				// Force reactivity
 				data_meta = data_meta;

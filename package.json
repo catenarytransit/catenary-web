@@ -3,7 +3,10 @@
 	"version": "0.1.0",
 	"scripts": {
 		"dev": "vite dev",
-		"build": "vite build",
+		"build": "node scripts/build-ip-geolocation.mjs && vite build && node scripts/package-ip-geolocation.mjs",
+		"geoip:build": "node scripts/build-ip-geolocation.mjs",
+		"geoip:refresh": "node scripts/build-ip-geolocation.mjs --refresh",
+		"test:geoip": "node --test tests/geoip.test.mjs",
 		"cloudflarebuild": "mv cloudflare-svelte.config.js svelte.config.js && svelte-kit sync && vite build",
 		"preview": "vite preview --port 16172",
 		"betapreview": "vite preview --port 16173",

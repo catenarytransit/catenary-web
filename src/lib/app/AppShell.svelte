@@ -8,11 +8,15 @@
 	import AppHead from './AppHead.svelte';
 	import AppOverlays from './AppOverlays.svelte';
 	import { initializeApplicationModules, startBrowserRuntime } from './bootstrap';
+	import type { InitialCamera } from '$lib/features/map/initialCamera';
+
+	export let initialCamera: InitialCamera | null = null;
 
 	initializeApplicationModules();
 
 	const sidebarController = createSidebarController();
 	const mapController = createMapController({
+		initialCamera,
 		recomputeSidebarPadding: sidebarController.recomputeMapPadding,
 		openSidebar: sidebarController.open
 	});
