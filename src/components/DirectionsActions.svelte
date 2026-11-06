@@ -33,23 +33,28 @@
 	}
 </script>
 
-<div class="mx-1 my-2 flex flex-wrap gap-2" role="group" aria-label="Plan a journey from or to this place">
+<div class="mx-1 my-2 flex gap-2 overflow-x-auto" role="group" aria-label="Plan a journey from or to this place">
 	<button
 		type="button"
 		disabled={!available}
 		on:click={() => openPlanner('origin')}
-		class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
+		class="inline-flex h-10 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full border border-gray-500 bg-transparent px-6 text-sm font-medium text-sky-700 enabled:hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-400 dark:text-sky-300 dark:enabled:hover:bg-gray-700 dark:focus-visible:ring-offset-gray-900"
 	>
-		<span class="material-symbols-outlined text-lg" aria-hidden="true">trip_origin</span>
+		<svg class="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+			<path d="M16,12 L23,12 M16,12 A7,7 0,1 0,2 12 A7,7 0,1 0,16 12 M12.5,12 A3.5,3.5 0,1 0,5.5 12 A3.5,3.5 0,1 0,12.5 12" />
+		</svg>
 		As origin
 	</button>
 	<button
 		type="button"
 		disabled={!available}
 		on:click={() => openPlanner('destination')}
-		class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-sky-600 bg-white px-3 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-800 dark:text-sky-300 dark:hover:bg-gray-700"
+		class="inline-flex h-10 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full border border-gray-500 bg-transparent px-6 text-sm font-medium text-sky-700 enabled:hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-400 dark:text-sky-300 dark:enabled:hover:bg-gray-700 dark:focus-visible:ring-offset-gray-900"
 	>
-		<span class="material-symbols-outlined text-lg" aria-hidden="true">place</span>
+		<svg class="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+			<path fill="none" stroke="currentColor" stroke-width="1.5" d="M1,12 L8,12 M22,12 A7,7 0,1 0,8 12 A7,7 0,1 0,22 12" />
+			<path fill="currentColor" d="M18.5,12 A3.5,3.5 0,1 0,11.5 12 A3.5,3.5 0,1 0,18.5 12" />
+		</svg>
 		As destination
 	</button>
 </div>

@@ -106,7 +106,7 @@
 </script>
 
 <div
-	class="w-full rounded-full border border-gray-500 bg-white px-2 py-1 sm:w-2/5 md:w-[350px] xl:w-[456px] dark:bg-gray-900 dark:text-white"
+	class="w-full rounded-full bg-white px-2 py-1 sm:w-2/5 md:w-[350px] xl:w-[456px] dark:bg-gray-900 dark:text-white"
 >
 	<div class="flex flex-row items-center gap-x-1 align-middle">
 		{#if $showBackButton}
