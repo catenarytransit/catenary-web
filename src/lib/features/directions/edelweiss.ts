@@ -242,12 +242,16 @@ export function routeBadgeKind(leg: EdelweissLeg): ItinerarySegment['badgeKind']
 	)) return 'ratp';
 	if (['deutschland','vbb'].includes(chateau) && ['RAIL','TRAIN'].includes(mode) &&
 		/^S\d+[A-Za-z]?$/i.test(shortName)) return 'sbahn';
-	if (chateau === 'schweiz' && ['RAIL','TRAIN'].includes(mode) &&
+	if (['schweiz', 'ch'].includes(chateau) && ['RAIL','TRAIN'].includes(mode) &&
 		/^(?:IC|IR)(?:\d+)?$|^EC$/i.test(shortName)) return 'sbb';
 	return 'standard';
 }
 
 export function routeLabel(leg: EdelweissLeg): string | null {
+	// Swiss train previews identify the line, rather than the individual train number.
+	if (['schweiz', 'ch'].includes(leg.chateau ?? '') && legTransitIcon(leg) === 'train') {
+		return leg.routeShortName?.trim() || null;
+	}
 	// UK rail route names are often generic operator labels, not a useful train ID.
 	if (leg.chateau === 'nationalrailuk' && ['RAIL','TRAIN'].includes(leg.mode.toUpperCase())) {
 		return leg.tripShortName?.trim() || null;
