@@ -5,8 +5,11 @@
 	import { get } from 'svelte/store';
 	import { data_stack_store, geolocation_store, map_pointer_store } from '$root/globalstores';
 	import { TripPlannerStack } from '$components/stackenum';
-	import { queryEdelweiss, resolveDepartureUnixSeconds, type EdelweissItinerary, isValidPoint, DEFAULT_STREET_ROUTING_SETTINGS, DEFAULT_DIRECT_TRAVEL_TIME_SECONDS, defaultTransitAccessTimeSeconds, formatWalkingPace, walkingPaceToKilometresPerHour, walkingPaceToSliderPosition, walkingSliderPositionToPace, WALKING_PACE_MIN_SECONDS_PER_KM, WALKING_PACE_MAX_SECONDS_PER_KM, type StreetMode } from '$lib/features/directions/edelweiss';
+	import { resolveDepartureUnixSeconds, type EdelweissItinerary, isValidPoint, DEFAULT_STREET_ROUTING_SETTINGS, DEFAULT_DIRECT_TRAVEL_TIME_SECONDS, defaultTransitAccessTimeSeconds, formatWalkingPace, walkingPaceToKilometresPerHour, walkingPaceToSliderPosition, walkingSliderPositionToPace, WALKING_PACE_MIN_SECONDS_PER_KM, WALKING_PACE_MAX_SECONDS_PER_KM, type StreetMode } from '$lib/features/directions/edelweiss';
 	import DatePicker from '$components/DatePicker.svelte';
+	import JourneySkeleton from '$components/JourneySkeleton.svelte';
+	import { _, locale } from 'svelte-i18n';
+	import { createRouteQuery, pageQuery, streamEdelweissPage, mergeEdelweissPages, itineraryIdentity, newRouteRequestId, type EdelweissPage, type EdelweissRouteQuery, type PageDirection } from '$lib/features/directions/edelweissStreaming';
 	import FootpathDebugPanel from '$components/FootpathDebugPanel.svelte';
 	import { footpathDebugEnabled, loadFootpathDebugPreference, type DebugStop } from '$lib/features/directions/footpathDebug';
 	import TripItineraryDetails from '$components/TripItineraryDetails.svelte';
@@ -36,6 +39,16 @@
 	let routeRequestId = 0;
 	let routingLoading = false;
 	let routingError = '';
+	let earlierLoading = false;
+	let laterLoading = false;
+	let previousPageCursor: string | null = null;
+	let nextPageCursor: string | null = null;
+	let originalRouteQuery: EdelweissRouteQuery | null = null;
+	let routePages: EdelweissPage[] = [];
+	let earlierPages: EdelweissPage[] = [];
+	let laterPages: EdelweissPage[] = [];
+	let earlierController: AbortController | null = null;
+	let laterController: AbortController | null = null;
 	let routes: EdelweissItinerary[] = [];
 	let selectedRoute = 0;
 	let expandedRoute: number | null = null;
@@ -212,6 +225,18 @@
 
 	function clearRoutes(): void {
 		routeRequestId++;
+		earlierController?.abort();
+		laterController?.abort();
+		earlierController = null;
+		laterController = null;
+		earlierLoading = false;
+		laterLoading = false;
+		previousPageCursor = null;
+		nextPageCursor = null;
+		originalRouteQuery = null;
+		routePages = [];
+		earlierPages = [];
+		laterPages = [];
 		routeController?.abort();
 		routeController = null;
 		routingLoading = false;
@@ -226,6 +251,22 @@
 		selectedTransferItineraryIndex.set(null);
 	}
 
+	/** Recompute visible rows from full replacement snapshots, keeping the selected journey by ID. */
+	function refreshRoutes(): void {
+		const selectedId = routes[selectedRoute] ? itineraryIdentity(routes[selectedRoute]) : null;
+		const expandedId = expandedRoute !== null && routes[expandedRoute] ? itineraryIdentity(routes[expandedRoute]) : null;
+		const detailId = detailsIndex !== null && routes[detailsIndex] ? itineraryIdentity(routes[detailsIndex]) : null;
+		const updated = mergeEdelweissPages([...earlierPages, ...routePages, ...laterPages]);
+		routes = updated;
+		selectedRoute = Math.max(0, selectedId ? updated.findIndex(item => itineraryIdentity(item) === selectedId) : 0);
+		expandedRoute = expandedId ? updated.findIndex(item => itineraryIdentity(item) === expandedId) : updated.length ? 0 : null;
+		if (expandedRoute !== null && expandedRoute < 0) expandedRoute = null;
+		detailsIndex = detailId ? updated.findIndex(item => itineraryIdentity(item) === detailId) : null;
+		if (detailsIndex !== null && detailsIndex < 0) detailsIndex = null;
+		activeItineraries.set(updated);
+		activeItineraryIndex.set(selectedRoute);
+	}
+
 	async function routeSelectedCoordinates(): Promise<void> {
 		clearRoutes();
 		if (!originSelection || !destinationSelection) return;
@@ -234,27 +275,85 @@
 		routeController = current;
 		routingLoading = true;
 		try {
-			const found = await queryEdelweiss(originSelection, destinationSelection, resolveDepartureUnixSeconds(departure, departNow), current.signal, timeMode === 'arrive', {
-				mode: streetMode,
-				walkingPaceSecondsPerKm: walkingPace,
-				cyclingSpeedKmH: cyclingSpeed,
-				maxPreTransitTimeSeconds: maxPreTransitMinutes * 60,
-				maxPostTransitTimeSeconds: maxPostTransitMinutes * 60,
-				maxDirectTimeSeconds: maxDirectMinutes * 60
+			const base = createRouteQuery(
+				originSelection, destinationSelection,
+				resolveDepartureUnixSeconds(departure, departNow),
+				timeMode === 'arrive',
+				{
+					mode: streetMode,
+					walkingPaceSecondsPerKm: walkingPace,
+					cyclingSpeedKmH: cyclingSpeed,
+					maxPreTransitTimeSeconds: maxPreTransitMinutes * 60,
+					maxPostTransitTimeSeconds: maxPostTransitMinutes * 60,
+					maxDirectTimeSeconds: maxDirectMinutes * 60
+				}
+			);
+			originalRouteQuery = base;
+			const requestId = newRouteRequestId();
+			const direction: PageDirection = timeMode === 'arrive' ? 'before' : 'after';
+			let fitted = false;
+			await streamEdelweissPage(pageQuery(base, direction), requestId, current.signal, (page) => {
+				if (current.signal.aborted || id !== routeRequestId) return;
+				routePages = [page]; // Replace, never append, successive WebSocket snapshots.
+				previousPageCursor = page.previousPageCursor;
+				nextPageCursor = page.nextPageCursor;
+				refreshRoutes();
+				if (!fitted && routes.length) {
+					fitted = true;
+					const map = get(map_pointer_store);
+					if (map) fitDirectionsItinerary(map, routes[0]);
+				}
 			});
-			if (current.signal.aborted || id !== routeRequestId) return;
-			routes = found;
-			activeItineraries.set(found);
-			if (found.length) {
-				expandedRoute = 0;
-				activeItineraryIndex.set(0);
-				const map = get(map_pointer_store);
-				if (map) fitDirectionsItinerary(map, found[0]);
-			}
 		} catch (error) {
-			if (!current.signal.aborted && id === routeRequestId) routingError = error instanceof Error ? error.message : 'Routing request failed';
+			if (!current.signal.aborted && id === routeRequestId)
+				routingError = error instanceof Error ? error.message : 'Routing request failed';
 		} finally {
 			if (id === routeRequestId) routingLoading = false;
+		}
+	}
+
+	/** The backend's cursors are query-bound, stateless and safe across new sockets. */
+	async function loadConnections(direction: PageDirection): Promise<void> {
+		const earlier = direction === 'before';
+		const cursor = earlier ? previousPageCursor : nextPageCursor;
+		if (!cursor || !originalRouteQuery || earlierLoading || laterLoading || routingLoading) return;
+		const id = routeRequestId;
+		const controller = new AbortController();
+		if (earlier) {
+			earlierController = controller;
+			earlierLoading = true;
+		} else {
+			laterController = controller;
+			laterLoading = true;
+		}
+		const requestId = newRouteRequestId();
+		const base = originalRouteQuery;
+		const previous = cursor;
+		try {
+			await streamEdelweissPage(pageQuery(base, direction, cursor), requestId, controller.signal, (page) => {
+				if (controller.signal.aborted || routeRequestId !== id) return;
+				if (earlier) {
+					earlierPages = [...earlierPages.filter(item => item.requestId !== requestId), page];
+					previousPageCursor = page.previousPageCursor === previous ? null : page.previousPageCursor;
+				} else {
+					laterPages = [...laterPages.filter(item => item.requestId !== requestId), page];
+					nextPageCursor = page.nextPageCursor === previous ? null : page.nextPageCursor;
+				}
+				refreshRoutes();
+			});
+		} catch (error) {
+			if (!controller.signal.aborted && id === routeRequestId)
+				routingError = error instanceof Error ? error.message : 'Unable to load connections';
+		} finally {
+			if (routeRequestId === id) {
+				if (earlier) {
+					earlierLoading = false;
+					earlierController = null;
+				} else {
+					laterLoading = false;
+					laterController = null;
+				}
+			}
 		}
 	}
 
@@ -672,9 +771,24 @@
 		{/if}
 	</div>
 	<div class="mt-5 flex flex-col gap-3 pb-8" aria-label="Available routes">
-		{#if routingLoading}<p role="status" class="text-sm text-gray-500">Finding routes…</p>{/if}
+		{#if routingLoading && routes.length === 0}<span class="sr-only" role="status">Finding routes…</span>{/if}
 		{#if routingError}<p role="alert" class="text-sm text-red-600">{routingError}</p>{/if}
 		{#if !routingLoading && !routingError && originSelection && destinationSelection && routes.length === 0}<p class="text-sm text-gray-500">No routes found for this journey.</p>{/if}
+		{#if originalRouteQuery && (routes.length > 0 || routingLoading)}
+			<button type="button" on:click={() => loadConnections('before')} disabled={!previousPageCursor || routingLoading || earlierLoading || laterLoading} aria-busy={earlierLoading} class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700">
+				<span class="inline-flex items-center gap-2"><span class="material-symbols-outlined text-base" aria-hidden="true">keyboard_arrow_up</span>{$_('earlier_connections')}</span>
+			</button>
+			{#if earlierLoading}
+				<div role="status" aria-label="Loading earlier connections" class="flex flex-col gap-3">
+					{#each Array(3) as _}<JourneySkeleton />{/each}
+				</div>
+			{/if}
+		{/if}
+		{#if routingLoading && routes.length === 0}
+			<div role="status" aria-label="Loading connections" class="flex flex-col gap-3">
+				{#each Array(3) as _}<JourneySkeleton />{/each}
+			</div>
+		{/if}
 		{#each routes as itinerary, index}
 			<div class="w-full rounded-xl border bg-white p-3 shadow-sm transition-all duration-300 ease-out dark:bg-gray-800 {selectedRoute === index ? 'border-cyan-700 ring-1 ring-cyan-700' : 'border-gray-200 dark:border-gray-700'}">
 				<button type="button" on:click={() => showRoute(index)} aria-pressed={selectedRoute === index} aria-expanded={expandedRoute === index} aria-label={`Preview journey ${index + 1}`} class="block w-full text-left">
@@ -689,6 +803,19 @@
 				{/if}
 			</div>
 		{/each}
+		{#if routingLoading && routes.length > 0}
+			<div role="status" aria-label="Finding more connections"><JourneySkeleton /></div>
+		{/if}
+		{#if originalRouteQuery && (routes.length > 0 || routingLoading)}
+			{#if laterLoading}
+				<div role="status" aria-label="Loading later connections" class="flex flex-col gap-3">
+					{#each Array(3) as _}<JourneySkeleton />{/each}
+				</div>
+			{/if}
+			<button type="button" on:click={() => loadConnections('after')} disabled={!nextPageCursor || routingLoading || earlierLoading || laterLoading} aria-busy={laterLoading} class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700">
+				<span class="inline-flex items-center gap-2">{$_('later_connections')}<span class="material-symbols-outlined text-base" aria-hidden="true">keyboard_arrow_down</span></span>
+			</button>
+		{/if}
 	</div>
 	</div>
 	{#if detailsIndex !== null && routes[detailsIndex]}
