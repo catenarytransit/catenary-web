@@ -58,21 +58,32 @@
 	let is_now = initial_is_now;
 	let selected_unix_time = initial_selected_unix_time;
 
-	$: {
-		data_stack_store.update((stack) => {
-			if (stack.length > 0) {
-				let last = stack[stack.length - 1];
-				if (
-					last.data instanceof StopStack ||
-					last.data instanceof OsmStationStack ||
-					last.data instanceof NearbyDeparturesStack
-				) {
-					last.data.is_now = is_now;
-					last.data.selected_unix_time = selected_unix_time;
+$: {
+		const stack = get(data_stack_store);
+		if (stack.length > 0) {
+			let last = stack[stack.length - 1];
+			if (
+				last.data instanceof StopStack ||
+				last.data instanceof OsmStationStack ||
+				last.data instanceof NearbyDeparturesStack
+			) {
+				// ONLY trigger a global store update if the user actually changed the time
+				if (last.data.is_now !== is_now || last.data.selected_unix_time !== selected_unix_time) {
+					data_stack_store.update((s) => {
+						let l = s[s.length - 1];
+						if (
+							l.data instanceof StopStack ||
+							l.data instanceof OsmStationStack ||
+							l.data instanceof NearbyDeparturesStack
+						) {
+							l.data.is_now = is_now;
+							l.data.selected_unix_time = selected_unix_time;
+						}
+						return s;
+					});
 				}
 			}
-			return stack;
-		});
+		}
 	}
 
 	export let buildUrl: (startSec: number, endSec: number) => string;
