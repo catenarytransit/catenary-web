@@ -243,3 +243,21 @@ export async function streamEdelweissPage(
 		await httpPage(query, requestId, signal, onSnapshot);
 	}
 }
+
+/**
+ * Collect replacement WebSocket snapshots without publishing intermediate results.
+ * Resolves only after the authoritative "complete" frame (or successful HTTP fallback).
+ * Intended for prepended earlier pages so all new cards enter in one animation batch.
+ */
+export async function loadCompleteEdelweissPage(
+	query: EdelweissRouteQuery,
+	requestId: string,
+	signal: AbortSignal
+): Promise<EdelweissPage> {
+	let finalPage: EdelweissPage | null = null;
+	await streamEdelweissPage(query, requestId, signal, (page) => {
+		finalPage = page; // Each snapshot replaces its predecessor, never accumulates.
+	});
+	if (!finalPage) throw new Error('Edelweiss completed without a routing page');
+	return finalPage;
+}
