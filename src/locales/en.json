@@ -187,5 +187,7 @@
   "cs_no_data": "No train formation data available.",
   "cs_disclaimer": "All information without guarantee.",
   "cs_nf": "LF",
-  "skip_to_current_trip": "Skip to current trip"
+  "skip_to_current_trip": "Skip to current trip",
+  "earlier_connections": "Earlier connections",
+  "later_connections": "Later connections"
 }
