@@ -184,5 +184,7 @@
   "cs_legend": "Légende",
   "cs_no_data": "Aucune donnée de composition de train disponible.",
   "cs_disclaimer": "Toutes les informations sont sans garantie.",
-  "cs_nf": "PS"
+  "cs_nf": "PS",
+  "earlier_connections": "Relations précédentes",
+  "later_connections": "Relations suivantes"
 }

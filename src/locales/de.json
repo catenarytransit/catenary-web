@@ -166,5 +166,7 @@
   "cs_legend": "Legende",
   "cs_no_data": "Keine Zugbildungsdaten verfügbar.",
   "cs_disclaimer": "Alle Angaben ohne Gewähr.",
-  "cs_nf": "NF"
+  "cs_nf": "NF",
+  "earlier_connections": "Frühere Verbindungen",
+  "later_connections": "Spätere Verbindungen"
 }
