@@ -53,6 +53,8 @@ export interface EdelweissLeg {
 }
 
 export interface EdelweissItinerary {
+	/** Stable identifier supplied by Edelweiss for streamed and paged journeys. */
+	id?: string;
 	startTime: string;
 	endTime: string;
 	duration?: number;
