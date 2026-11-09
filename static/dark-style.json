@@ -2587,13 +2587,37 @@
       "source": "openmaptiles",
       "source-layer": "poi",
       "minzoom": 17,
-      "filter": ["all",["!=",["get","subclass"],"bus_stop"],["match",["geometry-type"],["Point","MultiPoint"],true,false],["any",["!=",["coalesce",["get","name"],""],""],["!=",["coalesce",["get","name_en"],""],""],["!=",["coalesce",["get","name_int"],""],""],["!=",["coalesce",["get","name:latin"],""],""],["!=",["coalesce",["get","name:nonlatin"],""],""],["!=",["coalesce",["get","name_de"],""],""]]],
+      "filter": [
+        "all",
+        ["!=", ["get", "subclass"], "bus_stop"],
+        ["!=", ["get", "subclass"], "station"],
+        ["!=", ["get", "class"], "railway"],
+        ["match", ["geometry-type"], ["Point", "MultiPoint"], true, false],
+        [
+          "any",
+          ["!=", ["coalesce", ["get", "name"], ""], ""],
+          ["!=", ["coalesce", ["get", "name_en"], ""], ""],
+          ["!=", ["coalesce", ["get", "name_int"], ""], ""],
+          ["!=", ["coalesce", ["get", "name:latin"], ""], ""],
+          ["!=", ["coalesce", ["get", "name:nonlatin"], ""], ""],
+          ["!=", ["coalesce", ["get", "name_de"], ""], ""]
+        ]
+      ],
       "layout": {
         "text-anchor": "top",
         "icon-optional": true,
         "text-allow-overlap": true,
         "text-ignore-placement": true,
-        "text-field": ["coalesce",["get","name"],["get","name_en"],["get","name_int"],["get","name:latin"],["get","name:nonlatin"],["get","name_de"],""],
+        "text-field": [
+          "coalesce",
+          ["get", "name"],
+          ["get", "name_en"],
+          ["get", "name_int"],
+          ["get", "name:latin"],
+          ["get", "name:nonlatin"],
+          ["get", "name_de"],
+          ""
+        ],
         "text-font": ["Arimo-Regular"],
         "text-max-width": 9,
         "text-offset": [0, 0.6],
@@ -2676,7 +2700,7 @@
       "maxzoom": 17,
       "filter": [
         "all",
-        ["!=",["get","subclass"],"bus_stop"],
+        ["!=", ["get", "subclass"], "bus_stop"],
         ["match", ["geometry-type"], ["Point", "MultiPoint"], true, false],
         [">=", ["get", "rank"], 2],
         ["<", ["get", "rank"], 20],
@@ -2686,7 +2710,16 @@
       ],
       "layout": {
         "text-anchor": "top",
-        "text-field": ["coalesce",["get","name"],["get","name_en"],["get","name_int"],["get","name:latin"],["get","name:nonlatin"],["get","name_de"],""],
+        "text-field": [
+          "coalesce",
+          ["get", "name"],
+          ["get", "name_en"],
+          ["get", "name_int"],
+          ["get", "name:latin"],
+          ["get", "name:nonlatin"],
+          ["get", "name_de"],
+          ""
+        ],
         "text-font": ["Arimo-Regular"],
         "text-max-width": 9,
         "text-offset": [0, 0.6],
@@ -2769,7 +2802,7 @@
       "maxzoom": 17,
       "filter": [
         "all",
-        ["!=",["get","subclass"],"bus_stop"],
+        ["!=", ["get", "subclass"], "bus_stop"],
         ["match", ["geometry-type"], ["Point", "MultiPoint"], true, false],
         ["==", ["get", "rank"], 1],
         ["!=", ["get", "class"], "bus"],
