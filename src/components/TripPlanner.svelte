@@ -10,7 +10,7 @@
 	import DatePicker from '$components/DatePicker.svelte';
 	import JourneySkeleton from '$components/JourneySkeleton.svelte';
 	import { _ } from 'svelte-i18n';
-	import { createRouteQuery, pageQuery, streamEdelweissPage, mergeEdelweissPages, itineraryIdentity, newRouteRequestId, type EdelweissPage, type EdelweissRouteQuery, type PageDirection } from '$lib/features/directions/edelweissStreaming';
+	import { createRouteQuery, pageQuery, streamEdelweissPage, mergeEdelweissPages, itineraryIdentity, newRouteRequestId, loadCompleteEdelweissPage, type EdelweissPage, type EdelweissRouteQuery, type PageDirection } from '$lib/features/directions/edelweissStreaming';
 	import FootpathDebugPanel from '$components/FootpathDebugPanel.svelte';
 	import { footpathDebugEnabled, loadFootpathDebugPreference, type DebugStop } from '$lib/features/directions/footpathDebug';
 	import TripItineraryDetails from '$components/TripItineraryDetails.svelte';
@@ -340,22 +340,29 @@
 		const base = originalRouteQuery;
 		const previous = cursor;
 		try {
-			await streamEdelweissPage(pageQuery(base, direction, cursor), requestId, controller.signal, (page) => {
+			const query = pageQuery(base, direction, cursor);
+			if (earlier) {
+				// Do not publish intermediate snapshots for earlier pages: displaying the
+				// authoritative completed page in one update makes all four new cards
+				// enter together, instead of jumping down with each PONG sweep.
+				const page = await loadCompleteEdelweissPage(query, requestId, controller.signal);
 				if (controller.signal.aborted || routeRequestId !== id) return;
-				if (earlier) {
-					// Snapshots replace the current page. Animate only IDs absent from the visible list.
-					const existingIds = new Set(routes.map(itineraryIdentity));
-					earlierInsertedIds = new Set(
-						page.itineraries.map(itineraryIdentity).filter(itemId => !existingIds.has(itemId))
-					);
-					earlierPages = [...earlierPages.filter(item => item.requestId !== requestId), page];
-					previousPageCursor = page.previousPageCursor === previous ? null : page.previousPageCursor;
-				} else {
+				const existingIds = new Set(routes.map(itineraryIdentity));
+				earlierInsertedIds = new Set(
+					page.itineraries.map(itineraryIdentity).filter(itemId => !existingIds.has(itemId))
+				);
+				earlierPages = [...earlierPages.filter(item => item.requestId !== requestId), page];
+				previousPageCursor = page.previousPageCursor === previous ? null : page.previousPageCursor;
+				refreshRoutes();
+			} else {
+				// Later results continue to stream progressively with skeleton placeholders.
+				await streamEdelweissPage(query, requestId, controller.signal, (page) => {
+					if (controller.signal.aborted || routeRequestId !== id) return;
 					laterPages = [...laterPages.filter(item => item.requestId !== requestId), page];
 					nextPageCursor = page.nextPageCursor === previous ? null : page.nextPageCursor;
-				}
-				refreshRoutes();
-			});
+					refreshRoutes();
+				});
+			}
 		} catch (error) {
 			if (!controller.signal.aborted && id === routeRequestId)
 				routingError = error instanceof Error ? error.message : 'Unable to load connections';
@@ -791,7 +798,7 @@
 		{#if !routingLoading && !routingError && originSelection && destinationSelection && routes.length === 0}<p class="text-sm text-gray-500">No routes found for this journey.</p>{/if}
 		{#if originalRouteQuery && (routes.length > 0 || routingLoading)}
 			<button type="button" on:click={() => loadConnections('before')} disabled={!previousPageCursor || routingLoading || earlierLoading || laterLoading} aria-busy={earlierLoading} class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700">
-				<span class="inline-flex items-center gap-2"><span class="material-symbols-outlined text-base" aria-hidden="true">keyboard_arrow_up</span>{$_('earlier_connections')}</span>
+				<span class="inline-flex items-center gap-2"><span class="material-symbols-outlined text-base" class:animate-spin={earlierLoading} aria-hidden="true">{earlierLoading ? 'progress_activity' : 'keyboard_arrow_up'}</span>{$_('earlier_connections')}</span>
 			</button>
 			{#if earlierLoading}<span class="sr-only" role="status">Loading earlier connections…</span>{/if}
 		{/if}
