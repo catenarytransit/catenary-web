@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
 	createRouteQuery, pageQuery, emptyEdelweissPage, mergeEdelweissPages,
-	parseEdelweissPage, itineraryIdentity, INITIAL_RESULTS, ADDITIONAL_RESULTS
+	parseEdelweissPage, itineraryIdentity, INITIAL_RESULTS, EARLIER_PAGE_RESULTS, LATER_PAGE_RESULTS
 } from './edelweissStreaming';
 import { DEFAULT_STREET_ROUTING_SETTINGS, type EdelweissItinerary } from './edelweiss';
 
@@ -28,12 +28,14 @@ describe('Edelweiss stateless streaming pages', () => {
 		});
 		expect(later).toMatchObject({
 			page_cursor: 'opaque-cursor', number_of_results_before: 0,
-			number_of_results_after: ADDITIONAL_RESULTS, preTransitModes: ['WALK']
+			number_of_results_after: LATER_PAGE_RESULTS, preTransitModes: ['WALK']
 		});
 		expect(earlier).toMatchObject({
-			page_cursor: 'opaque-cursor-2', number_of_results_before: ADDITIONAL_RESULTS,
+			page_cursor: 'opaque-cursor-2', number_of_results_before: EARLIER_PAGE_RESULTS,
 			number_of_results_after: 0
 		});
+		expect(EARLIER_PAGE_RESULTS).toBe(4);
+		expect(LATER_PAGE_RESULTS).toBe(5);
 		expect(base).not.toHaveProperty('page_cursor');
 		expect(pageQuery(createRouteQuery(
 			{lat:33,lon:-117}, {lat:34,lon:-118}, 1794201234, true, DEFAULT_STREET_ROUTING_SETTINGS
