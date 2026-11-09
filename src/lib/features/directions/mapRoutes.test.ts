@@ -1,6 +1,38 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Map } from 'maplibre-gl';
-import { clearDirectionsContext, refreshDirectionsSource } from './mapRoutes';
+import polyline from '@mapbox/polyline';
+import type { EdelweissItinerary } from './edelweiss';
+import { clearDirectionsContext, fitDirectionsItinerary, refreshDirectionsSource } from './mapRoutes';
+
+describe('journey bounds', () => {
+	it('fits the complete journey with equal horizontal margins inside the sidebar-padded map', () => {
+		const fitBounds = vi.fn();
+		const map = { fitBounds } as unknown as Map;
+		const itinerary: EdelweissItinerary = {
+			startTime: '', endTime: '', duration: 600,
+			legs: [{ mode: 'BUS', duration: 600,
+				from: { name: 'Origin', lon: -118, lat: 34 }, to: { name: 'Destination', lon: -117.9, lat: 34.1 },
+				legGeometry: { points: polyline.encode([[34, -118], [34.2, -118.1], [34.1, -117.9]], 6), precision: 6 }
+			}]
+		};
+
+		fitDirectionsItinerary(map, itinerary);
+
+		// Include the intermediate shape point, not only the leg endpoints. The
+		// extra inset must not reserve the sidebar again (or use a desktop inset on mobile).
+		expect(fitBounds).toHaveBeenCalledExactlyOnceWith(
+			[[-118.1, 34], [-117.9, 34.2]],
+			{ padding: { top: 85, bottom: 65, left: 45, right: 45 }, maxZoom: 15, duration: 550 }
+		);
+	});
+
+	it('does not move the camera for a journey without coordinates', () => {
+		const fitBounds = vi.fn();
+		fitDirectionsItinerary({ fitBounds } as unknown as Map,
+			{ startTime: '', endTime: '', duration: 0, legs: [] });
+		expect(fitBounds).not.toHaveBeenCalled();
+	});
+});
 
 describe('directions map cleanup', () => {
 	it('clears route lines and transfer stops even while the style is loading', () => {
