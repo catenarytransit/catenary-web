@@ -8,7 +8,7 @@
 	import { resolveDepartureUnixSeconds, type EdelweissItinerary, isValidPoint, DEFAULT_STREET_ROUTING_SETTINGS, DEFAULT_DIRECT_TRAVEL_TIME_SECONDS, defaultTransitAccessTimeSeconds, formatWalkingPace, walkingPaceToKilometresPerHour, walkingPaceToSliderPosition, walkingSliderPositionToPace, WALKING_PACE_MIN_SECONDS_PER_KM, WALKING_PACE_MAX_SECONDS_PER_KM, type StreetMode } from '$lib/features/directions/edelweiss';
 	import DatePicker from '$components/DatePicker.svelte';
 	import JourneySkeleton from '$components/JourneySkeleton.svelte';
-	import { _, locale } from 'svelte-i18n';
+	import { _ } from 'svelte-i18n';
 	import { createRouteQuery, pageQuery, streamEdelweissPage, mergeEdelweissPages, itineraryIdentity, newRouteRequestId, type EdelweissPage, type EdelweissRouteQuery, type PageDirection } from '$lib/features/directions/edelweissStreaming';
 	import FootpathDebugPanel from '$components/FootpathDebugPanel.svelte';
 	import { footpathDebugEnabled, loadFootpathDebugPreference, type DebugStop } from '$lib/features/directions/footpathDebug';
