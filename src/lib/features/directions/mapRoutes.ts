@@ -116,7 +116,10 @@ export function fitDirectionsItinerary(map: Map, itinerary: EdelweissItinerary):
 		minLat = Math.min(minLat, lat); maxLat = Math.max(maxLat, lat);
 	}
 	map.fitBounds([[minLon, minLat], [maxLon, maxLat]], {
-		padding: { top: 85, bottom: 65, left: Math.min(window.innerWidth * 0.42, 520), right: 45 },
+		// MapLibre adds fitBounds padding to the map's existing camera padding.
+		// The sidebar controller already reserves the left sidebar / mobile sheet;
+		// only add a margin around the journey within that visible map area.
+		padding: { top: 85, bottom: 65, left: 45, right: 45 },
 		maxZoom: 15, duration: 550
 	});
 }
