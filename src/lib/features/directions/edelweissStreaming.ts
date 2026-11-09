@@ -20,7 +20,8 @@ export interface EdelweissPage {
 }
 
 export const INITIAL_RESULTS = 8;
-export const ADDITIONAL_RESULTS = 6;
+export const EARLIER_PAGE_RESULTS = 4;
+export const LATER_PAGE_RESULTS = 5;
 const EDELWEISS_ORIGIN = 'https://edelweiss.catenarymaps.org';
 
 let requestSequence = 0;
@@ -58,8 +59,8 @@ export function pageQuery(
 	return {
 		...base,
 		...(cursor ? { page_cursor: cursor } : {}),
-		number_of_results_before: direction === 'before' ? (cursor ? ADDITIONAL_RESULTS : INITIAL_RESULTS) : 0,
-		number_of_results_after: direction === 'after' ? (cursor ? ADDITIONAL_RESULTS : INITIAL_RESULTS) : 0
+		number_of_results_before: direction === 'before' ? (cursor ? EARLIER_PAGE_RESULTS : INITIAL_RESULTS) : 0,
+		number_of_results_after: direction === 'after' ? (cursor ? LATER_PAGE_RESULTS : INITIAL_RESULTS) : 0
 	};
 }
 

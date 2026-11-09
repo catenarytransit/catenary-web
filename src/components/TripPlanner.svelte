@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onDestroy, onMount, tick } from 'svelte';
-	import { slide } from 'svelte/transition';
+	import { fly, slide } from 'svelte/transition';
+	import { flip } from 'svelte/animate';
 	import { Marker, type Map as MapLibreMap } from 'maplibre-gl';
 	import { get } from 'svelte/store';
 	import { data_stack_store, geolocation_store, map_pointer_store } from '$root/globalstores';
@@ -40,6 +41,7 @@
 	let routingLoading = false;
 	let routingError = '';
 	let earlierLoading = false;
+	let earlierInsertedIds = new Set<string>();
 	let laterLoading = false;
 	let previousPageCursor: string | null = null;
 	let nextPageCursor: string | null = null;
@@ -230,6 +232,7 @@
 		earlierController = null;
 		laterController = null;
 		earlierLoading = false;
+		earlierInsertedIds = new Set<string>();
 		laterLoading = false;
 		previousPageCursor = null;
 		nextPageCursor = null;
@@ -249,6 +252,13 @@
 		activeItineraries.set([]);
 		activeItineraryIndex.set(0);
 		selectedTransferItineraryIndex.set(null);
+	}
+
+	/** Only new earlier connections enter from slightly above; existing cards shift using FLIP. */
+	function earlierEntryMotion(itinerary: EdelweissItinerary): { y: number; duration: number } {
+		return earlierInsertedIds.has(itineraryIdentity(itinerary))
+			? { y: -16, duration: 240 }
+			: { y: 0, duration: 0 };
 	}
 
 	/** Recompute visible rows from full replacement snapshots, keeping the selected journey by ID. */
@@ -333,6 +343,11 @@
 			await streamEdelweissPage(pageQuery(base, direction, cursor), requestId, controller.signal, (page) => {
 				if (controller.signal.aborted || routeRequestId !== id) return;
 				if (earlier) {
+					// Snapshots replace the current page. Animate only IDs absent from the visible list.
+					const existingIds = new Set(routes.map(itineraryIdentity));
+					earlierInsertedIds = new Set(
+						page.itineraries.map(itineraryIdentity).filter(itemId => !existingIds.has(itemId))
+					);
 					earlierPages = [...earlierPages.filter(item => item.requestId !== requestId), page];
 					previousPageCursor = page.previousPageCursor === previous ? null : page.previousPageCursor;
 				} else {
@@ -778,19 +793,15 @@
 			<button type="button" on:click={() => loadConnections('before')} disabled={!previousPageCursor || routingLoading || earlierLoading || laterLoading} aria-busy={earlierLoading} class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700">
 				<span class="inline-flex items-center gap-2"><span class="material-symbols-outlined text-base" aria-hidden="true">keyboard_arrow_up</span>{$_('earlier_connections')}</span>
 			</button>
-			{#if earlierLoading}
-				<div role="status" aria-label="Loading earlier connections" class="flex flex-col gap-3">
-					{#each Array(3) as _}<JourneySkeleton />{/each}
-				</div>
-			{/if}
+			{#if earlierLoading}<span class="sr-only" role="status">Loading earlier connections…</span>{/if}
 		{/if}
 		{#if routingLoading && routes.length === 0}
 			<div role="status" aria-label="Loading connections" class="flex flex-col gap-3">
 				{#each Array(3) as _}<JourneySkeleton />{/each}
 			</div>
 		{/if}
-		{#each routes as itinerary, index}
-			<div class="w-full rounded-xl border bg-white p-3 shadow-sm transition-all duration-300 ease-out dark:bg-gray-800 {selectedRoute === index ? 'border-cyan-700 ring-1 ring-cyan-700' : 'border-gray-200 dark:border-gray-700'}">
+		{#each routes as itinerary, index (itineraryIdentity(itinerary))}
+			<div animate:flip={{ duration: 240 }} in:fly={earlierEntryMotion(itinerary)} class="w-full rounded-xl border bg-white p-3 shadow-sm transition-colors duration-300 ease-out dark:bg-gray-800 {selectedRoute === index ? 'border-cyan-700 ring-1 ring-cyan-700' : 'border-gray-200 dark:border-gray-700'}">
 				<button type="button" on:click={() => showRoute(index)} aria-pressed={selectedRoute === index} aria-expanded={expandedRoute === index} aria-label={`Preview journey ${index + 1}`} class="block w-full text-left">
 				<JourneyPreviewTimeline {itinerary} />
 			</button>
