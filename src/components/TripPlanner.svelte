@@ -305,7 +305,8 @@
 			await streamEdelweissPage(pageQuery(base, direction), requestId, current.signal, (page) => {
 				if (current.signal.aborted || id !== routeRequestId) return;
 				routePages = [page]; // Replace, never append, successive WebSocket snapshots.
-				previousPageCursor = page.previousPageCursor;
+				// Earlier pagination may finish while the initial stream is still running.
+				if (earlierPages.length === 0) previousPageCursor = page.previousPageCursor;
 				nextPageCursor = page.nextPageCursor;
 				refreshRoutes();
 				if (!fitted && routes.length) {
@@ -326,7 +327,7 @@
 	async function loadConnections(direction: PageDirection): Promise<void> {
 		const earlier = direction === 'before';
 		const cursor = earlier ? previousPageCursor : nextPageCursor;
-		if (!cursor || !originalRouteQuery || earlierLoading || laterLoading || routingLoading) return;
+		if (!cursor || !originalRouteQuery || earlierLoading || laterLoading || (routingLoading && (!earlier || routes.length === 0))) return;
 		const id = routeRequestId;
 		const controller = new AbortController();
 		if (earlier) {
@@ -797,8 +798,8 @@
 		{#if routingError}<p role="alert" class="text-sm text-red-600">{routingError}</p>{/if}
 		{#if !routingLoading && !routingError && originSelection && destinationSelection && routes.length === 0}<p class="text-sm text-gray-500">No routes found for this journey.</p>{/if}
 		{#if originalRouteQuery && (routes.length > 0 || routingLoading)}
-			<button type="button" on:click={() => loadConnections('before')} disabled={!previousPageCursor || routingLoading || earlierLoading || laterLoading} aria-busy={earlierLoading} class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700">
-				<span class="inline-flex items-center gap-2"><span class="material-symbols-outlined text-base" class:animate-spin={earlierLoading} aria-hidden="true">{earlierLoading ? 'progress_activity' : 'keyboard_arrow_up'}</span>{$_('earlier_connections')}</span>
+			<button type="button" on:click={() => loadConnections('before')} disabled={!previousPageCursor || routes.length === 0 || earlierLoading || laterLoading} aria-busy={earlierLoading} class="connection-button w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors enabled:hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:enabled:hover:bg-gray-700">
+				<span class="hover-content inline-flex items-center gap-2"><span class="material-symbols-outlined text-base" class:animate-spin={earlierLoading} aria-hidden="true">{earlierLoading ? 'progress_activity' : 'keyboard_arrow_up'}</span>{$_('earlier_connections')}</span>
 			</button>
 			{#if earlierLoading}<span class="sr-only" role="status">Loading earlier connections…</span>{/if}
 		{/if}
@@ -808,17 +809,19 @@
 			</div>
 		{/if}
 		{#each routes as itinerary, index (itineraryIdentity(itinerary))}
-			<div animate:flip={{ duration: 240 }} in:fly={earlierEntryMotion(itinerary)} class="w-full rounded-xl border bg-white p-3 shadow-sm transition-colors duration-300 ease-out dark:bg-gray-800 {selectedRoute === index ? 'border-cyan-700 ring-1 ring-cyan-700' : 'border-gray-200 dark:border-gray-700'}">
-				<button type="button" on:click={() => showRoute(index)} aria-pressed={selectedRoute === index} aria-expanded={expandedRoute === index} aria-label={`Preview journey ${index + 1}`} class="block w-full text-left">
-				<JourneyPreviewTimeline {itinerary} />
-			</button>
-				{#if expandedRoute === index}
-					<div transition:slide={{ duration: 240 }} class="mt-2 flex justify-end border-t border-gray-200 pt-2 dark:border-gray-700">
-						<button type="button" on:click={() => openDetails(index)} class="inline-flex items-center gap-1 rounded-lg bg-cyan-700 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-cyan-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700">
-							Show details <span class="material-symbols-outlined text-base" aria-hidden="true">chevron_right</span>
-						</button>
-					</div>
-				{/if}
+			<div animate:flip={{ duration: 240 }} in:fly={earlierEntryMotion(itinerary)} class="journey-card w-full rounded-xl border bg-white p-3 shadow-sm transition-colors duration-300 ease-out dark:bg-gray-800 {selectedRoute === index ? 'border-cyan-700 ring-1 ring-cyan-700' : 'border-gray-200 dark:border-gray-700'}">
+				<div class="hover-content">
+					<button type="button" on:click={() => showRoute(index)} aria-pressed={selectedRoute === index} aria-expanded={expandedRoute === index} aria-label={`Preview journey ${index + 1}`} class="block w-full text-left">
+					<JourneyPreviewTimeline {itinerary} />
+				</button>
+					{#if expandedRoute === index}
+						<div transition:slide={{ duration: 240 }} class="mt-2 flex justify-end border-t border-gray-200 pt-2 dark:border-gray-700">
+							<button type="button" on:click={() => openDetails(index)} class="inline-flex items-center gap-1 rounded-lg bg-cyan-700 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-cyan-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700">
+								Show details <span class="material-symbols-outlined text-base" aria-hidden="true">chevron_right</span>
+							</button>
+						</div>
+					{/if}
+				</div>
 			</div>
 		{/each}
 		{#if routingLoading && routes.length > 0}
@@ -830,8 +833,8 @@
 					{#each Array(3) as _}<JourneySkeleton />{/each}
 				</div>
 			{/if}
-			<button type="button" on:click={() => loadConnections('after')} disabled={!nextPageCursor || routingLoading || earlierLoading || laterLoading} aria-busy={laterLoading} class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700">
-				<span class="inline-flex items-center gap-2">{$_('later_connections')}<span class="material-symbols-outlined text-base" aria-hidden="true">keyboard_arrow_down</span></span>
+			<button type="button" on:click={() => loadConnections('after')} disabled={!nextPageCursor || routingLoading || earlierLoading || laterLoading} aria-busy={laterLoading} class="connection-button w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors enabled:hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:enabled:hover:bg-gray-700">
+				<span class="hover-content inline-flex items-center gap-2">{$_('later_connections')}<span class="material-symbols-outlined text-base" aria-hidden="true">keyboard_arrow_down</span></span>
 			</button>
 		{/if}
 	</div>
@@ -842,3 +845,24 @@
 	{#if $footpathDebugEnabled && debugStop}<div class="absolute bottom-3 left-3 right-3 z-40 max-h-[55%] overflow-y-auto"><FootpathDebugPanel stop={debugStop} onClose={() => { debugStop = null; }} /></div>{/if}
 </section>
 
+
+<style>
+	.connection-button, .journey-card {
+		transition: box-shadow 200ms ease-out, background-color 200ms ease-out;
+	}
+	.hover-content {
+		transition: transform 200ms ease-out;
+	}
+	.connection-button:enabled:hover, .journey-card:hover {
+		box-shadow: 0 6px 16px -4px rgb(0 0 0 / 0.25);
+	}
+	.connection-button:enabled:hover > .hover-content, .journey-card:hover > .hover-content {
+		transform: translateY(-2px);
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.connection-button, .journey-card, .hover-content { transition: none; }
+		.connection-button:enabled:hover > .hover-content, .journey-card:hover > .hover-content {
+			transform: none;
+		}
+	}
+</style>
