@@ -24,14 +24,14 @@
 <div class="min-w-0 w-full">
 	<div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-2" aria-label="Journey times">
 		<div class="flex min-w-0 items-baseline justify-start gap-x-2.5 sm:gap-x-3">
-			{#each timeGroups.departure as marker}
-				<time datetime={marker.time} class={`shrink-0 whitespace-nowrap ${marker.transit ? 'text-sm font-bold' : 'text-xs font-normal text-gray-600 dark:text-gray-300'}`}>{formatJourneyTime(marker.time)}</time>
+			{#each (summary ? timeGroups.departure : [...timeGroups.departure].reverse()) as marker}
+				<time datetime={marker.time} class={`shrink-0 whitespace-nowrap ${(summary || marker.time === itinerary.startTime) ? 'text-sm font-bold' : 'text-xs font-normal text-gray-600 dark:text-gray-300'}`}>{formatJourneyTime(marker.time)}</time>
 			{/each}
 		</div>
 		<span class="shrink-0 whitespace-nowrap text-center text-xs font-medium text-gray-600 dark:text-gray-300">{formatJourneyDuration(itinerary)}</span>
 		<div class="flex min-w-0 items-baseline justify-end gap-x-2.5 sm:gap-x-3">
-			{#each timeGroups.arrival as marker}
-				<time datetime={marker.time} class={`shrink-0 whitespace-nowrap ${marker.transit ? 'text-sm font-bold' : 'text-xs font-normal text-gray-600 dark:text-gray-300'}`}>{formatJourneyTime(marker.time)}</time>
+			{#each (summary ? timeGroups.arrival : [...timeGroups.arrival].reverse()) as marker}
+				<time datetime={marker.time} class={`shrink-0 whitespace-nowrap ${(summary || marker.time === itinerary.endTime) ? 'text-sm font-bold' : 'text-xs font-normal text-gray-600 dark:text-gray-300'}`}>{formatJourneyTime(marker.time)}</time>
 			{/each}
 		</div>
 	</div>
