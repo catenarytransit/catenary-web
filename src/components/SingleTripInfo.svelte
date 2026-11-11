@@ -42,6 +42,7 @@
 		fixStationName
 	} from './agencyspecific';
 	import { cleanStationName, cleanPlatformName } from '../utils/national_rail_utils';
+	import { displayTrainStationStopName, shouldShortenTrainStationStops } from '$lib/features/directions/trainStationStopNames';
 	let is_loading_trip_data: boolean = true;
 	let trip_data: Record<string, any> | null = null;
 	let init_loaded = 0;
@@ -498,6 +499,19 @@
 
 	export let darkMode: boolean = determineDarkModeToBool();
 
+	function tripStopDisplayName(name: string): string {
+		// Only rail trips with uniformly suffixed names abbreviate "Station".
+		// Never mutate the underlying GTFS stop names used for navigation.
+		const routeType = trip_data?.route_type;
+		if ([0, 1, 2].includes(routeType)) {
+			const shorten = shouldShortenTrainStationStops(
+				routeType, stoptimes_cleaned_dataset.map(stop => stop.name)
+			);
+			return displayTrainStationStopName(fixStationName(name), shorten);
+		}
+		return cleanStationName(fixStationName(name));
+	}
+
 	function label_stops_on_map() {
 		let map = get(map_pointer_store);
 
@@ -531,9 +545,7 @@
 					});
 				}
 
-				let label = `${eachstoptime.schedule_relationship == 1 ? '(X)' : ''}${time_text} ${cleanStationName(
-					eachstoptime.name
-				)}`;
+				let label = `${eachstoptime.schedule_relationship == 1 ? '(X)' : ''}${time_text} ${tripStopDisplayName(eachstoptime.name)}`;
 
 				return {
 					type: 'Feature',
@@ -1752,7 +1764,7 @@
 													}}
 													class={`cursor-pointer hover:underline ${stop_id_to_alert_ids[stoptime.stop_id] ? 'text-[#F99C24]' : ''}`}
 												>
-													{cleanStationName(fixStationName(stoptime.name))}
+													{tripStopDisplayName(stoptime.name)}
 												</span>
 											{/if}
 

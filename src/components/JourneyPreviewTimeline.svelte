@@ -38,7 +38,7 @@
 				<div class="mt-3 w-full max-w-full" use:measureTimeline aria-label="Journey segments">
 					<div class="flex w-full min-w-0 items-start overflow-hidden">
 						{#each segments as segment, segmentIndex}
-							<div class="min-w-0 shrink-0 overflow-visible" style:width={`${widths[segmentIndex]}%`} role="group" aria-label={segment.transfer ? 'Transfer' : segment.walking ? `${segment.mode === 'BIKE' ? 'Cycle' : 'Walk'} ${formatWalkSegment(segment)}` : segment.routeName ? `${segment.mode} ${segment.routeName}` : segment.mode}>
+							<div class="min-w-0 shrink-0 overflow-hidden" style:width={`${widths[segmentIndex]}%`} role="group" aria-label={segment.transfer ? 'Transfer' : segment.walking ? `${segment.mode === 'BIKE' ? 'Cycle' : 'Walk'} ${formatWalkSegment(segment)}` : segment.routeName ? `${segment.mode} ${segment.routeName}` : segment.mode}>
 								<div class="flex h-6 w-full min-w-0 items-center gap-1">
 									{#if !segment.transfer}
 										{#if segment.walking}
@@ -54,11 +54,11 @@
 									{/if}
 								</div>
 								{#if !segment.transfer}
-									<div class="mt-1 flex min-h-5 w-full min-w-0 items-start justify-start text-xs" title={segment.walking ? formatWalkSegment(segment) : segment.routeName ?? segment.mode}>
+									<div class="mt-1 flex min-h-5 w-full min-w-0 items-start justify-start overflow-hidden whitespace-nowrap text-xs" title={segment.walking ? formatWalkSegment(segment) : segment.routeName ?? segment.mode}>
 										{#if segment.walking}
 											<span class="truncate text-gray-600 dark:text-gray-300">{formatWalkSegment(segment)}</span>
 										{:else}
-											<JourneyRouteBadge {segment} />
+											<JourneyRouteBadge {segment} compact />
 										{/if}
 									</div>
 								{/if}
