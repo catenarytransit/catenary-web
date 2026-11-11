@@ -10,6 +10,7 @@
 	import { footpathDebugEnabled, type DebugStop } from '$lib/features/directions/footpathDebug';
 	import { isValidPoint } from '$lib/features/directions/edelweiss';
 	import { connectionRailColor } from '$lib/features/directions/connectionRailColor';
+	import { displayTrainStationStopName, shouldShortenTrainStationStops } from '$lib/features/directions/trainStationStopNames';
 
 	export let itinerary: EdelweissItinerary;
 	export let originName: string;
@@ -31,11 +32,18 @@
 		return named?.trim() || stop?.platform?.trim() || stop?.platformCode?.trim() || '';
 	}
 
+	function shortenStops(leg: EdelweissLeg): boolean {
+		return shouldShortenTrainStationStops(leg.routeType, [
+			leg.from?.name, ...stops(leg).map(stop => stop.name), leg.to?.name
+		]);
+	}
+
 	function placeName(leg: EdelweissLeg, end: 'from' | 'to', index: number): string {
 		const fallback = end === 'from'
 			? (index === 0 ? originName : 'Boarding stop')
 			: (index === itinerary.legs.length - 1 ? destinationName : 'Alighting stop');
-		return leg[end]?.name?.trim() || fallback;
+		const name = leg[end]?.name?.trim() || fallback;
+		return displayTrainStationStopName(name, shortenStops(leg));
 	}
 
 	function legTime(leg: EdelweissLeg, end: 'start' | 'end'): string {
@@ -144,7 +152,7 @@
 								<div class="connection-row">
 									<span class="min-w-0 text-right text-xs tabular-nums leading-5 text-gray-500 dark:text-gray-400">{stopTime(stop)}</span>
 									<span class="pearl-rail" aria-hidden="true"><span class="pearl"></span></span>
-									<span class="min-w-0 text-left text-xs leading-5 text-gray-500 dark:text-gray-400">{stop.name}{#if $footpathDebugEnabled && isValidPoint(stop)} <button type="button" class="ml-1 text-amber-700 underline" on:click={() => inspectStop(stop)}>Footpaths</button>{/if}</span>
+									<span class="min-w-0 text-left text-xs leading-5 text-gray-500 dark:text-gray-400">{displayTrainStationStopName(stop.name, shortenStops(leg))}{#if $footpathDebugEnabled && isValidPoint(stop)} <button type="button" class="ml-1 text-amber-700 underline" on:click={() => inspectStop(stop)}>Footpaths</button>{/if}</span>
 									<span class="min-w-0 text-right text-xs text-gray-500 dark:text-gray-400">{stop.platform || stop.platformCode || ''}</span>
 								</div>
 							{/each}
