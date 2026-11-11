@@ -390,10 +390,43 @@ describe('Edelweiss geometry and itinerary presentation', () => {
 		const [segment] = itinerarySegments({...itinerary, legs: [leg]});
 		expect(segment).toMatchObject({routeName: 'IC5', badgeKind: 'sbb', badgeName: 'IC5'});
 	});
-	it('uses only trip short name for UK National Rail', () => {
+	it('uses route names for ordinary rail routes, including Germany and Switzerland', () => {
+		for (const chateau of ['deutschland', 'amtrak', 'trenitalia']) {
+			const leg = {mode:'RAIL',chateau,routeShortName:'RE1 Line',routeLongName:'Regional Express',tripShortName:'6'};
+			expect(routeLabel(leg)).toBe('RE1');
+			expect(routeBadgeKind(leg)).toBe('standard');
+			expect(itineraryDisplaySegments({...itinerary,legs:[leg]})[0].routeName).toBe('RE1');
+		}
+		expect(routeLabel({mode:'RAIL',chateau:'amtrak',routeLongName:'Coast Starlight',tripShortName:'14'})).toBe('Coast Starlight');
+		expect(routeLabel({mode:'RAIL',chateau:'amtrak',tripShortName:'14'})).toBe('14');
+		expect(routeLabel({mode:'BUS',routeShortName:'17',tripShortName:'1234'})).toBe('17');
+	});
+	it('preserves SNCF train numbers instead of the route designation', () => {
+		const leg = {mode:'RAIL',chateau:'sncf',routeShortName:'TGV',tripShortName:'8421'};
+		expect(routeLabel(leg)).toBe('8421');
+		expect(routeBadgeKind(leg)).toBe('standard');
+		expect(routeLabel({mode:'RAIL',chateau:'sncf',routeShortName:'TER'})).toBe('TER');
+	});
+	it('uses DB Fernverkehr agency IDs to select individual train designations', () => {
+		for (const agencyId of ['12681', '13557', '10918']) {
+			const leg = {mode:'RAIL',chateau:'deutschland',agencyId,routeShortName:'ICE',tripShortName:'000123'};
+			expect(routeLabel(leg)).toBeTruthy();
+			expect(routeLabel(leg)).not.toBe('ICE');
+			expect(routeBadgeKind(leg)).toBe('standard');
+		}
+		expect(routeLabel({mode:'RAIL',chateau:'deutschland',agencyId:'other',routeShortName:'ICE',tripShortName:'123'})).toBe('ICE');
+		expect(routeLabel({mode:'RAIL',chateau:'deutschland',routeShortName:'ICE',tripShortName:'123'})).toBe('ICE');
+		expect(routeLabel({mode:'RAIL',chateau:'deutschland',agencyId:'12681',routeShortName:'ICE'})).toBe('ICE');
+	});
+	it('preserves UK National Rail train numbers and urban rail line exceptions', () => {
 		expect(routeLabel({mode:'RAIL',chateau:'nationalrailuk',routeShortName:'GWR',tripShortName:'1A23'})).toBe('1A23');
 		expect(routeLabel({mode:'RAIL',chateau:'nationalrailuk',routeShortName:'GWR'})).toBeNull();
-		expect(routeLabel({mode:'RAIL',chateau:'deutschland',routeShortName:'RE1',tripShortName:'6'})).toBe('6');
+		for (const agencyId of ['TW','ME','LO','XR','HX']) {
+			const leg = {mode:'RAIL',chateau:'nationalrailuk',agencyId,routeShortName:'Urban rail',tripShortName:'1A23'};
+			expect(routeLabel(leg)).toBe('Urban rail');
+		}
+		expect(routeLabel({mode:'RAIL',chateau:'nationalrailuk',routeShortName:'LO-OVERGROUND',tripShortName:'1A23'})).toBe('LO-OVERGROUND');
+		expect(routeLabel({mode:'RAIL',chateau:'nationalrailuk',routeShortName:'GWR',agencyId:'GW',tripShortName:'1A23'})).toBe('1A23');
 	});
 	it('recognizes LA Metro symbols only for its tram and metro lines', () => {
 		for (const line of ['A','B','C','D','E','K']) {
