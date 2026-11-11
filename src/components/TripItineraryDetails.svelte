@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import JourneyRouteBadge from '$components/JourneyRouteBadge.svelte';
 	import JourneyPreviewTimeline from '$components/JourneyPreviewTimeline.svelte';
+	import { portalToMobileViewport } from '$lib/features/directions/portalToMobileViewport';
 	import {
 		formatJourneyTime, isStreetLeg, itinerarySegments, itineraryDetailLegs,
 		type EdelweissItinerary, type EdelweissLeg, type EdelweissIntermediateStop
@@ -78,7 +79,7 @@
 
 <div class="absolute inset-0 z-30 flex min-h-0 flex-col overflow-y-auto bg-gray-100 text-gray-900 dark:bg-black dark:text-white" role="region" aria-label="Journey details">
 	<div class="sticky top-0 z-10 bg-gray-100 px-4 pb-3 pt-3 dark:bg-black">
-		<button bind:this={backButton} type="button" on:click={onBack} class="mb-3 inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium hover:bg-gray-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-600 dark:hover:bg-gray-900" aria-label="Back to directions">
+		<button bind:this={backButton} use:portalToMobileViewport type="button" on:click={onBack} class="mb-3 inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium hover:bg-gray-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-600 max-md:fixed max-md:left-3 max-md:top-[max(0.5rem,env(safe-area-inset-top))] max-md:z-50 max-md:mb-0 max-md:border max-md:border-gray-200 max-md:bg-white max-md:px-3 max-md:py-2 max-md:shadow-lg dark:hover:bg-gray-900 dark:max-md:border-gray-700 dark:max-md:bg-gray-900" aria-label="Back to directions">
 			<span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
 			Directions
 		</button>
