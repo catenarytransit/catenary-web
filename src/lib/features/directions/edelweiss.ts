@@ -1,6 +1,7 @@
 import polyline from '@mapbox/polyline';
 import { MTA_CHATEAU_ID, isSubwayRouteId } from '$root/utils/mta_subway_utils';
 import { IDFM_CHATEAU_ID, isRatpRoute } from '$root/utils/ratp_utils';
+import dbTrainLookup from '$root/fernverkehr_2026_train_lookup.json';
 
 export interface Coordinate {
 	lat: number;
@@ -44,6 +45,8 @@ export interface EdelweissLeg {
 	tripShortName?: string | null;
 	/** The originating timetable's source chateau (supplied by Edelweiss). */
 	chateau?: string | null;
+	/** GTFS route agency ID, supplied with itinerary leg metadata by Edelweiss. */
+	agencyId?: string | null;
 	from?: RoutePoint | null;
 	to?: RoutePoint | null;
 	fromPlatform?: string | null;
@@ -412,8 +415,8 @@ export function routeBadgeKind(leg: EdelweissLeg): ItinerarySegment['badgeKind']
 		(icon === 'tram' && /^T\d+[A-Za-z]?$/i.test(name)) ||
 		(icon === 'train' && /^[A-EHJKLNPRUV]$/i.test(name))
 	)) return 'ratp';
-	// A train number uses the ordinary text badge rather than line-specific styling.
-	if (icon === 'train' && leg.tripShortName?.trim() && !['schweiz', 'ch'].includes(chateau)) return 'standard';
+	// Only services displaying a train number should lose their line-specific badge styling.
+	if (icon === 'train' && prefersTrainNumber(leg) && leg.tripShortName?.trim()) return 'standard';
 	if (['deutschland','vbb'].includes(chateau) && icon === 'train' &&
 		/^S\d+[A-Za-z]?$/i.test(name)) return 'sbahn';
 	if (['schweiz', 'ch'].includes(chateau) && icon === 'train' &&
@@ -423,11 +426,33 @@ export function routeBadgeKind(leg: EdelweissLeg): ItinerarySegment['badgeKind']
 
 /** Match the named urban rail exceptions used by the station and route views. */
 function isNationalRailLineException(leg: EdelweissLeg): boolean {
+	// Match the explicit agency exceptions used on station departure boards.
+	if (['TW', 'ME', 'LO', 'XR', 'HX'].includes(leg.agencyId?.trim().toUpperCase() ?? '')) return true;
+	// Older responses may lack agencyId; retain the existing route-name fallback.
 	const names = [leg.routeShortName, leg.routeLongName, leg.routeId];
 	return names.some(value => value && (
 		/^(?:TW|ME|LO|XR|HX)(?:-|$)/i.test(value.trim()) ||
 		/^(?:London Overground|Elizabeth(?: Line)?|Merseyrail|Tyne (?:and|&) Wear Metro|Heathrow Express)$/i.test(value.trim())
 	));
+}
+
+/** The same DB Fernverkehr agencies whose departures display individual train numbers. */
+function isDbFernverkehr(leg: EdelweissLeg): boolean {
+	return leg.chateau === 'deutschland' &&
+		['12681', '13557', '10918'].includes(leg.agencyId?.trim() ?? '');
+}
+
+/** Use the existing DB train designation lookup also used by station departure boards. */
+function dbFernverkehrTrainName(tripShortName: string): string {
+	const trainNumber = tripShortName.replace(/^0+/, '');
+	const matches = (dbTrainLookup as Record<string, Array<{ display_name?: string }>>)[trainNumber];
+	return matches?.[0]?.display_name?.trim() || tripShortName;
+}
+
+function prefersTrainNumber(leg: EdelweissLeg): boolean {
+	return leg.chateau === 'sncf' ||
+		isDbFernverkehr(leg) ||
+		(leg.chateau === 'nationalrailuk' && !isNationalRailLineException(leg));
 }
 
 export function routeLabel(leg: EdelweissLeg): string | null {
@@ -438,11 +463,16 @@ export function routeLabel(leg: EdelweissLeg): string | null {
 		if (['schweiz', 'ch'].includes(leg.chateau ?? '')) {
 			return leg.routeShortName?.trim() || null;
 		}
-		if (leg.chateau === 'nationalrailuk') {
-			return isNationalRailLineException(leg) ? name || tripName : tripName;
+		// UK National Rail services keep their train number except urban rail operators.
+		if (leg.chateau === 'nationalrailuk' && !isNationalRailLineException(leg)) {
+			return tripName;
 		}
-		if (tripName) return tripName;
+		if (isDbFernverkehr(leg) && tripName) {
+			return dbFernverkehrTrainName(tripName);
+		}
+		if (leg.chateau === 'sncf' && tripName) return tripName;
 	}
+	// All other trains prefer the route label, with the train number as fallback.
 	return name || tripName || cleanRouteName(leg.routeId);
 }
 
