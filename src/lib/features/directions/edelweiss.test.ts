@@ -341,6 +341,26 @@ describe('Edelweiss geometry and itinerary presentation', () => {
 		expect(segments[2].duration).toBe(120);
 		expect(segments[4].duration).toBe(180);
 	});
+	it('hides short transfers between two trains longer than for mixed-mode interchanges', () => {
+		const train = {mode:'RAIL',routeType:2,duration:600};
+		const metro = {mode:'SUBWAY',routeType:1,duration:600};
+		const walk = {mode:'WALK',duration:390};
+		const journey = {...itinerary, legs:[train,walk,train]};
+		expect(itineraryDisplaySegments(journey).map(segment=>segment.mode)).toEqual(['RAIL','RAIL']);
+		expect(itineraryDisplaySegments({...journey, legs:[train,{...walk,duration:421},train]}).map(s=>s.mode)).toEqual(['RAIL','WALK','RAIL']);
+		expect(itineraryDisplaySegments({...journey, legs:[metro,walk,train]}).map(s=>s.mode)).toEqual(['SUBWAY','WALK','RAIL']);
+	});
+	it('allocates a smaller minimum width to walking transfers', () => {
+		const segments = [{duration:3600}, {duration:5,transfer:true}, {duration:3600}];
+		const percentages = allocateTimelinePercentages(segments,300);
+		expect(percentages[1]*3).toBeCloseTo(16,5);
+		expect(percentages.reduce((a,b)=>a+b,0)).toBeCloseTo(100,8);
+		const ordinary = allocateTimelinePercentages(segments.map(x=>({...x,transfer:false})),300);
+		expect(ordinary[1]*3).toBeCloseTo(26,5);
+		const narrow = allocateTimelinePercentages(segments,40);
+		expect(narrow.reduce((a,b)=>a+b,0)).toBeCloseTo(100,8);
+		expect(narrow.every(n=>n>0)).toBe(true);
+	});
 	it('fits proportional durations into exactly the available width with short-leg minimums', () => {
 		const durations = [5, 5, 600, 20].map(duration=>({duration}));
 		const widths = allocateTimelinePercentages(durations,300,26);
