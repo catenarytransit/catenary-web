@@ -68,11 +68,17 @@
 	import TripDataForVehicleOnRouteScreen from './TripDataForVehicleOnRouteScreen.svelte';
 	import ConsolidatedRouteList from './ConsolidatedRouteList.svelte';
 
+	// Each screen owns its requests; leaving it must not repaint a newer selection.
+	const requests = new AbortController();
+	function reportRequestError(error: unknown) {
+		if (!requests.signal.aborted) console.error(error);
+	}
+
 	let activePattern: string = '';
 
 	let show_gtfs_ids = get(show_gtfs_ids_store);
 
-	show_gtfs_ids_store.subscribe((value) => {
+	const unsubscribeShowGtfsIds = show_gtfs_ids_store.subscribe((value) => {
 		show_gtfs_ids = value;
 	});
 
@@ -211,23 +217,24 @@
 		for (const shape_id of route_data.shape_ids) {
 			if (!fetched_shapes[shape_id]) {
 				let url = new URL(`https://birch.catenarymaps.org/get_shape?chateau=${encodeURIComponent(routestack.chateau_id)}&shape_id=${encodeURIComponent(shape_id)}&format=geojson`);
-				fetch(url.toString())
+				fetch(url.toString(), { signal: requests.signal })
 					.then((res) => res.json())
 					.then((data) => {
+						if (requests.signal.aborted) return;
 						fetched_shapes[shape_id] = data;
 						// Update map shapes if activePattern is already set
 						if (activePattern) {
 							update_map_shapes();
 						}
 					})
-					.catch((e) => console.error('Error fetching lazy shape', e));
+					.catch(reportRequestError);
 			}
 		}
 	}
 
 	async function update_map_shapes() {
 		let map = get(map_pointer_store);
-		if (!map || !route_data || !activePattern) return;
+		if (requests.signal.aborted || !map || !route_data || !activePattern) return;
 
 		let directionIdFirst = new_directions_from_parent_store[activePattern][0];
 		let directionReference = route_data.direction_patterns[directionIdFirst];
@@ -296,17 +303,17 @@
 			// Await for it so it loads synchronously if it hasn't.
 			try {
 				let url = new URL(`https://birch.catenarymaps.org/get_shape?chateau=${encodeURIComponent(routestack.chateau_id)}&shape_id=${encodeURIComponent(shape_id)}&format=geojson&simplify=10`);
-				let res = await fetch(url.toString());
+				let res = await fetch(url.toString(), { signal: requests.signal });
 				let data = await res.json();
 				if (activePattern === pattern) {
 					fetched_shapes[shape_id] = data;
 				}
 			} catch(e) {
-				console.error(e);
+				reportRequestError(e);
 			}
 		}
 		
-		if (activePattern !== pattern) return;
+		if (requests.signal.aborted || activePattern !== pattern) return;
 		update_map_shapes();
 
 		//now work on stops
@@ -391,8 +398,9 @@
 				`https://birch_rt.catenarymaps.org/get_rt_of_single_route?chateau=${encodeURIComponent(routestack.chateau_id)}&route_id=${encodeURIComponent(routestack.route_id.replace(/^\"/, '').replace(/\"$/, ''))}${route_rt_last_updated ? '&last_updated_time_ms=' + route_rt_last_updated : ''}`
 			);
 
-			await fetch(url.toString()).then(async (response) => {
+			await fetch(url.toString(), { signal: requests.signal }).then(async (response) => {
 				let text = await response.text();
+				if (requests.signal.aborted) return;
 				try {
 					const data = JSON.parse(text);
 
@@ -600,8 +608,9 @@
 			`https://birch.catenarymaps.org/route_info_v2?chateau=${encodeURIComponent(routestack.chateau_id)}&route_id=${encodeURIComponent(routestack.route_id.replace(/^\"/, '').replace(/\"$/, ''))}`
 		);
 
-		await fetch(url.toString()).then(async (response) => {
+		await fetch(url.toString(), { signal: requests.signal }).then(async (response) => {
 			let text = await response.text();
+			if (requests.signal.aborted) return;
 			try {
 				//console.log('route text', text);
 				const data = JSON.parse(text);
@@ -767,15 +776,17 @@
 
 		// A last-updated token belongs to one route only.
 		route_rt_last_updated = null;
-		void fetch_route_selected();
-		void fetch_vehicles_for_route();
+		void fetch_route_selected().catch(reportRequestError);
+		void fetch_vehicles_for_route().catch(reportRequestError);
 
 		vehicle_interval = setInterval(() => {
-			void fetch_vehicles_for_route();
+			void fetch_vehicles_for_route().catch(reportRequestError);
 		}, 1000);
 	}
 
 	onDestroy(() => {
+		requests.abort();
+		unsubscribeShowGtfsIds();
 		if (fetchtimeout) {clearTimeout(fetchtimeout)};
 		resetAdditionalVehicleFilter();
 		if (vehicle_interval) clearInterval(vehicle_interval);
