@@ -341,6 +341,26 @@ describe('Edelweiss geometry and itinerary presentation', () => {
 		expect(segments[2].duration).toBe(120);
 		expect(segments[4].duration).toBe(180);
 	});
+	it('hides short transfers between two trains longer than for mixed-mode interchanges', () => {
+		const train = {mode:'RAIL',routeType:2,duration:600};
+		const metro = {mode:'SUBWAY',routeType:1,duration:600};
+		const walk = {mode:'WALK',duration:390};
+		const journey = {...itinerary, legs:[train,walk,train]};
+		expect(itineraryDisplaySegments(journey).map(segment=>segment.mode)).toEqual(['RAIL','RAIL']);
+		expect(itineraryDisplaySegments({...journey, legs:[train,{...walk,duration:421},train]}).map(s=>s.mode)).toEqual(['RAIL','WALK','RAIL']);
+		expect(itineraryDisplaySegments({...journey, legs:[metro,walk,train]}).map(s=>s.mode)).toEqual(['SUBWAY','WALK','RAIL']);
+	});
+	it('allocates a smaller minimum width to walking transfers', () => {
+		const segments = [{duration:3600}, {duration:5,transfer:true}, {duration:3600}];
+		const percentages = allocateTimelinePercentages(segments,300);
+		expect(percentages[1]*3).toBeCloseTo(16,5);
+		expect(percentages.reduce((a,b)=>a+b,0)).toBeCloseTo(100,8);
+		const ordinary = allocateTimelinePercentages(segments.map(x=>({...x,transfer:false})),300);
+		expect(ordinary[1]*3).toBeCloseTo(26,5);
+		const narrow = allocateTimelinePercentages(segments,40);
+		expect(narrow.reduce((a,b)=>a+b,0)).toBeCloseTo(100,8);
+		expect(narrow.every(n=>n>0)).toBe(true);
+	});
 	it('fits proportional durations into exactly the available width with short-leg minimums', () => {
 		const durations = [5, 5, 600, 20].map(duration=>({duration}));
 		const widths = allocateTimelinePercentages(durations,300,26);
@@ -390,10 +410,43 @@ describe('Edelweiss geometry and itinerary presentation', () => {
 		const [segment] = itinerarySegments({...itinerary, legs: [leg]});
 		expect(segment).toMatchObject({routeName: 'IC5', badgeKind: 'sbb', badgeName: 'IC5'});
 	});
-	it('uses only trip short name for UK National Rail', () => {
+	it('uses route names for ordinary rail routes, including Germany and Switzerland', () => {
+		for (const chateau of ['deutschland', 'amtrak', 'trenitalia']) {
+			const leg = {mode:'RAIL',chateau,routeShortName:'RE1 Line',routeLongName:'Regional Express',tripShortName:'6'};
+			expect(routeLabel(leg)).toBe('RE1');
+			expect(routeBadgeKind(leg)).toBe('standard');
+			expect(itineraryDisplaySegments({...itinerary,legs:[leg]})[0].routeName).toBe('RE1');
+		}
+		expect(routeLabel({mode:'RAIL',chateau:'amtrak',routeLongName:'Coast Starlight',tripShortName:'14'})).toBe('Coast Starlight');
+		expect(routeLabel({mode:'RAIL',chateau:'amtrak',tripShortName:'14'})).toBe('14');
+		expect(routeLabel({mode:'BUS',routeShortName:'17',tripShortName:'1234'})).toBe('17');
+	});
+	it('preserves SNCF train numbers instead of the route designation', () => {
+		const leg = {mode:'RAIL',chateau:'sncf',routeShortName:'TGV',tripShortName:'8421'};
+		expect(routeLabel(leg)).toBe('8421');
+		expect(routeBadgeKind(leg)).toBe('standard');
+		expect(routeLabel({mode:'RAIL',chateau:'sncf',routeShortName:'TER'})).toBe('TER');
+	});
+	it('uses DB Fernverkehr agency IDs to select individual train designations', () => {
+		for (const agencyId of ['12681', '13557', '10918']) {
+			const leg = {mode:'RAIL',chateau:'deutschland',agencyId,routeShortName:'ICE',tripShortName:'000123'};
+			expect(routeLabel(leg)).toBeTruthy();
+			expect(routeLabel(leg)).not.toBe('ICE');
+			expect(routeBadgeKind(leg)).toBe('standard');
+		}
+		expect(routeLabel({mode:'RAIL',chateau:'deutschland',agencyId:'other',routeShortName:'ICE',tripShortName:'123'})).toBe('ICE');
+		expect(routeLabel({mode:'RAIL',chateau:'deutschland',routeShortName:'ICE',tripShortName:'123'})).toBe('ICE');
+		expect(routeLabel({mode:'RAIL',chateau:'deutschland',agencyId:'12681',routeShortName:'ICE'})).toBe('ICE');
+	});
+	it('preserves UK National Rail train numbers and urban rail line exceptions', () => {
 		expect(routeLabel({mode:'RAIL',chateau:'nationalrailuk',routeShortName:'GWR',tripShortName:'1A23'})).toBe('1A23');
 		expect(routeLabel({mode:'RAIL',chateau:'nationalrailuk',routeShortName:'GWR'})).toBeNull();
-		expect(routeLabel({mode:'RAIL',chateau:'deutschland',routeShortName:'RE1',tripShortName:'6'})).toBe('6');
+		for (const agencyId of ['TW','ME','LO','XR','HX']) {
+			const leg = {mode:'RAIL',chateau:'nationalrailuk',agencyId,routeShortName:'Urban rail',tripShortName:'1A23'};
+			expect(routeLabel(leg)).toBe('Urban rail');
+		}
+		expect(routeLabel({mode:'RAIL',chateau:'nationalrailuk',routeShortName:'LO-OVERGROUND',tripShortName:'1A23'})).toBe('LO-OVERGROUND');
+		expect(routeLabel({mode:'RAIL',chateau:'nationalrailuk',routeShortName:'GWR',agencyId:'GW',tripShortName:'1A23'})).toBe('1A23');
 	});
 	it('recognizes LA Metro symbols only for its tram and metro lines', () => {
 		for (const line of ['A','B','C','D','E','K']) {

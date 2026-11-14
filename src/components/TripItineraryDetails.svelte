@@ -1,7 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { data_stack_store } from '$root/globalstores';
+	import { StackInterface } from './stackenum';
+	import { singleTripForLeg } from '$lib/features/directions/journeyTripInfo';
 	import JourneyRouteBadge from '$components/JourneyRouteBadge.svelte';
 	import JourneyPreviewTimeline from '$components/JourneyPreviewTimeline.svelte';
+	import { portalToMobileViewport } from '$lib/features/directions/portalToMobileViewport';
 	import {
 		formatJourneyTime, isStreetLeg, itinerarySegments, itineraryDetailLegs,
 		type EdelweissItinerary, type EdelweissLeg, type EdelweissIntermediateStop
@@ -9,6 +13,7 @@
 	import { footpathDebugEnabled, type DebugStop } from '$lib/features/directions/footpathDebug';
 	import { isValidPoint } from '$lib/features/directions/edelweiss';
 	import { connectionRailColor } from '$lib/features/directions/connectionRailColor';
+	import { displayTrainStationStopName, shouldShortenTrainStationStops } from '$lib/features/directions/trainStationStopNames';
 
 	export let itinerary: EdelweissItinerary;
 	export let originName: string;
@@ -30,11 +35,18 @@
 		return named?.trim() || stop?.platform?.trim() || stop?.platformCode?.trim() || '';
 	}
 
+	function shortenStops(leg: EdelweissLeg): boolean {
+		return shouldShortenTrainStationStops(leg.routeType, [
+			leg.from?.name, ...stops(leg).map(stop => stop.name), leg.to?.name
+		]);
+	}
+
 	function placeName(leg: EdelweissLeg, end: 'from' | 'to', index: number): string {
 		const fallback = end === 'from'
 			? (index === 0 ? originName : 'Boarding stop')
 			: (index === itinerary.legs.length - 1 ? destinationName : 'Alighting stop');
-		return leg[end]?.name?.trim() || fallback;
+		const name = leg[end]?.name?.trim() || fallback;
+		return displayTrainStationStopName(name, shortenStops(leg));
 	}
 
 	function legTime(leg: EdelweissLeg, end: 'start' | 'end'): string {
@@ -62,6 +74,11 @@
 		return Array.isArray(leg.intermediateStops) ? leg.intermediateStops : [];
 	}
 
+	function openTripInfo(leg: EdelweissLeg): void {
+        const trip = singleTripForLeg(leg);
+        if (trip) data_stack_store.update(stack => [...stack, new StackInterface(trip)]);
+    }
+
 	function toggleStops(index: number): void {
 		expandedStops = { ...expandedStops, [index]: !expandedStops[index] };
 	}
@@ -77,8 +94,8 @@
 <svelte:window on:keydown={handleKeydown} />
 
 <div class="absolute inset-0 z-30 flex min-h-0 flex-col overflow-y-auto bg-gray-100 text-gray-900 dark:bg-black dark:text-white" role="region" aria-label="Journey details">
-	<div class="sticky top-0 z-10 bg-gray-100 px-4 pb-3 pt-3 dark:bg-black">
-		<button bind:this={backButton} type="button" on:click={onBack} class="mb-3 inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium hover:bg-gray-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-600 dark:hover:bg-gray-900" aria-label="Back to directions">
+	<div class="sticky top-0 z-10 bg-gray-100 px-4 pb-3 pt-3 max-md:pt-16 dark:bg-black">
+		<button bind:this={backButton} use:portalToMobileViewport type="button" on:click={onBack} class="mb-3 inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium hover:bg-gray-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-600 max-md:fixed max-md:left-3 max-md:top-[max(0.5rem,env(safe-area-inset-top))] max-md:z-50 max-md:mb-0 max-md:border max-md:border-gray-200 max-md:bg-white max-md:px-3 max-md:py-2 max-md:shadow-lg dark:hover:bg-gray-900 dark:max-md:border-gray-700 dark:max-md:bg-gray-900" aria-label="Back to directions">
 			<span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
 			Directions
 		</button>
@@ -130,6 +147,15 @@
 						<span></span>
 					</div>
 
+                    {#if singleTripForLeg(leg)}
+                        <div class="connection-row">
+                            <span></span><span class="pearl-rail" aria-hidden="true"></span>
+                            <button type="button" on:click={() => openTripInfo(leg)} class="inline-flex w-fit items-center rounded py-2 text-sm font-medium text-blue-700 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 dark:text-blue-300">
+                                Trip info<span class="material-symbols-outlined text-base" aria-hidden="true">chevron_right</span>
+                            </button>
+                            <span></span>
+                        </div>
+                    {/if}
 					{#if stops(leg).length > 0}
 						<!-- The click target spans the entire card, not just the stop-name column. -->
 						<button type="button" class="connection-row w-full rounded text-left text-xs text-gray-600 hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-600 dark:text-gray-300 dark:hover:bg-gray-700" aria-expanded={!!expandedStops[index]} aria-label={(expandedStops[index] ? 'Hide ' : 'Show ') + stops(leg).length + ' intermediate stops'} on:click={() => toggleStops(index)}>
@@ -143,7 +169,7 @@
 								<div class="connection-row">
 									<span class="min-w-0 text-right text-xs tabular-nums leading-5 text-gray-500 dark:text-gray-400">{stopTime(stop)}</span>
 									<span class="pearl-rail" aria-hidden="true"><span class="pearl"></span></span>
-									<span class="min-w-0 text-left text-xs leading-5 text-gray-500 dark:text-gray-400">{stop.name}{#if $footpathDebugEnabled && isValidPoint(stop)} <button type="button" class="ml-1 text-amber-700 underline" on:click={() => inspectStop(stop)}>Footpaths</button>{/if}</span>
+									<span class="min-w-0 text-left text-xs leading-5 text-gray-500 dark:text-gray-400">{displayTrainStationStopName(stop.name, shortenStops(leg))}{#if $footpathDebugEnabled && isValidPoint(stop)} <button type="button" class="ml-1 text-amber-700 underline" on:click={() => inspectStop(stop)}>Footpaths</button>{/if}</span>
 									<span class="min-w-0 text-right text-xs text-gray-500 dark:text-gray-400">{stop.platform || stop.platformCode || ''}</span>
 								</div>
 							{/each}

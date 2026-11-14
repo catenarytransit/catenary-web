@@ -154,7 +154,9 @@
 
 	{#if latest_item_on_stack.data instanceof RouteStack}
 		<HomeButton />
-		<RouteScreen {darkMode} routestack={latest_item_on_stack.data} />
+		{#key latest_item_on_stack}
+			<RouteScreen {darkMode} routestack={latest_item_on_stack.data} />
+		{/key}
 	{/if}
 {:else}
 	<div class="flex h-full flex-col py-1">

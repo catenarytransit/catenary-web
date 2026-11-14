@@ -1,6 +1,7 @@
 import polyline from '@mapbox/polyline';
 import { MTA_CHATEAU_ID, isSubwayRouteId } from '$root/utils/mta_subway_utils';
 import { IDFM_CHATEAU_ID, isRatpRoute } from '$root/utils/ratp_utils';
+import dbTrainLookup from '$root/fernverkehr_2026_train_lookup.json';
 
 export interface Coordinate {
 	lat: number;
@@ -8,6 +9,7 @@ export interface Coordinate {
 }
 
 export interface RoutePoint extends Coordinate {
+	stopId?: string | null;
 	name: string;
 	/** Stop platform information, when included by the routing backend. */
 	platform?: string | null;
@@ -42,8 +44,15 @@ export interface EdelweissLeg {
 	routeTextColor?: string | null;
 	routeId?: string | null;
 	tripShortName?: string | null;
+	tripId?: string | null;
+	tripStartDate?: string | null;
+	tripStartTime?: string | null;
+	fromStopSequence?: number | null;
+	toStopSequence?: number | null;
 	/** The originating timetable's source chateau (supplied by Edelweiss). */
 	chateau?: string | null;
+	/** GTFS route agency ID, supplied with itinerary leg metadata by Edelweiss. */
+	agencyId?: string | null;
 	from?: RoutePoint | null;
 	to?: RoutePoint | null;
 	fromPlatform?: string | null;
@@ -154,6 +163,8 @@ export function streetRoutingRequest(settings: StreetRoutingSettings) {
 
 export interface ItinerarySegment {
 	mode: string;
+	/** GTFS route type is retained for train-to-train transfer presentation. */
+	routeType?: number | null;
 	color: string;
 	walking: boolean;
 	/** Walking between two transit legs is a silent transfer, not access/egress. */
@@ -412,8 +423,8 @@ export function routeBadgeKind(leg: EdelweissLeg): ItinerarySegment['badgeKind']
 		(icon === 'tram' && /^T\d+[A-Za-z]?$/i.test(name)) ||
 		(icon === 'train' && /^[A-EHJKLNPRUV]$/i.test(name))
 	)) return 'ratp';
-	// A train number uses the ordinary text badge rather than line-specific styling.
-	if (icon === 'train' && leg.tripShortName?.trim() && !['schweiz', 'ch'].includes(chateau)) return 'standard';
+	// Only services displaying a train number should lose their line-specific badge styling.
+	if (icon === 'train' && prefersTrainNumber(leg) && leg.tripShortName?.trim()) return 'standard';
 	if (['deutschland','vbb'].includes(chateau) && icon === 'train' &&
 		/^S\d+[A-Za-z]?$/i.test(name)) return 'sbahn';
 	if (['schweiz', 'ch'].includes(chateau) && icon === 'train' &&
@@ -423,11 +434,33 @@ export function routeBadgeKind(leg: EdelweissLeg): ItinerarySegment['badgeKind']
 
 /** Match the named urban rail exceptions used by the station and route views. */
 function isNationalRailLineException(leg: EdelweissLeg): boolean {
+	// Match the explicit agency exceptions used on station departure boards.
+	if (['TW', 'ME', 'LO', 'XR', 'HX'].includes(leg.agencyId?.trim().toUpperCase() ?? '')) return true;
+	// Older responses may lack agencyId; retain the existing route-name fallback.
 	const names = [leg.routeShortName, leg.routeLongName, leg.routeId];
 	return names.some(value => value && (
 		/^(?:TW|ME|LO|XR|HX)(?:-|$)/i.test(value.trim()) ||
 		/^(?:London Overground|Elizabeth(?: Line)?|Merseyrail|Tyne (?:and|&) Wear Metro|Heathrow Express)$/i.test(value.trim())
 	));
+}
+
+/** The same DB Fernverkehr agencies whose departures display individual train numbers. */
+function isDbFernverkehr(leg: EdelweissLeg): boolean {
+	return leg.chateau === 'deutschland' &&
+		['12681', '13557', '10918'].includes(leg.agencyId?.trim() ?? '');
+}
+
+/** Use the existing DB train designation lookup also used by station departure boards. */
+function dbFernverkehrTrainName(tripShortName: string): string {
+	const trainNumber = tripShortName.replace(/^0+/, '');
+	const matches = (dbTrainLookup as Record<string, Array<{ display_name?: string }>>)[trainNumber];
+	return matches?.[0]?.display_name?.trim() || tripShortName;
+}
+
+function prefersTrainNumber(leg: EdelweissLeg): boolean {
+	return leg.chateau === 'sncf' ||
+		isDbFernverkehr(leg) ||
+		(leg.chateau === 'nationalrailuk' && !isNationalRailLineException(leg));
 }
 
 export function routeLabel(leg: EdelweissLeg): string | null {
@@ -438,11 +471,16 @@ export function routeLabel(leg: EdelweissLeg): string | null {
 		if (['schweiz', 'ch'].includes(leg.chateau ?? '')) {
 			return leg.routeShortName?.trim() || null;
 		}
-		if (leg.chateau === 'nationalrailuk') {
-			return isNationalRailLineException(leg) ? name || tripName : tripName;
+		// UK National Rail services keep their train number except urban rail operators.
+		if (leg.chateau === 'nationalrailuk' && !isNationalRailLineException(leg)) {
+			return tripName;
 		}
-		if (tripName) return tripName;
+		if (isDbFernverkehr(leg) && tripName) {
+			return dbFernverkehrTrainName(tripName);
+		}
+		if (leg.chateau === 'sncf' && tripName) return tripName;
 	}
+	// All other trains prefer the route label, with the train number as fallback.
 	return name || tripName || cleanRouteName(leg.routeId);
 }
 
@@ -495,6 +533,7 @@ export function itinerarySegments(itinerary: EdelweissItinerary): ItinerarySegme
 	const lastTransit = transitIndices.at(-1) ?? -1;
 	return itinerary.legs.map((leg, index) => ({
 		mode: leg.mode,
+		routeType: leg.routeType ?? null,
 		walking: isStreetLeg(leg.mode),
 		transfer: isWalkingLeg(leg.mode) && firstTransit >= 0 && index > firstTransit && index < lastTransit,
 		color: isStreetLeg(leg.mode) ? '#64748b' : routeColor(leg.routeColor),
@@ -555,14 +594,21 @@ export function itineraryDisplaySegments(itinerary: EdelweissItinerary): Itinera
 		}
 		displayed.push({ ...segment });
 	}
-	// Preview-only filters: a transfer walk appears only when it exceeds
-	// five minutes. Access/egress walks shorter than 25 m can be omitted when
+	// Preview-only filters: hide walking between two GTFS type-2 trains up to
+	// seven minutes; other transfers retain the five-minute threshold.
+	// Access/egress walks shorter than 25 m can be omitted when
 	// detailed walking geometry provides a reliable distance. Unknown distances
 	// stay visible rather than being silently treated as short walks.
 	const hasTransit = displayed.some(segment => !segment.walking);
-	return displayed.filter(segment => {
+	return displayed.filter((segment, index) => {
 		if (!segment.walking) return true;
-		if (segment.transfer) return segment.duration > 5 * 60;
+		if (segment.transfer) {
+			const previous = displayed[index - 1];
+			const next = displayed[index + 1];
+			const betweenTrains = previous && next &&
+				!previous.walking && !next.walking && previous.routeType === 2 && next.routeType === 2;
+			return segment.duration > (betweenTrains ? 7 : 5) * 60;
+		}
 		if (hasTransit && segment.distanceMeters !== null &&
 			Number.isFinite(segment.distanceMeters) && segment.distanceMeters < 25) return false;
 		return true;
@@ -575,29 +621,36 @@ export function itineraryDisplaySegments(itinerary: EdelweissItinerary): Itinera
  * many-leg trips, so the combined widths never exceed the container.
  */
 export function allocateTimelinePercentages(
-	segments: ReadonlyArray<Pick<ItinerarySegment, 'duration'>>,
+	segments: ReadonlyArray<Pick<ItinerarySegment, 'duration'> & Partial<Pick<ItinerarySegment, 'transfer'>>>,
 	containerWidth: number,
-	minimumWidth = 26
+	minimumWidth = 26,
+	transferMinimumWidth = 16
 ): number[] {
 	const count = segments.length;
 	if (!count) return [];
 	const width = Number.isFinite(containerWidth) && containerWidth > 0 ? containerWidth : 320;
-	const minPixels = Math.min(Math.max(0, minimumWidth), width / count);
 	const weights = segments.map(s => Number.isFinite(s.duration) && s.duration > 0 ? s.duration : 1);
+	const minimums = segments.map(s =>
+		Math.max(0, s.transfer ? transferMinimumWidth : minimumWidth));
+	const minimumTotal = minimums.reduce((sum, value) => sum + value, 0);
+	// On narrow cards, scale all minimums together rather than overflowing horizontally.
+	const floors = minimumTotal > width
+		? minimums.map(value => value * width / minimumTotal)
+		: minimums;
 	const pixels = new Array<number>(count).fill(0);
 	const remaining = new Set<number>(weights.map((_, i) => i));
 	let remainingWidth = width;
 	while (remaining.size) {
 		const totalWeight = [...remaining].reduce((sum, i) => sum + weights[i], 0);
-		const underMinimum = [...remaining].filter(i => remainingWidth * weights[i] / totalWeight < minPixels - 1e-9);
+		const underMinimum = [...remaining].filter(i => remainingWidth * weights[i] / totalWeight < floors[i] - 1e-9);
 		if (!underMinimum.length) {
 			for (const i of remaining) pixels[i] = remainingWidth * weights[i] / totalWeight;
 			break;
 		}
 		for (const i of underMinimum) {
-			pixels[i] = minPixels;
+			pixels[i] = floors[i];
 			remaining.delete(i);
-			remainingWidth -= minPixels;
+			remainingWidth -= floors[i];
 		}
 	}
 	const widths = pixels.map(p => p / width * 100);

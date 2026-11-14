@@ -15,6 +15,7 @@
 	import { footpathDebugEnabled, loadFootpathDebugPreference, type DebugStop } from '$lib/features/directions/footpathDebug';
 	import TripItineraryDetails from '$components/TripItineraryDetails.svelte';
 	import JourneyPreviewTimeline from '$components/JourneyPreviewTimeline.svelte';
+	import { portalToMobileViewport } from '$lib/features/directions/portalToMobileViewport';
 	import { activeItineraries, activeItineraryIndex, selectedTransferItineraryIndex, fitDirectionsItinerary } from '$lib/features/directions/mapRoutes';
 	import { getRecentDirectionsLocations, rememberDirectionsLocation } from '$lib/features/directions/recentLocations';
 	import {
@@ -587,11 +588,13 @@
 
 <section aria-label="Directions / Trip Planner" class="relative flex h-full min-h-0 flex-col overflow-hidden">
 	<div class="min-h-0 flex-1 overflow-y-auto px-4 py-4" class:hidden={detailsIndex !== null} aria-hidden={detailsIndex !== null}>
-	<div class="mb-4 flex items-center justify-between">
-		<h2 class="text-lg font-semibold">Directions</h2>
-		<button type="button" on:click={closeDirections} aria-label="Exit directions" class="inline-flex items-center gap-1 rounded-full px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800">
-			<span class="material-symbols-outlined" aria-hidden="true">close</span>
-			<span class="text-sm">Exit</span>
+	<div use:portalToMobileViewport class="relative z-50 mb-4 rounded-xl bg-white text-gray-900 max-md:fixed max-md:inset-x-3 max-md:top-[max(0.5rem,env(safe-area-inset-top))] max-md:mb-0 max-md:border max-md:border-gray-200 max-md:p-3 max-md:shadow-xl dark:bg-gray-900 dark:text-white dark:max-md:border-gray-700" class:hidden={detailsIndex !== null}>
+	<div class="mb-4 flex items-center justify-between max-md:mb-2">
+		<h2 class="text-lg font-semibold max-md:sr-only">Directions</h2>
+		<button type="button" on:click={closeDirections} aria-label="Back from directions" class="inline-flex items-center gap-1 rounded-full px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800">
+			<span class="material-symbols-outlined" aria-hidden="true"><span class="max-md:hidden">close</span><span class="md:hidden">arrow_back</span></span>
+			<span class="text-sm max-md:hidden">Exit</span>
+			<span class="text-sm md:hidden">Back</span>
 		</button>
 	</div>
 
@@ -677,6 +680,7 @@
 				{#if searchError}<p class="px-3 py-2 text-xs text-red-600" role="status">Unable to load location suggestions.</p>{/if}
 			</div>
 		{/if}
+	</div>
 	</div>
 	<div class="mt-3" role="group" aria-label="Journey time preference">
 		<div class="relative mb-3 grid grid-cols-2 rounded-full bg-gray-100 p-1 dark:bg-gray-800" role="group" aria-label="Depart by or arrive by">
