@@ -2590,6 +2590,7 @@
       "filter": [
         "all",
         ["!=", ["get", "subclass"], "bus_stop"],
+        ["!=", ["get", "subclass"], "bus_station"],
         ["!=", ["get", "subclass"], "station"],
         ["!=", ["get", "class"], "railway"],
         ["match", ["geometry-type"], ["Point", "MultiPoint"], true, false],
