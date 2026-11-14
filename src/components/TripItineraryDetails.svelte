@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { data_stack_store } from '$root/globalstores';
+	import { StackInterface } from './stackenum';
+	import { singleTripForLeg } from '$lib/features/directions/journeyTripInfo';
 	import JourneyRouteBadge from '$components/JourneyRouteBadge.svelte';
 	import JourneyPreviewTimeline from '$components/JourneyPreviewTimeline.svelte';
 	import { portalToMobileViewport } from '$lib/features/directions/portalToMobileViewport';
@@ -71,6 +74,11 @@
 		return Array.isArray(leg.intermediateStops) ? leg.intermediateStops : [];
 	}
 
+	function openTripInfo(leg: EdelweissLeg): void {
+        const trip = singleTripForLeg(leg);
+        if (trip) data_stack_store.update(stack => [...stack, new StackInterface(trip)]);
+    }
+
 	function toggleStops(index: number): void {
 		expandedStops = { ...expandedStops, [index]: !expandedStops[index] };
 	}
@@ -139,6 +147,15 @@
 						<span></span>
 					</div>
 
+                    {#if singleTripForLeg(leg)}
+                        <div class="connection-row">
+                            <span></span><span class="pearl-rail" aria-hidden="true"></span>
+                            <button type="button" on:click={() => openTripInfo(leg)} class="inline-flex w-fit items-center rounded py-2 text-sm font-medium text-blue-700 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 dark:text-blue-300">
+                                Trip info<span class="material-symbols-outlined text-base" aria-hidden="true">chevron_right</span>
+                            </button>
+                            <span></span>
+                        </div>
+                    {/if}
 					{#if stops(leg).length > 0}
 						<!-- The click target spans the entire card, not just the stop-name column. -->
 						<button type="button" class="connection-row w-full rounded text-left text-xs text-gray-600 hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-600 dark:text-gray-300 dark:hover:bg-gray-700" aria-expanded={!!expandedStops[index]} aria-label={(expandedStops[index] ? 'Hide ' : 'Show ') + stops(leg).length + ' intermediate stops'} on:click={() => toggleStops(index)}>

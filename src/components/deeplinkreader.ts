@@ -1,3 +1,4 @@
+import { parseJourneyTripSegment } from '$lib/features/directions/journeyTripInfo';
 import {
 	BlockStack,
 	OsmItemStack,
@@ -98,7 +99,8 @@ export function deep_link_url_reader(urlParams?: URLSearchParams) {
 					getFirstParam(urlParams, 'start_time'),
 					getFirstParam(urlParams, 'start_date'),
 					vehicleId,
-					getOptionalNumber(urlParams, 'route_type')
+					getOptionalNumber(urlParams, 'route_type'),
+					parseJourneyTripSegment(getFirstParam(urlParams, 'journey_segment'))
 				)
 			);
 		}

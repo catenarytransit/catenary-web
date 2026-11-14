@@ -1,3 +1,4 @@
+import type { JourneyTripSegment } from '$lib/features/directions/journeyTripInfo';
 export class StackInterface {
 	public data:
 		| SingleTrip
@@ -212,7 +213,8 @@ export class SingleTrip {
 		start_time: string | null,
 		start_date: string | null,
 		vehicle_id: string | null,
-		route_type: number | null
+		route_type: number | null,
+		public journeySegment: JourneyTripSegment | null = null
 	) {
 		this.chateau_id = chateau_id;
 		this.trip_id = trip_id;
@@ -346,6 +348,7 @@ export class OsmStationMapSelector {
 type PageQueryValue = string | number | boolean | null | undefined;
 
 const PAGE_QUERY_KEYS = [
+	'journey_segment',
 	'page',
 	'screen',
 	'chateau',
@@ -412,7 +415,8 @@ function stackDataToPageQuery(data: StackInterface['data']): Record<string, Page
 			start_time: data.start_time,
 			start_date: data.start_date,
 			vehicle: data.vehicle_id,
-			route_type: data.route_type
+			route_type: data.route_type,
+			journey_segment: data.journeySegment ? JSON.stringify(data.journeySegment) : null
 		};
 	}
 

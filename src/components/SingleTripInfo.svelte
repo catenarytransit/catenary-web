@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolveJourneySegment } from '$lib/features/directions/journeyTripInfo';
 	import { json, text } from '@sveltejs/kit';
 	import { BlockStack, SingleTrip, StackInterface, StopStack } from './stackenum';
 	import { onDestroy, onMount, tick } from 'svelte';
@@ -442,7 +443,7 @@
 
 	function scrollToCurrentStop(behavior: ScrollBehavior = 'smooth') {
 		if (!bind_scrolling_div) return;
-		const currentIdx = getCurrentStopIndex();
+		const currentIdx = journeyRange?.from ?? getCurrentStopIndex();
 		const stopRow = bind_scrolling_div.querySelector(`[data-stop-index="${currentIdx}"]`);
 		if (stopRow) {
 			stopRow.scrollIntoView({ behavior, block: 'center' });
@@ -452,7 +453,7 @@
 	async function autoScrollToCurrentStop() {
 		if (has_scrolled_to_current) return;
 		if (!bind_scrolling_div || stoptimes_cleaned_dataset.length === 0) return;
-		if (last_inactive_stop_idx === -1 && current_at_stop_idx_store === -1) {
+		if (!journeyRange && last_inactive_stop_idx === -1 && current_at_stop_idx_store === -1) {
 			return;
 		}
 
@@ -468,7 +469,7 @@
 
 	function checkScrollPosition() {
 		if (!bind_scrolling_div) return;
-		const currentIdx = getCurrentStopIndex();
+		const currentIdx = journeyRange?.from ?? getCurrentStopIndex();
 		const stopRow = bind_scrolling_div.querySelector(
 			`[data-stop-index="${currentIdx}"]`
 		) as HTMLElement | null;
@@ -496,6 +497,10 @@
 	});
 
 	export let trip_selected: SingleTrip;
+    $: journeyRange = resolveJourneySegment(stoptimes_cleaned_dataset, trip_selected.journeySegment);
+    function journeyRail(active: boolean, dark: boolean, selected: boolean): string {
+        return selected ? `background-color: ${active ? (dark ? '#fff' : '#000') : (dark ? '#6b7280' : '#9ca3af')}; border-color: ${active ? (dark ? '#fff' : '#000') : (dark ? '#6b7280' : '#9ca3af')}; opacity: 1;` : '';
+    }
 
 	export let darkMode: boolean = determineDarkModeToBool();
 
@@ -988,7 +993,7 @@
 	$: if (
 		bind_scrolling_div &&
 		stoptimes_cleaned_dataset.length > 0 &&
-		(last_inactive_stop_idx !== -1 || current_at_stop_idx_store !== -1)
+		(journeyRange || last_inactive_stop_idx !== -1 || current_at_stop_idx_store !== -1)
 	) {
 		autoScrollToCurrentStop();
 	}
@@ -1498,7 +1503,11 @@
 
 				<table class="w-full border-collapse">
 					{#each stoptimes_cleaned_dataset as stoptime, i}
-						{@const connectionKey = stop_connections[stoptime.stop_id] ? stoptime.stop_id : null}
+						{@const inJourney = journeyRange && i >= journeyRange.from && i <= journeyRange.to}
+                        {@const journeyEndpoint = journeyRange && (i === journeyRange.from || i === journeyRange.to)}
+                        {@const topInJourney = journeyRange && i > journeyRange.from && i <= journeyRange.to}
+                        {@const bottomInJourney = journeyRange && i >= journeyRange.from && i < journeyRange.to}
+                        {@const connectionKey = stop_connections[stoptime.stop_id] ? stoptime.stop_id : null}
 						{@const isDoubleTime = shouldShowDoubleTime(stoptime)}
 						{@const isLastStop = i === stoptimes_cleaned_dataset.length - 1}
 						{@const isCancelledStop = cancellationTimeline.cancelledStops[i] ?? false}
@@ -1507,7 +1516,7 @@
 						{@const isDashedTopLine = isDashedArrivalLine}
 						{@const isDashedBottomLine = cancellationTimeline.dashedSegments[i] ?? false}
 						<!-- Pearl centers are 4px margin + half of their rendered 8px/12px diameter. -->
-						{@const pearlCenter = is_at_station && i === current_at_stop_idx_store ? '0.625rem' : '0.5rem'}
+						{@const pearlCenter = !journeyRange && is_at_station && i === current_at_stop_idx_store ? '0.625rem' : '0.5rem'}
 						{@const mainRealtimeTime =
 							stoptime.rt_departure_time ?? (!isDoubleTime ? stoptime.rt_arrival_time : null)}
 						{@const mainDisplayTime =
@@ -1524,17 +1533,17 @@
 
 						{#if isDoubleTime}
 							<!-- Arrival Row -->
-							<tr class={`min-h-[3rem] ${i <= last_inactive_stop_idx ? 'opacity-60' : ''}`}>
+							<tr class:journey-active={!!inJourney} class:journey-muted={!!journeyRange && !inJourney} class={`min-h-[3rem] ${!journeyRange && i <= last_inactive_stop_idx ? 'opacity-60' : ''}`}>
 								<!-- Time Column: Scheduled Arrival -->
 								{#if show_original_timetable}
 									<td
-										class="align-top text-right whitespace-nowrap pl-2 pr-3 {i <=
+										class="align-top text-right whitespace-nowrap pl-2 pr-3 {!journeyRange && i <=
 										last_inactive_stop_idx
 											? 'opacity-70'
 											: ''}"
 									>
 										{#if stoptime.scheduled_arrival_time_unix_seconds != null}
-											<div class="leading-none text-gray-400 dark:text-gray-500 text-sm mt-0.5">
+											<div class="journey-time leading-none text-gray-400 dark:text-gray-500 text-sm mt-0.5">
 												<Clock
 													timezone={stoptime.timezone || trip_data.tz}
 													time_seconds={stoptime.scheduled_arrival_time_unix_seconds}
@@ -1547,13 +1556,13 @@
 
 								<!-- Time Column: Real-time Arrival -->
 								<td
-									class="align-top text-right whitespace-nowrap {i <= last_inactive_stop_idx
+									class="align-top text-right whitespace-nowrap {!journeyRange && i <= last_inactive_stop_idx
 										? 'opacity-70'
 										: ''}"
 								>
 									<div class="flex flex-col items-end mt-0.5">
 										<div class="flex flex-row gap-2 justify-end">
-											<div class={`leading-none text-sm ${isLastStop ? 'font-bold' : 'font-normal'}`}>
+											<div class={`journey-time leading-none text-sm ${isLastStop ? 'font-bold' : 'font-normal'}`}>
 												<Clock
 													timezone={stoptime.timezone || trip_data.tz}
 													time_seconds={stoptime.rt_arrival_time ||
@@ -1610,7 +1619,7 @@
 											class={isDashedArrivalLine
 											? 'w-0.5 h-full border-l-2 border-dashed border-red-600 dark:border-red-500'
 											: 'bg-gray-700 dark:bg-gray-300 w-0.5 h-full'}
-											style={` opacity: ${i <= last_inactive_stop_idx ? '0.4' : '1'};`}
+											style={`opacity: ${!journeyRange && i <= last_inactive_stop_idx ? '0.4' : '1'}; ${journeyRail(!!topInJourney, darkMode, !!journeyRange)}`}
 										></div>
 										{/if}
 									</div>
@@ -1622,17 +1631,17 @@
 						{/if}
 
 						<!-- Main/Departure Row -->
-						<tr data-stop-index={i} class={`min-h-[3rem]`}>
+						<tr data-stop-index={i} class:journey-active={!!inJourney} class:journey-muted={!!journeyRange && !inJourney} class:journey-endpoint={!!journeyEndpoint} class="min-h-[3rem]">
 							<!-- Time Column: Scheduled Departure (or single time) -->
 							{#if show_original_timetable}
 								<td
-									class="align-top text-right whitespace-nowrap pl-2 pr-3 {i <=
+									class="align-top text-right whitespace-nowrap pl-2 pr-3 {!journeyRange && i <=
 									last_inactive_stop_idx
 										? 'opacity-70'
 										: ''}"
 								>
 									{#if stoptime.scheduled_departure_time_unix_seconds != null || stoptime.scheduled_arrival_time_unix_seconds != null}
-										<div class="leading-none text-gray-400 dark:text-gray-500 text-sm mt-0.5">
+										<div class="journey-time leading-none text-gray-400 dark:text-gray-500 text-sm mt-0.5">
 											<Clock
 												timezone={stoptime.timezone || trip_data.tz}
 												time_seconds={stoptime.scheduled_departure_time_unix_seconds ||
@@ -1646,13 +1655,13 @@
 
 							<!-- Time Column: Real-time Departure (or single time) -->
 							<td
-								class="align-top text-right whitespace-nowrap {i <= last_inactive_stop_idx
+								class="align-top text-right whitespace-nowrap {!journeyRange && i <= last_inactive_stop_idx
 									? 'opacity-70'
 									: ''}"
 							>
 								<div class="flex flex-col items-end mt-0.5">
 									<div class="flex flex-row gap-2 justify-end">
-										<div class="font-bold leading-none text-sm">
+										<div class="journey-time font-bold leading-none text-sm">
 											<Clock
 												timezone={stoptime.timezone || trip_data.tz}
 												time_seconds={mainDisplayTime}
@@ -1703,7 +1712,7 @@
 											class={isDashedTopLine
 												? 'w-0.5 absolute top-0 border-l-2 border-dashed border-red-600 dark:border-red-500'
 												: 'bg-gray-800 dark:bg-gray-300 w-0.5 absolute top-0 bg-current'}
-											style={`height: ${pearlCenter}; opacity: ${i <= last_inactive_stop_idx - 1 ? '0.4' : '1'};`}
+											style={`height: ${pearlCenter}; opacity: ${!journeyRange && i <= last_inactive_stop_idx - 1 ? '0.4' : '1'}; ${journeyRail(!!topInJourney, darkMode, !!journeyRange)}`}
 										></div>
 									{/if}
 
@@ -1713,12 +1722,14 @@
 											class={isDashedBottomLine
 												? 'w-0.5 absolute bottom-0 border-l-2 border-dashed border-red-600 dark:border-red-500'
 												: 'bg-gray-800 dark:bg-gray-300 w-0.5 absolute bottom-0 bg-current'}
-											style={`top: ${pearlCenter}; opacity: ${i <= last_inactive_stop_idx - 1 ? '0.4' : '1'};`}
+											style={`top: ${pearlCenter}; opacity: ${!journeyRange && i <= last_inactive_stop_idx - 1 ? '0.4' : '1'}; ${journeyRail(!!bottomInJourney, darkMode, !!journeyRange)}`}
 										></div>
 									{/if}
 
 									<!-- Dot -->
-									{#if is_at_station && i == current_at_stop_idx_store}
+									{#if journeyRange}
+                                        <span class="z-10 mt-1 h-2 w-2 rounded-full border-2" style={`border-color: ${inJourney ? (darkMode ? '#fff' : '#000') : (darkMode ? '#6b7280' : '#9ca3af')}; background-color: ${journeyEndpoint ? (darkMode ? '#fff' : '#000') : (darkMode ? '#111827' : '#fff')};`}></span>
+                                    {:else if is_at_station && i == current_at_stop_idx_store}
 										<div
 											class={isCancelledStop
 											? 'z-20 w-3 h-3 mt-1 rounded-full animate-pulse border-2 border-red-600 dark:border-red-500'
@@ -1745,11 +1756,11 @@
 							</td>
 
 							<!-- Content Column -->
-							<td class="align-top pb-6 pl-4 {i <= last_inactive_stop_idx ? 'opacity-60' : ''}">
+							<td class="align-top pb-6 pl-4 {!journeyRange && i <= last_inactive_stop_idx ? 'opacity-60' : ''}">
 								<div class="flex flex-col">
 									<!-- Header: Station Name + Platform -->
 									<div class="flex flex-row justify-between items-start leading-none gap-2">
-										<div class="text-charcoal dark:text-gray-200">
+										<div class="journey-name text-charcoal dark:text-gray-200">
 											{#if stoptime.name}
 												<span
 													on:click={() => {
@@ -1835,7 +1846,7 @@
 				</table>
 			{/if}
 		</div>
-		{#if show_scroll_button}
+		{#if show_scroll_button && !journeyRange}
 			<button
 				transition:fly={{ y: 20, duration: 250 }}
 				on:click={() => scrollToCurrentStop('smooth')}
@@ -1852,3 +1863,16 @@
 		{/if}
 	</div>
 {/if}
+
+<style>
+    .journey-active { color: #000; }
+    :global(.dark) .journey-active { color: #fff; }
+    .journey-muted { color: #6b7280; }
+    :global(.dark) .journey-muted { color: #9ca3af; }
+    .journey-active .journey-name, .journey-active .journey-time,
+    .journey-muted .journey-name, .journey-muted .journey-time,
+    .journey-active .journey-name :global(span), .journey-muted .journey-name :global(span) { color: inherit; }
+    :global(.dark) .journey-active .journey-name, :global(.dark) .journey-active .journey-time,
+    :global(.dark) .journey-muted .journey-name, :global(.dark) .journey-muted .journey-time { color: inherit; }
+    .journey-endpoint .journey-name { font-weight: 700; }
+</style>

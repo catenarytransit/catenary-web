@@ -9,6 +9,7 @@ export interface Coordinate {
 }
 
 export interface RoutePoint extends Coordinate {
+	stopId?: string | null;
 	name: string;
 	/** Stop platform information, when included by the routing backend. */
 	platform?: string | null;
@@ -43,6 +44,11 @@ export interface EdelweissLeg {
 	routeTextColor?: string | null;
 	routeId?: string | null;
 	tripShortName?: string | null;
+	tripId?: string | null;
+	tripStartDate?: string | null;
+	tripStartTime?: string | null;
+	fromStopSequence?: number | null;
+	toStopSequence?: number | null;
 	/** The originating timetable's source chateau (supplied by Edelweiss). */
 	chateau?: string | null;
 	/** GTFS route agency ID, supplied with itinerary leg metadata by Edelweiss. */
