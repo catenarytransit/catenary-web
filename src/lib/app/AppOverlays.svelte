@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ConsentBanner from '$components/ConsentBanner.svelte';
+	import ClockSkewWarning from './ClockSkewWarning.svelte';
 	import AndroidDownloadPopup from '$components/AndroidDownloadPopup.svelte';
 	import IosDownloadPopup from '$components/IosDownloadPopup.svelte';
 	import { showAndroidDownloadPopup, showIosDownloadPopup } from './state/overlays';
@@ -13,3 +14,4 @@
 	<IosDownloadPopup />
 {/if}
 <ConsentBanner />
+<ClockSkewWarning />

@@ -6,7 +6,7 @@ async function runCheck() {
 
 	try {
 		const clientStartPerf = performance.now();
-		const response = await fetch(serverTimeEndpoint);
+		const response = await fetch(serverTimeEndpoint, { cache: 'no-store' });
 		if (!response.ok) {
 			throw new Error(`HTTP error! status: ${response.status}`);
 		}
@@ -14,7 +14,7 @@ async function runCheck() {
 		const clientEndPerf = performance.now();
 
 		const serverTimeUs = parseInt(data, 10);
-		if (isNaN(serverTimeUs)) {
+		if (!Number.isFinite(serverTimeUs) || serverTimeUs <= 0) {
 			throw new Error('Invalid server time format');
 		}
 		const serverTime = serverTimeUs / 1000;
