@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { _, locale } from 'svelte-i18n';
 	import RouteResultItem from './RouteResultItem.svelte';
+	import SearchResultIcon from './SearchResultIcon.svelte';
 	import StopRankingInfo from './StopRankingInfo.svelte';
 	import { getTopHistory } from '../state/stationHistory';
 	import { parseCoordinateInput } from '../coordinates';
@@ -113,7 +114,7 @@
 					on:click={() => selectResult(item)}
 					class="flex w-full cursor-pointer items-center gap-3 px-3 py-2 text-left hover:bg-gray-200 dark:hover:bg-gray-700"
 				>
-					<img src={searchResultIcon(item, showingHistory)} alt="" aria-hidden="true" class="h-5 w-5 shrink-0 object-contain" />
+					<SearchResultIcon icon={searchResultIcon(item, showingHistory)} />
 					<div class="min-w-0"><p class="font-medium dark:text-white">{item.data.name || item.data.osm_class + ' ' + item.data.osm_id}</p>
 					<p class="text-xs text-gray-600 dark:text-gray-400">{item.data.address || 'OpenStreetMap'}</p></div>
 				</button>
@@ -124,7 +125,7 @@
 						? 'bg-gray-200 dark:bg-gray-700'
 						: 'hover:bg-gray-200 dark:hover:bg-gray-700'}"
 				>
-					<img src={searchResultIcon(item, showingHistory)} alt="" aria-hidden="true" class="h-5 w-5 shrink-0 object-contain" />
+					<SearchResultIcon icon={searchResultIcon(item, showingHistory)} />
 					<div class="min-w-0 flex flex-col content-start items-start text-left">
 						<p class="font-medium dark:text-white">
 							{item.data.properties.name}
@@ -162,7 +163,7 @@
 						: 'hover:bg-gray-200 dark:hover:bg-gray-700'}"
 					on:click={() => selectResult(item)}
 				>
-					<img src={searchResultIcon(item, showingHistory)} alt="" aria-hidden="true" class="h-5 w-5 shrink-0 object-contain" />
+					<SearchResultIcon icon={searchResultIcon(item, showingHistory)} />
 					{#key item.gtfs_id}
 						{#if item.data.osm_station_id == null}
 							<StopRankingInfo
@@ -185,7 +186,7 @@
 						: 'hover:bg-gray-200 dark:hover:bg-gray-700'}"
 					on:click={() => selectResult(item)}
 				>
-					<img src={searchResultIcon(item, showingHistory)} alt="" aria-hidden="true" class="h-5 w-5 shrink-0 object-contain" />
+					<SearchResultIcon icon={searchResultIcon(item, showingHistory)} />
 					<div class="min-w-0 flex-1 flex flex-col text-left">
 						<p class="font-medium dark:text-white leading-tight">
 							{item.data.name}
