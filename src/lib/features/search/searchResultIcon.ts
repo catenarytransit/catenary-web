@@ -8,6 +8,7 @@ const ICONS = {
   restaurant: '/icons/sbb/cutlery-small.svg',
   park: '/icons/sbb/tree-small.svg',
   government: '/icons/sbb/parliament-small.svg',
+  shopping: '/icons/sbb/shopping-bag-small.svg',
   recent: '/icons/sbb/arrow-circle-time-small.svg'
 } as const;
 
@@ -64,5 +65,6 @@ export function searchResultIcon(
   if (matches(/amenity:(?:restaurant|cafe|fast_food|food_court|pub|bar)|restaurant|eatery/)) return ICONS.restaurant;
   if (matches(/leisure:(?:park|garden|nature_reserve)|landuse:(?:forest|recreation_ground)|natural:(?:wood|forest)|park/)) return ICONS.park;
   if (matches(/amenity:(?:townhall|courthouse|public_building)|office:government|government|townhall/)) return ICONS.government;
+  if (matches(/^(?:shop(?::|$)|shopping(?:$|[_:])|retail(?:$|[_:])|mall(?:$|[_:]))|amenity:(?:marketplace|supermarket|convenience)|building:retail|landuse:retail/)) return ICONS.shopping;
   return '/icons/sbb/tree-small.svg';
 }
