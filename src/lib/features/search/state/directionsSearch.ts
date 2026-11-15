@@ -19,6 +19,9 @@ export interface DirectionsLocation {
 	address: string;
 	lat: number;
 	lon: number;
+	categories?: string[];
+	layer?: string;
+	modeType?: string | number;
 }
 
 type CypressFeature = {
@@ -150,7 +153,9 @@ function parseCypress(response: CypressResponse): DirectionsLocation[] {
 				properties.country
 			]) || properties.display_name || '',
 			lat,
-			lon
+			lon,
+			categories: properties.categories,
+			layer: properties.layer
 		});
 	}
 	return rows;
