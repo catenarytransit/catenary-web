@@ -48,7 +48,9 @@ export function searchResultIcon(
       const icon = transportIcon(route?.route_type ?? route?.routeType ?? route?.type);
       if (icon) return icon;
     }
-    return ICONS.train;
+    // Birch GTFS stop records generally have no mode metadata; default to bus.
+    // OSM station matches retain the train fallback.
+    return item.type === 'stop' ? ICONS.bus : ICONS.train;
   }
   const properties = item.type === 'cypress' ? data.properties ?? {} : data;
   const categories: string[] = Array.isArray(properties.categories)
