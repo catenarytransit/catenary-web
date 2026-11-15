@@ -22,6 +22,10 @@ describe('search result icons', () => {
     expect(searchResultIcon({ type: 'route', data: { route_type: 3 } })).toContain('bus-right');
     expect(searchResultIcon({ type: 'osm_station', data: { mode_type: 'subway' } })).toContain('metro-right');
   });
+  it('uses the location pin for unknown places', () => {
+    expect(searchResultIcon({ type: 'cypress', data: { properties: { categories: ['amenity:library'] } } })).toContain('location-pin-small');
+    expect(searchResultIcon({ type: 'osm_item', data: { osm_class: 'building', osm_type: 'yes' } })).toContain('location-pin-small');
+  });
   it('uses recent icon for empty-query history', () => {
     expect(searchResultIcon({ type: 'stop', data: {} }, true)).toContain('arrow-circle-time-small');
   });
