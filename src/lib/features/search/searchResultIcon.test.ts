@@ -7,7 +7,10 @@ describe('search result icons', () => {
       ['tourism:hotel', 'roof-bed-small'],
       ['amenity:restaurant', 'cutlery-small'],
       ['leisure:park', 'tree-small'],
-      ['amenity:townhall', 'parliament-small']
+      ['amenity:townhall', 'parliament-small'],
+      ['shop:clothes', 'shopping-bag-small'],
+      ['shop:supermarket', 'shopping-bag-small'],
+      ['amenity:marketplace', 'shopping-bag-small']
     ]) {
       expect(searchResultIcon({ type: 'cypress', data: { properties: { categories: [category] } } })).toContain(expected);
     }
