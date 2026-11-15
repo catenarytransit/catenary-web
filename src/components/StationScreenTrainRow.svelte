@@ -5,6 +5,7 @@
 	import DelayDiff from './DelayDiff.svelte';
 	import { _ } from 'svelte-i18n';
 	import Clock from './Clock.svelte';
+	import { stopEventTimes } from '$lib/features/departures/eventTimes';
 	import { SingleTrip, StackInterface } from './stackenum';
 	import { data_stack_store } from '../globalstores';
 	import StationScreenRouteBadge from './StationScreenRouteBadge.svelte';
@@ -22,8 +23,9 @@
 	export let swiss_style: boolean = false;
 	export let eventAlerts: any[] = [];
 
-	$: shared_rt_time = event.last_stop ? event.realtime_arrival : event.realtime_departure;
-	$: shared_scheduled_time = event.last_stop ? event.scheduled_arrival : event.scheduled_departure;
+	$: times = stopEventTimes(event, event.last_stop);
+	$: shared_rt_time = times.realtime;
+	$: shared_scheduled_time = times.scheduled;
 
 	$: routeDef = data_from_server.routes?.[event.chateau]?.[event.route_id];
 	$: agencyId = routeDef?.agency_id;
@@ -91,24 +93,26 @@
 			{#if event.trip_cancelled}
 				<span class="text-red-500 font-semibold text-xs">{$_('cancelled')}</span>
 				<div class="line-through opacity-70 text-xs">
-					<Clock {timezone} time_seconds={shared_scheduled_time} {show_seconds} />
+					<Clock {timezone} time_seconds={shared_scheduled_time ?? shared_rt_time} {show_seconds} />
 				</div>
 			{:else if event.trip_deleted}
 				<span class="text-red-500 font-semibold text-xs">{$_('deleted')}</span>
 				<div class="line-through opacity-70 text-xs">
-					<Clock {timezone} time_seconds={shared_scheduled_time} {show_seconds} />
+					<Clock {timezone} time_seconds={shared_scheduled_time ?? shared_rt_time} {show_seconds} />
 				</div>
 			{:else if event.stop_cancelled}
 				<span class="text-red-500 font-semibold text-xs">{$_('stop_cancelled')}</span>
 				<div class="line-through opacity-70 text-xs">
-					<Clock {timezone} time_seconds={shared_scheduled_time} {show_seconds} />
+					<Clock {timezone} time_seconds={shared_scheduled_time ?? shared_rt_time} {show_seconds} />
 				</div>
 			{:else if shared_rt_time}
 				<!-- Vertical Mode: Scheduled -> Delay -> Realtime -->
 				{#if shared_rt_time != shared_scheduled_time}
-					<span class="text-gray-600 dark:text-gray-400 line-through">
-						<Clock {timezone} time_seconds={shared_scheduled_time} {show_seconds} />
-					</span>
+					{#if shared_scheduled_time != null}
+						<span class="text-gray-600 dark:text-gray-400 line-through">
+							<Clock {timezone} time_seconds={shared_scheduled_time} {show_seconds} />
+						</span>
+					{/if}
 					<span
 						class={`text-seashore dark:text-seashoredark font-medium ${shared_rt_time < current_time / 1000 ? 'opacity-70' : ''}`}
 					>
@@ -130,7 +134,9 @@
 					</span>
 				{/if}
 			{:else}
-				<div class={`${shared_scheduled_time < current_time / 1000 ? 'opacity-70' : ''}`}>
+				<div
+					class={`${shared_scheduled_time != null && shared_scheduled_time < current_time / 1000 ? 'opacity-70' : ''}`}
+				>
 					<Clock {timezone} time_seconds={shared_scheduled_time} {show_seconds} />
 				</div>
 			{/if}
