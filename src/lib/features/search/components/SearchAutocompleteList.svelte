@@ -4,6 +4,7 @@
 	import StopRankingInfo from './StopRankingInfo.svelte';
 	import { getTopHistory } from '../state/stationHistory';
 	import { parseCoordinateInput } from '../coordinates';
+	import { searchResultIcon } from '../searchResultIcon';
 	import {
 		displayedResults,
 		latestCypressResults,
@@ -39,6 +40,7 @@
 	}
 
 	let visibleItems: SearchResultItem[] = [];
+	$: showingHistory = $searchText.length === 0;
 	$: currentLocale = $locale ?? 'default';
 
 	$: {
@@ -99,7 +101,7 @@
 					on:click={() => selectResult(item)}
 					class="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left {index === $selectedResultIndex ? 'bg-gray-200 dark:bg-gray-700' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}"
 				>
-					<span class="material-symbols-outlined text-gray-600 dark:text-gray-300" aria-hidden="true">grid_on</span>
+					<span class="material-symbols-outlined w-5 shrink-0 text-gray-600 dark:text-gray-300" aria-hidden="true">grid_on</span>
 					<span class="min-w-0">
 						<span class="block font-medium dark:text-white">{item.data.label}</span>
 						<span class="block text-xs text-gray-600 dark:text-gray-400">Coordinate</span>
@@ -109,19 +111,21 @@
 				<button
 					type="button"
 					on:click={() => selectResult(item)}
-					class="w-full cursor-pointer px-3 py-2 text-left hover:bg-gray-200 dark:hover:bg-gray-700"
+					class="flex w-full cursor-pointer items-center gap-3 px-3 py-2 text-left hover:bg-gray-200 dark:hover:bg-gray-700"
 				>
-					<p class="font-medium dark:text-white">{item.data.name || item.data.osm_class + ' ' + item.data.osm_id}</p>
-					<p class="text-xs text-gray-600 dark:text-gray-400">{item.data.address || 'OpenStreetMap'}</p>
+					<img src={searchResultIcon(item, showingHistory)} alt="" aria-hidden="true" class="h-5 w-5 shrink-0 object-contain" />
+					<div class="min-w-0"><p class="font-medium dark:text-white">{item.data.name || item.data.osm_class + ' ' + item.data.osm_id}</p>
+					<p class="text-xs text-gray-600 dark:text-gray-400">{item.data.address || 'OpenStreetMap'}</p></div>
 				</button>
 			{:else if item.type === 'cypress'}
 				<button
 					on:click={() => selectResult(item)}
-					class="px-3 cursor-pointer w-full {index === $selectedResultIndex
+					class="flex items-center gap-3 px-3 py-2 cursor-pointer w-full {index === $selectedResultIndex
 						? 'bg-gray-200 dark:bg-gray-700'
 						: 'hover:bg-gray-200 dark:hover:bg-gray-700'}"
 				>
-					<div class="align-start flex flex-col content-start items-start text-left">
+					<img src={searchResultIcon(item, showingHistory)} alt="" aria-hidden="true" class="h-5 w-5 shrink-0 object-contain" />
+					<div class="min-w-0 flex flex-col content-start items-start text-left">
 						<p class="font-medium dark:text-white">
 							{item.data.properties.name}
 							<span class="font-light text-xs text-gray-700 dark:text-gray-300"
@@ -149,16 +153,18 @@
 						route_id={item.gtfs_id ?? ''}
 						routeInfo={item.data}
 						onClick={() => selectResult(item)}
+						icon={searchResultIcon(item, showingHistory)}
 					/>
 				</div>
 			{:else if item.type === 'stop'}
 				<button
-					class="px-3 cursor-pointer w-full flex flex-col content-start items-start align-left {index ===
+					class="px-3 py-2 cursor-pointer w-full flex items-center gap-3 text-left {index ===
 					$selectedResultIndex
 						? 'bg-gray-200 dark:bg-gray-700'
 						: 'hover:bg-gray-200 dark:hover:bg-gray-700'}"
 					on:click={() => selectResult(item)}
 				>
+					<img src={searchResultIcon(item, showingHistory)} alt="" aria-hidden="true" class="h-5 w-5 shrink-0 object-contain" />
 					{#key item.gtfs_id}
 						{#if item.data.osm_station_id == null}
 							<StopRankingInfo
@@ -175,13 +181,14 @@
 				</button>
 			{:else if item.type === 'osm_station'}
 				<button
-					class="px-3 cursor-pointer w-full flex flex-row items-center gap-2 py-2 {index ===
+					class="px-3 cursor-pointer w-full flex flex-row items-center gap-3 py-2 {index ===
 					$selectedResultIndex
 						? 'bg-gray-200 dark:bg-gray-700'
 						: 'hover:bg-gray-200 dark:hover:bg-gray-700'}"
 					on:click={() => selectResult(item)}
 				>
-					<div class="flex-1 flex flex-col text-left">
+					<img src={searchResultIcon(item, showingHistory)} alt="" aria-hidden="true" class="h-5 w-5 shrink-0 object-contain" />
+					<div class="min-w-0 flex-1 flex flex-col text-left">
 						<p class="font-medium dark:text-white leading-tight">
 							{item.data.name}
 						</p>
@@ -200,19 +207,6 @@
 								</p>
 							{/if}
 						{/if}
-						<div class="flex flex-row flex-wrap gap-1 mt-1">
-							{#if item.data.routes && item.data.routes.length > 0}
-								{#each item.data.routes as route}
-									<div
-										class="px-1.5 py-0.5 text-[10px] font-bold rounded"
-										style="background-color: {route.color || '#cccccc'}; color: {route.text_color ||
-											'#000000'};"
-									>
-										{route.short_name || route.route_id}
-									</div>
-								{/each}
-							{/if}
-						</div>
 					</div>
 				</button>
 			{/if}
