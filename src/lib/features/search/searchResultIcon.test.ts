@@ -22,6 +22,14 @@ describe('search result icons', () => {
     expect(searchResultIcon({ type: 'route', data: { route_type: 3 } })).toContain('bus-right');
     expect(searchResultIcon({ type: 'osm_station', data: { mode_type: 'subway' } })).toContain('metro-right');
   });
+  it('defaults ordinary Birch GTFS stops to bus, retaining explicit modes', () => {
+    expect(searchResultIcon({ type: 'stop', data: {} })).toContain('bus-right-fill-color.svg');
+    expect(searchResultIcon({ type: 'stop', data: { location_type: 0 } })).toContain('bus-right-fill-color.svg');
+    expect(searchResultIcon({ type: 'stop', data: { mode_type: 'rail' } })).toContain('train-right-fill-color.svg');
+    expect(searchResultIcon({ type: 'stop', data: { route_type: 0 } })).toContain('tram-right-fill-color.svg');
+    expect(searchResultIcon({ type: 'stop', data: { routes: [{ route_type: 1 }] } })).toContain('metro-right-fill-color.svg');
+    expect(searchResultIcon({ type: 'osm_station', data: {} })).toContain('train-right-fill-color.svg');
+  });
   it('uses recent icon for empty-query history', () => {
     expect(searchResultIcon({ type: 'stop', data: {} }, true)).toContain('arrow-circle-time-small');
   });

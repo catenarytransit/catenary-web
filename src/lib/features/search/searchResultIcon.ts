@@ -41,14 +41,17 @@ export function searchResultIcon(
     return transportIcon(data.route_type ?? data.routeType ?? data.type) ?? ICONS.bus;
   }
   if (item.type === 'stop' || item.type === 'osm_station') {
-    const mode = transportIcon(data.mode_type ?? data.station_type ?? data.route_type ?? data.location_type);
+    // GTFS location_type describes platform/station hierarchy, not transit mode.
+    const mode = transportIcon(data.mode_type ?? data.station_type ?? data.route_type);
     if (mode) return mode;
     const routeTypes: unknown[] = Array.isArray(data.routes) ? data.routes : [];
     for (const route of routeTypes) {
       const icon = transportIcon(route?.route_type ?? route?.routeType ?? route?.type);
       if (icon) return icon;
     }
-    return ICONS.train;
+    // Birch GTFS stop records generally have no mode metadata; default to bus.
+    // OSM station matches retain the train fallback.
+    return item.type === 'stop' ? ICONS.bus : ICONS.train;
   }
   const properties = item.type === 'cypress' ? data.properties ?? {} : data;
   const categories: string[] = Array.isArray(properties.categories)
