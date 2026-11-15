@@ -99,6 +99,8 @@ export function buildDirectionsSearchUrls(
 	cypress.searchParams.set('focus.point.lat', String(focus.mapLat));
 	cypress.searchParams.set('focus.point.lon', String(focus.mapLon));
 	cypress.searchParams.set('focus.point.weight', String(focusWeight));
+	cypress.searchParams.set("suppress_cities_near_stations", "true");
+	cypress.searchParams.set("prefer_train_stations", "true");
 
 	const station = new URL('https://birch_search.catenarymaps.org/osm_station_search');
 	station.searchParams.set('text', text);
