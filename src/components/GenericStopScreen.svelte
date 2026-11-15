@@ -32,6 +32,8 @@
 	import { locale, _ } from 'svelte-i18n';
 	import Clock from './Clock.svelte';
 	import StopScreenRow from './StopScreenRow.svelte';
+	import DepartureRouteFilterRow from './DepartureRouteFilterRow.svelte';
+	import { departureRouteFilters, matchesDepartureRouteFilters, routeFiltersEnabled } from '$lib/features/departures/routeFilters';
 	import StationScreenTrainRow from './StationScreenTrainRow.svelte';
 	import {
 		SingleTrip,
@@ -204,6 +206,29 @@ $: {
 		}
 	}
 
+	let selected_routes = new Set<string>();
+	$: route_filter_context = JSON.stringify([chateau, osm_id, key, active_tab]);
+	$: if (route_filter_context) selected_routes = new Set();
+	$: route_filters = departureRouteFilters(data_meta?.routes ?? {}, active_tab);
+	$: route_filters_enabled = routeFiltersEnabled(
+		route_filters, active_tab, Boolean(regionId && train_categories[regionId]),
+		Boolean(data_meta?.routes?.nationalrailuk) || regionId === 'nationalrailuk'
+	);
+	$: {
+		const validKeys = new Set(route_filters.map(filter => filter.key));
+		const next = route_filters_enabled
+			? new Set([...selected_routes].filter(key => validKeys.has(key)))
+			: new Set<string>();
+		if (next.size !== selected_routes.size) selected_routes = next;
+	}
+
+	function toggle_route(routeKey: string) {
+		const next = new Set(selected_routes);
+		if (next.has(routeKey)) next.delete(routeKey);
+		else next.add(routeKey);
+		selected_routes = next;
+	}
+
 	function toggle_category(cat: string) {
 		if (enabled_categories.has(cat)) {
 			enabled_categories.delete(cat);
@@ -327,6 +352,10 @@ $: {
 					const shortName = routeDef?.short_name;
 					if (get_mode(event.chateau, rType, shortName) !== active_tab) return false;
 				}
+
+				if (route_filters_enabled && !matchesDepartureRouteFilters(
+					event.chateau, event.route_id, selected_routes, route_filters
+				)) return false;
 
 				// Train Category filter
 				if (active_tab === 'rail' && regionId && train_categories[regionId]) {
@@ -1199,6 +1228,15 @@ $: {
 							{/if}
 						{/each}
 					</div>
+				{/if}
+
+				{#if route_filters_enabled}
+					<DepartureRouteFilterRow
+						filters={route_filters}
+						selected={selected_routes}
+						onToggle={toggle_route}
+						onReset={() => (selected_routes = new Set())}
+					/>
 				{/if}
 
 				{#if active_tab === 'rail' && regionId && train_categories[regionId]}
