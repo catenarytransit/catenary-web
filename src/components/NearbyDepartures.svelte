@@ -282,15 +282,16 @@
 		if (trip.departure_realtime !== null) {
 			return trip.departure_realtime;
 		}
-
-		if (
-			trip.arrival_realtime !== null &&
-			trip.departure_schedule !== null &&
-			trip.arrival_realtime > trip.departure_schedule
-		) {
-			return trip.arrival_realtime;
+	
+		if (trip.arrival_realtime !== null) {
+			if (
+				trip.departure_schedule === null ||
+				trip.arrival_realtime > trip.departure_schedule
+			) {
+				return trip.arrival_realtime;
+			}
 		}
-
+	
 		return trip.departure_schedule;
 	}
 
@@ -1163,71 +1164,84 @@
 
 							<div class="flex flex-row gap-x-1 overflow-x-auto catenary-scroll">
 								{#each trips as trip}
-									<button
-										class="bg-white dark:bg-gray-900
-                                         hover:bg-blue-100 hover:dark:bg-hover
-                                         mb-0.5 rounded-sm min-w-16 md:min-w-20 flex justify-center"
-										on:click={() => {
-											data_stack_store.update((stack) => {
-												stack.push(
-													new StackInterface(
-														new SingleTrip(
-															route_group.chateau_id,
-															trip.trip_id,
-															route_group.route_id,
-															null,
-															trip.service_date,
-															null,
-															route_group.route_type
+									{@const effective_time = getEffectiveDepartureTime(trip)}
+									{@const has_realtime =
+										trip.departure_realtime != null ||
+										(trip.arrival_realtime != null &&
+											(trip.departure_schedule == null || trip.arrival_realtime > trip.departure_schedule))}
+									{@const has_schedule = trip.departure_schedule != null}
+								
+									{#if effective_time !== null}
+										<button
+											class="bg-white dark:bg-gray-900
+											 hover:bg-blue-100 hover:dark:bg-hover
+											 mb-0.5 rounded-sm min-w-16 md:min-w-20 flex justify-center"
+											on:click={() => {
+												data_stack_store.update((stack) => {
+													stack.push(
+														new StackInterface(
+															new SingleTrip(
+																route_group.chateau_id,
+																trip.trip_id,
+																route_group.route_id,
+																null,
+																trip.service_date,
+																null,
+																route_group.route_type
+															)
 														)
-													)
-												);
-												return stack;
-											});
-										}}
-									>
-										<div class="text-center">
-											<span
-												class={`font-semibold leading-none ${getEffectiveDepartureTime(trip) - reference_time_sec < -60 ? 'text-gray-600 dark:text-gray-400' : trip.departure_realtime != null || (trip.arrival_realtime != null && trip.arrival_realtime > trip.departure_schedule) ? 'text-seashore dark:text-seashoredark' : ''}`}
-											>
-												{#if !isRail && (getEffectiveDepartureTime(trip) - reference_time_sec > 60 || getEffectiveDepartureTime(trip) - reference_time_sec < -60)}
-													<TimeDiff
-														large={false}
-														show_brackets={false}
-														show_seconds={false}
-														space_between={false}
-														diff={getEffectiveDepartureTime(trip) - reference_time_sec}
-														stylesForUnits={'font-medium'}
-													/>
-												{:else if isRail}
-													<!-- Only Time for Local Rail per User Request -->
-												{:else}
-													<!-- Bus/Metro (not rail) within 60s -->
-													<span class="text-md font-bold">{$_('now')}</span>
-												{/if}
-
-												{#if trip.departure_realtime != null || (trip.arrival_realtime != null && trip.arrival_realtime > trip.departure_schedule)}
-													<!-- Wifi/Realtime Icon -->
-												{/if}
-											</span>
-
-											<p class="font-medium text-sm leading-none">
-												{new Intl.DateTimeFormat('en-GB', {
-													hour: 'numeric',
-													minute: 'numeric',
-													timeZone: v3_stops[route_group.chateau_id]?.[trip.stop_id]?.timezone // Use trip specific TZ if avail
-												}).format(new Date(getEffectiveDepartureTime(trip) * 1000))}
-												{#if trip.departure_realtime != null || (trip.arrival_realtime != null && trip.arrival_realtime > trip.departure_schedule)}
-													<br />
-													<DelayDiff
-														diff={getEffectiveDepartureTime(trip) - trip.departure_schedule}
-														use_symbol_sign={true}
-														unitsclass="font-normal text-xs"
-													/>
-												{/if}
-											</p>
-										</div>
-									</button>
+													);
+													return stack;
+												});
+											}}
+										>
+											<div class="text-center">
+												<span
+													class={`font-semibold leading-none ${
+														effective_time - reference_time_sec < -60
+															? 'text-gray-600 dark:text-gray-400'
+															: has_realtime
+																? 'text-seashore dark:text-seashoredark'
+																: ''
+													}`}
+												>
+													{#if !isRail && (effective_time - reference_time_sec > 60 || effective_time - reference_time_sec < -60)}
+														<TimeDiff
+															large={false}
+															show_brackets={false}
+															show_seconds={false}
+															space_between={false}
+															diff={effective_time - reference_time_sec}
+															stylesForUnits={'font-medium'}
+														/>
+													{:else if isRail}
+														<!-- Only Time for Local Rail per User Request -->
+													{:else}
+														<!-- Bus/Metro (not rail) within 60s -->
+														<span class="text-md font-bold">{$_('now')}</span>
+													{/if}
+												</span>
+								
+												<p class="font-medium text-sm leading-none">
+													{new Intl.DateTimeFormat('en-GB', {
+														hour: 'numeric',
+														minute: 'numeric',
+														timeZone: v3_stops[route_group.chateau_id]?.[trip.stop_id]?.timezone
+													}).format(new Date(effective_time * 1000))}
+								
+													<!-- Only render DelayDiff when BOTH realtime and scheduled times exist -->
+													{#if has_realtime && has_schedule && trip.departure_schedule !== null}
+														<br />
+														<DelayDiff
+															diff={effective_time - trip.departure_schedule}
+															use_symbol_sign={true}
+															unitsclass="font-normal text-xs"
+														/>
+													{/if}
+												</p>
+											</div>
+										</button>
+									{/if}
 								{/each}
 							</div>
 						{/each}
