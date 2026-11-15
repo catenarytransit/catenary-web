@@ -149,8 +149,6 @@
 						: 'hover:bg-gray-200 dark:hover:bg-gray-700'}
 				>
 					<RouteResultItem
-						chateau={item.chateau ?? ''}
-						route_id={item.gtfs_id ?? ''}
 						routeInfo={item.data}
 						onClick={() => selectResult(item)}
 						icon={searchResultIcon(item, showingHistory)}
