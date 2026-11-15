@@ -38,19 +38,22 @@ export function searchHistoryLocation(item: SearchResultItem): DirectionsLocatio
 		location = {
 			key: 'stop:' + (item.chateau ?? '') + ':' + (item.gtfs_id ?? ''),
 			kind: 'stop', name: data.name ?? '', address: data.code ?? '',
-			lat: data.point?.y, lon: data.point?.x
+			lat: data.point?.y, lon: data.point?.x,
+			modeType: data.mode_type ?? data.station_type ?? data.route_type
 		};
 	} else if (item.type === 'osm_station') {
 		location = {
 			key: 'station:' + data.osm_id,
 			kind: 'station', name: data.name ?? '', address: '',
-			lat: data.point?.y, lon: data.point?.x
+			lat: data.point?.y, lon: data.point?.x,
+			modeType: data.mode_type ?? data.station_type ?? data.route_type
 		};
 	} else if (item.type === 'osm_item') {
 		location = {
 			key: 'osm:' + data.osm_class + ':' + data.osm_id,
 			kind: 'place', name: data.name ?? '', address: data.address ?? '',
-			lat: data.lat, lon: data.lon
+			lat: data.lat, lon: data.lon,
+			categories: data.categories, layer: data.layer
 		};
 	} else if (item.type === 'coordinate') {
 		location = {
@@ -64,7 +67,8 @@ export function searchHistoryLocation(item: SearchResultItem): DirectionsLocatio
 			key: 'cypress:' + data.properties?.id,
 			kind: 'place', name: data.properties?.name ?? '',
 			address: data.properties?.display_name ?? '',
-			lat: coordinates?.[1], lon: coordinates?.[0]
+			lat: coordinates?.[1], lon: coordinates?.[0],
+			categories: data.properties?.categories, layer: data.properties?.layer
 		};
 	}
 
