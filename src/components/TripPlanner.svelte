@@ -37,6 +37,7 @@
 	import { portalToMobileViewport } from '$lib/features/directions/portalToMobileViewport';
 	import { activeItineraries, activeItineraryIndex, selectedTransferItineraryIndex, fitDirectionsItinerary } from '$lib/features/directions/mapRoutes';
 	import { getRecentDirectionsLocations, rememberDirectionsLocation } from '$lib/features/directions/recentLocations';
+	import { directionsLocationIcon } from '$lib/features/search/directionsLocationIcon';
 	import {
 		streamDirectionsLocations,
 		setDirectionsMapSelectionHandler,
@@ -716,9 +717,13 @@
 						class="flex w-full min-w-0 items-center gap-2 px-3 py-3 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800 {index === highlighted ? 'bg-gray-100 dark:bg-gray-800' : ''}"
 						on:click={() => chooseSuggestion(suggestion)}
 					>
-						<span class="material-symbols-outlined shrink-0 {suggestion.key === 'user:location' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}" aria-hidden="true">
-							{suggestion.key === 'user:location' ? 'my_location' : suggestion.key.startsWith('coordinate:') ? 'grid_on' : suggestion.kind === 'station' ? 'train' : suggestion.kind === 'stop' ? 'directions_bus' : 'place'}
-						</span>
+						{#if suggestion.key === 'user:location' || suggestion.key.startsWith('coordinate:')}
+							<span class="material-symbols-outlined w-5 shrink-0 {suggestion.key === 'user:location' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-300'}" aria-hidden="true">
+								{suggestion.key === 'user:location' ? 'my_location' : 'grid_on'}
+							</span>
+						{:else}
+							<img src={directionsLocationIcon(suggestion, !(activeField === 'origin' ? origin : destination).trim())} alt="" aria-hidden="true" class="h-5 w-5 shrink-0 object-contain brightness-0 dark:invert" />
+						{/if}
 						<span class="min-w-0 flex-1 truncate">
 							<span class="font-medium">{suggestion.name}</span>
 							{#if suggestion.address}<span class="text-gray-500 dark:text-gray-400">, {suggestion.address}</span>{/if}
