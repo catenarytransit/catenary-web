@@ -14,10 +14,11 @@ const leg: EdelweissLeg = {
 	from: { name: 'A', stopId: 'a', lat: 0, lon: 0 },
 	to: { name: 'B', stopId: 'b', lat: 0, lon: 0 }
 };
-function details(connection: EdelweissLeg) {
+function details(connection: EdelweissLeg, expandedStops: Record<number, boolean> = {}) {
 	return render(TripItineraryDetails, {
 		props: {
 			itinerary: { startTime: leg.startTime!, endTime: leg.endTime!, legs: [connection] },
+			expandedStops,
 			originName: 'A',
 			destinationName: 'B',
 			onBack: () => {}
@@ -32,6 +33,11 @@ describe('trip info link', () => {
 	it('appears before the intermediate stop summary', () => {
 		const html = details({ ...leg, intermediateStops: [{ name: 'Middle' }] });
 		expect(html.indexOf('Trip info')).toBeLessThan(html.indexOf('1 stop'));
+	});
+	it('restores expanded intermediate stops from the planner session', () => {
+		const connection = { ...leg, intermediateStops: [{ name: 'Restored middle stop' }] };
+		expect(details(connection)).not.toContain('Restored middle stop');
+		expect(details(connection, { 0: true })).toContain('Restored middle stop');
 	});
 	it('does not offer an unidentified trip', () => {
 		expect(details({ ...leg, tripId: null })).not.toContain('Trip info');

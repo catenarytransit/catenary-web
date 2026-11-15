@@ -1,3 +1,22 @@
+<script context="module" lang="ts">
+	// Each navigation entry owns its cache; popping it lets the session be collected.
+	const sessions = new WeakMap<TripPlannerStack, PlannerSession>();
+	interface PlannerSession {
+		origin: string; destination: string;
+		originSelection: DirectionsLocation | null; destinationSelection: DirectionsLocation | null;
+		departure: number; departNow: boolean; timeMode: 'depart' | 'arrive';
+		streetMode: StreetMode; walkingPace: number; cyclingSpeed: number;
+		travelOptionsExpanded: boolean; maxPreTransitMinutesOverride: number | null;
+		maxPostTransitMinutesOverride: number | null; maxDirectMinutes: number;
+		routes: EdelweissItinerary[]; selectedRoute: number; expandedRoute: number | null;
+		detailsIndex: number | null; previousPageCursor: string | null; nextPageCursor: string | null;
+		originalRouteQuery: EdelweissRouteQuery | null;
+		routePages: EdelweissPage[]; earlierPages: EdelweissPage[]; laterPages: EdelweissPage[];
+		routingError: string; detailsScrollTop: number; expandedStops: Record<number, boolean>;
+		transferRoute: number | null;
+	}
+</script>
+
 <script lang="ts">
 	import { onDestroy, onMount, tick } from 'svelte';
 	import { fly, slide } from 'svelte/transition';
@@ -57,6 +76,8 @@
 	let expandedRoute: number | null = null;
 	let detailsIndex: number | null = null;
 	let debugStop: DebugStop | null = null;
+	let detailsScrollTop = 0;
+	let expandedStops: Record<number, boolean> = {};
 	let originMarker: Marker | null = null;
 	let destinationMarker: Marker | null = null;
 	let markerMap: MapLibreMap | null = null;
@@ -116,6 +137,21 @@
 			destinationSelection = { key:'url:to', kind:'place', name:stackData.toName || 'Destination', address:'', lat:stackData.toLat, lon:stackData.toLon };
 			destination = destinationSelection.name;
 		}
+	}
+
+	const cachedSession = stackData instanceof TripPlannerStack ? sessions.get(stackData) : undefined;
+	if (cachedSession) {
+		({
+			origin, destination, originSelection, destinationSelection, departure,
+			departNow, timeMode, streetMode, walkingPace, cyclingSpeed,
+			travelOptionsExpanded, maxPreTransitMinutesOverride, maxPostTransitMinutesOverride, maxDirectMinutes, routes,
+			selectedRoute, expandedRoute, detailsIndex, previousPageCursor, nextPageCursor,
+			originalRouteQuery, routePages, earlierPages, laterPages, routingError,
+			detailsScrollTop, expandedStops
+		} = cachedSession);
+		activeItineraries.set(routes);
+		activeItineraryIndex.set(selectedRoute);
+		selectedTransferItineraryIndex.set(cachedSession.transferRoute);
 	}
 
 	function makeEndpointMarker(field: Field, map: MapLibreMap, selected: DirectionsLocation): Marker {
@@ -409,6 +445,8 @@
 	function openDetails(index: number): void {
 		if (!routes[index]) return;
 		detailsIndex = index;
+		detailsScrollTop = 0;
+		expandedStops = {};
 	}
 
 	function cancelSearch(): void {
@@ -568,12 +606,23 @@
 	}
 
 	onDestroy(() => {
+		// Save before cleanup clears results and aborts outstanding streams.
+		if (stackData instanceof TripPlannerStack && get(data_stack_store).some(entry => entry.data === stackData)) {
+			sessions.set(stackData, {
+				origin, destination, originSelection, destinationSelection, departure,
+				departNow, timeMode, streetMode, walkingPace, cyclingSpeed,
+				travelOptionsExpanded, maxPreTransitMinutesOverride, maxPostTransitMinutesOverride, maxDirectMinutes, routes,
+				selectedRoute, expandedRoute, detailsIndex, previousPageCursor, nextPageCursor,
+				originalRouteQuery, routePages, earlierPages, laterPages, routingError,
+				detailsScrollTop, expandedStops, transferRoute: get(selectedTransferItineraryIndex)
+			});
+		}
 		if (speedChangeDebounce !== null) clearTimeout(speedChangeDebounce);
 		clearRoutes();
 		requestId++;
 		cancelSearch();
 	});
-	if (originSelection && destinationSelection) void routeSelectedCoordinates();
+	if (!cachedSession && originSelection && destinationSelection) void routeSelectedCoordinates();
 </script>
 
 <svelte:head>
@@ -844,7 +893,7 @@
 	</div>
 	</div>
 	{#if detailsIndex !== null && routes[detailsIndex]}
-		<TripItineraryDetails onInspectFootpaths={(stop) => { debugStop = stop; }} itinerary={routes[detailsIndex]} originName={originSelection?.name || origin} destinationName={destinationSelection?.name || destination} onBack={() => { detailsIndex = null; }} />
+		<TripItineraryDetails bind:scrollTop={detailsScrollTop} bind:expandedStops onInspectFootpaths={(stop) => { debugStop = stop; }} itinerary={routes[detailsIndex]} originName={originSelection?.name || origin} destinationName={destinationSelection?.name || destination} onBack={() => { detailsIndex = null; }} />
 	{/if}
 	{#if $footpathDebugEnabled && debugStop}<div class="absolute bottom-3 left-3 right-3 z-40 max-h-[55%] overflow-y-auto"><FootpathDebugPanel stop={debugStop} onClose={() => { debugStop = null; }} /></div>{/if}
 </section>
