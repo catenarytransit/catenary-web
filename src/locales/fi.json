@@ -170,5 +170,9 @@
   "cs_legend": "Legend",
   "cs_no_data": "No train formation data available.",
   "cs_disclaimer": "All information without guarantee.",
-  "cs_nf": "LF"
+  "cs_nf": "LF",
+  "current_alerts": "Voimassa olevat häiriötiedotteet",
+  "upcoming_alerts": "Tulevat häiriötiedotteet",
+  "current_alerts_count": "{n} Voimassa olevat häiriötiedotteet",
+  "upcoming_alerts_count": "{n} Tulevat häiriötiedotteet"
 }
