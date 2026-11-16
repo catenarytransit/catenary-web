@@ -175,8 +175,10 @@
 					<img src="/icons/service_alert.svg" alt="(i)" class="h-6 w-6 inline mr-2" />
 					<span class={`text-[#F99C24] font-semibold transition-all duration-300 ${expanded ? 'text-lg' : 'text-sm'}`}>
 						{$_('current_alerts_count', { values: { n: groupedAlerts.current.length } })}
-						<span class="mx-1">·</span>
-						{$_('upcoming_alerts_count', { values: { n: groupedAlerts.upcoming.length } })}
+						{#if groupedAlerts.upcoming.length > 0}
+							<span class="mx-1">·</span>
+							{$_('upcoming_alerts_count', { values: { n: groupedAlerts.upcoming.length } })}
+						{/if}
 					</span>
 				</div>
 
