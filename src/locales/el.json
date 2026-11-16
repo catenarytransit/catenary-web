@@ -169,5 +169,9 @@
   "cs_legend": "Legend",
   "cs_no_data": "No train formation data available.",
   "cs_disclaimer": "All information without guarantee.",
-  "cs_nf": "LF"
+  "cs_nf": "LF",
+  "current_alerts": "Τρέχουσες ειδοποιήσεις",
+  "upcoming_alerts": "Επερχόμενες ειδοποιήσεις",
+  "current_alerts_count": "{n} Τρέχουσες ειδοποιήσεις",
+  "upcoming_alerts_count": "{n} Επερχόμενες ειδοποιήσεις"
 }
