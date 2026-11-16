@@ -29,7 +29,7 @@
   "stopnames": "Noms",
   "vehicles": "Vehicles",
   "showroute": "Ruta",
-   "vehiclelabels": "Etiquetes de vehicles",
+  "vehiclelabels": "Etiquetes de vehicles",
   "showtrip": "Trajecte",
   "showvehicle": "Vehicle",
   "showspeed": "Velocitat",
@@ -165,5 +165,9 @@
   "cs_legend": "Legend",
   "cs_no_data": "No train formation data available.",
   "cs_disclaimer": "All information without guarantee.",
-  "cs_nf": "LF"
+  "cs_nf": "LF",
+  "current_alerts": "Alertes actuals",
+  "upcoming_alerts": "Alertes properes",
+  "current_alerts_count": "{n} Alertes actuals",
+  "upcoming_alerts_count": "{n} Alertes properes"
 }
