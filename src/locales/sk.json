@@ -186,5 +186,9 @@
   "cs_no_data": "Informácie pre tento vlak nie sú dostupné",
   "cs_disclaimer": "Poskytované informácie sú bez garancie správnosti",
   "cs_nf": "LF",
-  "skip_to_current_trip": "Preskočiť na aktuálnu jazdu"
+  "skip_to_current_trip": "Preskočiť na aktuálnu jazdu",
+  "current_alerts": "Aktuálne upozornenia",
+  "upcoming_alerts": "Nadchádzajúce upozornenia",
+  "current_alerts_count": "{n} Aktuálne upozornenia",
+  "upcoming_alerts_count": "{n} Nadchádzajúce upozornenia"
 }
