@@ -429,24 +429,40 @@
 			sortDistance: x.distance_m
 		}));
 
-		// 3. Sorting Logic:
+		// Hoist the closest long-distance station within 1 km, then nearby
+		// metro (<500m) and tram (<400m) route groups in distance mode.
+		// Keep the hoisted items ordered by distance, as on Android.
 		let final_list: NearbyDisplayItem[] = [];
+		let hoisted: NearbyDisplayItem[] = [];
+		let mixed: NearbyDisplayItem[] = [];
 		wrapped_stations.sort((a, b) => a.sortDistance - b.sortDistance);
 
-		// Check if the closest station meets the 500m threshold for hoisting
-		const should_hoist = wrapped_stations.length > 0 && wrapped_stations[0].sortDistance < 500;
+		const should_hoist_station =
+			wrapped_stations.length > 0 && wrapped_stations[0].sortDistance < 1000;
 
-		let mixed: NearbyDisplayItem[] = [];
-
-		if (should_hoist) {
-			// Hoist the closest station to the top
-			final_list.push(wrapped_stations[0]);
-			// Mix remaining stations with local routes
-			mixed = [...wrapped_stations.slice(1), ...filtered_local];
+		if (should_hoist_station) {
+			hoisted.push(wrapped_stations[0]);
+			mixed.push(...wrapped_stations.slice(1));
 		} else {
-			// No hoisting: mix all stations with local routes
-			mixed = [...wrapped_stations, ...filtered_local];
+			mixed.push(...wrapped_stations);
 		}
+
+		if (sortMode === 'distance') {
+			for (const item of filtered_local) {
+				const routeType = item.data.route_type;
+				const isMetro = [1, 7, 12].includes(routeType);
+				const isTram = [0, 5, 900].includes(routeType);
+				if ((isMetro && item.sortDistance < 500) || (isTram && item.sortDistance < 400)) {
+					hoisted.push(item);
+				} else {
+					mixed.push(item);
+				}
+			}
+		} else {
+			mixed.push(...filtered_local);
+		}
+
+		final_list = hoisted.sort((a, b) => a.sortDistance - b.sortDistance);
 
 		// Sort the mixed portion (or the entire list if nothing was hoisted)
 		mixed.sort((a, b) => {
