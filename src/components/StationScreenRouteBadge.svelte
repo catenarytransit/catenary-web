@@ -25,7 +25,7 @@
 	// rail line letters have SVG assets; bus and unknown routes retain text badges.
 	$: laMetroLine =
 		chateau === 'metro~losangeles'
-			? /^(?:([ABCDEK])(?:\s+Line)?)$/i.exec(text.trim())?.[1]?.toUpperCase()
+			? /^(?:Metro\s+)?(?:([ABCDEK])(?:\s+Line)?)$/i.exec(text.trim())?.[1]?.toUpperCase()
 			: undefined;
 
 	$: isSbb =
