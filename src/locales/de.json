@@ -168,5 +168,9 @@
   "cs_disclaimer": "Alle Angaben ohne Gewähr.",
   "cs_nf": "NF",
   "earlier_connections": "Frühere Verbindungen",
-  "later_connections": "Spätere Verbindungen"
+  "later_connections": "Spätere Verbindungen",
+  "current_alerts": "Aktuelle Meldungen",
+  "upcoming_alerts": "Bevorstehende Meldungen",
+  "current_alerts_count": "{n} Aktuelle Meldungen",
+  "upcoming_alerts_count": "{n} Bevorstehende Meldungen"
 }
