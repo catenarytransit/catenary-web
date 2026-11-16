@@ -21,12 +21,12 @@
 			? routeDef?.long_name
 			: '';
 
-	$: isSbb =
+	// Reuse the LA Metro line circles already shown by journey planning. Only known\n	// rail line letters have SVG assets; bus and unknown routes retain text badges.\n	$: laMetroLine =\n		chateau === 'metro~losangeles'\n			? /^(?:([ABCDEK])(?:\\s+Line)?)$/i.exec(text.trim())?.[1]?.toUpperCase()\n			: undefined;\n\n	$: isSbb =
 		chateau === 'schweiz' && (text.startsWith('IR') || text.startsWith('IC') || text === 'EC');
 </script>
 
 {#if text}
-	{#if isSbb}
+	{#if laMetroLine}\n		<img\n			class="inline-block h-[20px] w-[20px] shrink-0 align-middle object-contain {extra_classes}"\n			src={`/lametro/LACMTA_Circle_${laMetroLine}_Line.svg`}\n			alt={`LA Metro ${laMetroLine} Line`}\n		/>\n	{:else if isSbb}
 		<span
 			class="{rounded_class} font-bold px-1 py-0.5 text-xs sbb-badge {extra_classes}"
 			style={`background: ${routeDef?.color || '#eb0000'}; color: ${routeDef?.text_color || '#ffffff'};`}
