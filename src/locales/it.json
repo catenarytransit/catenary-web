@@ -155,5 +155,9 @@
   "cs_legend": "Leggenda",
   "cs_no_data": "Nessun dato disponibile sulla composizione del treno.",
   "cs_disclaimer": "Tutte le informazioni senza garanzia.",
-  "cs_nf": "PR"
+  "cs_nf": "PR",
+  "current_alerts": "Avvisi attuali",
+  "upcoming_alerts": "Avvisi futuri",
+  "current_alerts_count": "{n} Avvisi attuali",
+  "upcoming_alerts_count": "{n} Avvisi futuri"
 }
