@@ -1,22 +1,20 @@
 <script lang="ts">
 	import { _, locale } from 'svelte-i18n';
 	import { cause_id_str, effect_id_str } from './alert_id_to_str_key';
-	import TimeDiff from './TimeDiff.svelte';
 	import MtaBullet from './mtabullet.svelte';
-	import { onDestroy } from 'svelte';
 	import { condenseActivePeriods } from './alertTimeUtils'; // Adjust path accordingly
 
 	export let alerts = {};
 	export let default_tz: string | null = null;
 	export let chateau: string | null = null;
 	export let expanded: boolean = true;
+	// Unix-second interval of the displayed journey; defaults to the present on other screens.
+	export let journeyStart: number | null = null;
+	export let journeyEnd: number | null = null;
 
 	//get locale from the store
 
 	let locale_code: string = 'en-CA'; // default
-	let currentIndex = 0;
-	let fading = false;
-	let intervalId: NodeJS.Timeout;
 
 	$: if ($locale) {
 		if ($locale.startsWith('en')) {
@@ -120,35 +118,27 @@
 		}
 	}
 
-	$: previewLanguageList = currentAlert
-		? languagelistToUse.filter(
-				(language) =>
-					selectedLanguages.has(language) &&
-					(translationsForLanguage(currentAlert.header_text, language).length > 0 ||
-						translationsForLanguage(currentAlert.description_text, language).length > 0)
-			)
-		: [];
-
-	// Cycling logic for collapsed state
-	function startCycling() {
-		stopCycling();
-		if (Object.keys(alerts).length > 1) {
-			intervalId = setInterval(() => {
-				fading = true;
-				setTimeout(() => {
-					currentIndex = (currentIndex + 1) % Object.keys(alerts).length;
-					fading = false;
-				}, 500); // Wait for fade out
-			}, 4000);
-		} else {
-			currentIndex = 0;
-		}
-	}
-
-	function stopCycling() {
-		if (intervalId) clearInterval(intervalId);
-		fading = false;
-	}
+	// All comparisons use Unix seconds so they remain correct across time zones.
+	// An alert is current when its active period overlaps the journey interval.
+	// Periods ending before the interval are omitted; future periods are upcoming.
+	$: referenceStart = Number.isFinite(journeyStart) ? (journeyStart as number) : Date.now() / 1000;
+	$: referenceEnd = Number.isFinite(journeyEnd) && (journeyEnd as number) >= referenceStart
+		? (journeyEnd as number) : referenceStart;
+	$: groupedAlerts = (Object.values(alerts) as any[]).reduce(
+		(result: { current: any[]; upcoming: any[] }, alert: any) => {
+			const periods = Array.isArray(alert.active_period) ? alert.active_period : [];
+			if (periods.length === 0 || periods.some((period: any) =>
+				(period.start == null || Number(period.start) <= referenceEnd) &&
+				(period.end == null || Number(period.end) >= referenceStart)
+			)) {
+				result.current.push(alert);
+			} else if (periods.some((period: any) => period.start != null && Number(period.start) > referenceEnd)) {
+				result.upcoming.push(alert);
+			}
+			return result;
+		},
+		{ current: [], upcoming: [] }
+	);
 
 	function formatActivePeriodTime(value: number | null | undefined, locale: string, timeZone: string) {
 		if (value == null) return '';
@@ -162,17 +152,6 @@
 			.replace(/,/, '');
 	}
 
-	$: if (!expanded) {
-		startCycling();
-	} else {
-		stopCycling();
-	}
-
-	onDestroy(() => {
-		stopCycling();
-	});
-
-	$: currentAlert = Object.values(alerts)[currentIndex] as any;
 
 	// Automatically compute compressed schedules when parameters adjust
 	$: scheduleAnalysis = (alert: any) => {
@@ -183,7 +162,7 @@
 	};
 </script>
 
-{#if Object.keys(alerts).length > 0}
+{#if groupedAlerts.current.length + groupedAlerts.upcoming.length > 0}
 	<div class="border-[#F99C24] border leading-snug mb-3 p-2 rounded-md transition-all duration-300">
 		<div
 			class="flex flex-row items-start cursor-pointer"
@@ -194,72 +173,13 @@
 			<div class="flex-grow flex flex-col justify-center min-w-0">
 				<div class="flex items-center">
 					<img src="/icons/service_alert.svg" alt="(i)" class="h-6 w-6 inline mr-2" />
-					<span
-						class={`text-[#F99C24] font-semibold transition-all duration-300 ${expanded ? 'text-lg' : 'text-sm'}`}
-					>
-						{$_('service_alerts', {
-							values: {
-								n: Object.keys(alerts).length
-							}
-						})}
+					<span class={`text-[#F99C24] font-semibold transition-all duration-300 ${expanded ? 'text-lg' : 'text-sm'}`}>
+						{$_('current_alerts_count', { values: { n: groupedAlerts.current.length } })}
+						<span class="mx-1">·</span>
+						{$_('upcoming_alerts_count', { values: { n: groupedAlerts.upcoming.length } })}
 					</span>
 				</div>
 
-				{#if !expanded}
-					<div
-						class={`text-xs text-gray-400 dark:text-gray-300 transition-opacity duration-500 ${fading ? 'opacity-0' : 'opacity-100'}`}
-					>
-						{#if currentAlert}
-							{#if currentAlert.header_text}
-								{#each previewLanguageList as language}
-									{#each translationsForLanguage(currentAlert.header_text, language) as each_header_translation_obj}
-										<p class="truncate">
-											<span class="font-bold">
-												{#each each_header_translation_obj.text.split(/(\[[A-Z0-9]+\])/g) as part, i}
-													{#if i % 2 === 1}
-														<MtaBullet
-															matchTextHeight={true}
-															route_short_name={part.slice(1, -1)}
-														/>
-													{:else}
-														{@html part.replaceAll(/\<(\/)?p\>/g, '').replaceAll(/\<(\/)?b\>/g, '')}
-													{/if}
-												{/each}
-											</span>
-										</p>
-									{/each}
-								{/each}
-							{/if}
-
-							{#if currentAlert.description_text}
-								{#each previewLanguageList as language}
-									{#each translationsForLanguage(currentAlert.description_text, language) as each_desc_translation_obj}
-										<p class="truncate">
-											{#each each_desc_translation_obj.text.split(/(\[[A-Z0-9]+\])/g) as part, i}
-												{#if i % 2 === 1}
-													<MtaBullet matchTextHeight={true} route_short_name={part.slice(1, -1)} />
-												{:else}
-													{@html part
-														.replaceAll(/\<(\/)?p\>/g, '')
-														.replaceAll(/\<(\/)?b\>/g, '')
-														.replaceAll(/\\n/g, ' ')}
-												{/if}
-											{/each}
-										</p>
-									{/each}
-								{/each}
-							{/if}
-
-							{#if !currentAlert.header_text && !currentAlert.description_text}
-								{#if cause_id_str(currentAlert.cause) !== 'alert_cause_unknown_cause' || effect_id_str(currentAlert.effect) !== 'alert_effect_unknown_effect'}
-									<p class="truncate text-gray-500 italic">
-										{$_(cause_id_str(currentAlert.cause))} // {$_(effect_id_str(currentAlert.effect))}
-									</p>
-								{/if}
-							{/if}
-						{/if}
-					</div>
-				{/if}
 			</div>
 
 			<button class="w-6 h-6 rounded-full flex flex-col justify-center items-center ml-2">
@@ -289,7 +209,11 @@
 				{/each}
 			</div>
 			<div class="py-0.5"></div>
-			{#each Object.values(alerts) as alert}
+			{#each [{ title: $_('current_alerts'), items: groupedAlerts.current }, { title: $_('upcoming_alerts'), items: groupedAlerts.upcoming }] as group}
+				{#if group.items.length > 0}
+					<h3 class="mt-3 mb-1 font-semibold text-sm text-[#F99C24]">{group.title}</h3>
+				{/if}
+				{#each group.items as alert}
 				<div class="pt-1">
 					<hr class="border-[#F99C24] border-0.5 rounded-xl" />
 					{#if cause_id_str(alert.cause) !== 'alert_cause_unknown_cause' || effect_id_str(alert.effect) !== 'alert_effect_unknown_effect'}
@@ -359,7 +283,7 @@
 						{/if}
 					{/each}
 
-					{#if alert.active_period.length > 0}
+					{#if alert.active_period?.length > 0}
 						{@const schedule = scheduleAnalysis(alert)}
 
 						<div
@@ -394,6 +318,7 @@
 						</div>
 					{/if}
 				</div>
+				{/each}
 			{/each}
 		{/if}
 	</div>
