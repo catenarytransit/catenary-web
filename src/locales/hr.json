@@ -168,5 +168,9 @@
   "cs_legend": "Legend",
   "cs_no_data": "No train formation data available.",
   "cs_disclaimer": "All information without guarantee.",
-  "cs_nf": "LF"
+  "cs_nf": "LF",
+  "current_alerts": "Trenutne obavijesti",
+  "upcoming_alerts": "Nadolazeće obavijesti",
+  "current_alerts_count": "{n} Trenutne obavijesti",
+  "upcoming_alerts_count": "{n} Nadolazeće obavijesti"
 }
