@@ -161,5 +161,9 @@
   "cs_legend": "Legend",
   "cs_no_data": "No train formation data available.",
   "cs_disclaimer": "All information without guarantee.",
-  "cs_nf": "LF"
+  "cs_nf": "LF",
+  "current_alerts": "현재 알림",
+  "upcoming_alerts": "예정된 알림",
+  "current_alerts_count": "{n} 현재 알림",
+  "upcoming_alerts_count": "{n} 예정된 알림"
 }

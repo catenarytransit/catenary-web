@@ -144,5 +144,9 @@
   "cs_legend": "Legenda",
   "cs_no_data": "Geen formatie data beschikbaar.",
   "cs_disclaimer": "Alle informatie zonder garanties.",
-  "cs_nf": "LF"
+  "cs_nf": "LF",
+  "current_alerts": "Huidige meldingen",
+  "upcoming_alerts": "Aankomende meldingen",
+  "current_alerts_count": "{n} Huidige meldingen",
+  "upcoming_alerts_count": "{n} Aankomende meldingen"
 }

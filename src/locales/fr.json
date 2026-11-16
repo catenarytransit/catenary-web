@@ -186,5 +186,9 @@
   "cs_disclaimer": "Toutes les informations sont sans garantie.",
   "cs_nf": "PS",
   "earlier_connections": "Relations précédentes",
-  "later_connections": "Relations suivantes"
+  "later_connections": "Relations suivantes",
+  "current_alerts": "Alertes en cours",
+  "upcoming_alerts": "Alertes à venir",
+  "current_alerts_count": "{n} Alertes en cours",
+  "upcoming_alerts_count": "{n} Alertes à venir"
 }

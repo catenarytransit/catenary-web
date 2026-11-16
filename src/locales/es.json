@@ -152,5 +152,9 @@
   "cs_legend": "Leyenda",
   "cs_no_data": "No hay datos de formación de trenes disponibles.",
   "cs_disclaimer": "Toda la información sin garantía.",
-  "cs_nf": "PB"
+  "cs_nf": "PB",
+  "current_alerts": "Alertas actuales",
+  "upcoming_alerts": "Próximas alertas",
+  "current_alerts_count": "{n} Alertas actuales",
+  "upcoming_alerts_count": "{n} Próximas alertas"
 }

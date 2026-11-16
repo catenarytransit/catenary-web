@@ -498,6 +498,15 @@
 
 	export let trip_selected: SingleTrip;
     $: journeyRange = resolveJourneySegment(stoptimes_cleaned_dataset, trip_selected.journeySegment);
+	// Prefer realtime stop times when the selected segment has them.
+	$: alertJourneyStart = (() => {
+		const stop = stoptimes_cleaned_dataset[journeyRange?.from ?? 0];
+		return stop?.rt_departure_time ?? stop?.scheduled_departure_time_unix_seconds ?? stop?.rt_arrival_time ?? stop?.scheduled_arrival_time_unix_seconds ?? null;
+	})();
+	$: alertJourneyEnd = (() => {
+		const stop = stoptimes_cleaned_dataset[journeyRange?.to ?? stoptimes_cleaned_dataset.length - 1];
+		return stop?.rt_arrival_time ?? stop?.scheduled_arrival_time_unix_seconds ?? stop?.rt_departure_time ?? stop?.scheduled_departure_time_unix_seconds ?? null;
+	})();
     function journeyRail(active: boolean, dark: boolean, selected: boolean): string {
         return selected ? `background-color: ${active ? (dark ? '#fff' : '#000') : (dark ? '#6b7280' : '#9ca3af')}; border-color: ${active ? (dark ? '#fff' : '#000') : (dark ? '#6b7280' : '#9ca3af')}; opacity: 1;` : '';
     }
@@ -1498,6 +1507,8 @@
 					{alerts}
 					chateau={trip_selected.chateau_id}
 					default_tz={trip_data.tz || null}
+					journeyStart={alertJourneyStart}
+					journeyEnd={alertJourneyEnd}
 					expanded={false}
 				/>
 

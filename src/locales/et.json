@@ -170,5 +170,9 @@
   "cs_legend": "Legend",
   "cs_no_data": "No train formation data available.",
   "cs_disclaimer": "All information without guarantee.",
-  "cs_nf": "LF"
+  "cs_nf": "LF",
+  "current_alerts": "Praegused teated",
+  "upcoming_alerts": "Eelseisvad teated",
+  "current_alerts_count": "{n} Praegused teated",
+  "upcoming_alerts_count": "{n} Eelseisvad teated"
 }

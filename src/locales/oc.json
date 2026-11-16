@@ -184,5 +184,9 @@
   "cs_legend": "Legenda",
   "cs_no_data": "Cap de donada de composicion de tren disponibla.",
   "cs_disclaimer": "Totas las informacions son sens garantida.",
-  "cs_nf": "PS"
+  "cs_nf": "PS",
+  "current_alerts": "Alèrtas actualas",
+  "upcoming_alerts": "Alèrtas venentas",
+  "current_alerts_count": "{n} Alèrtas actualas",
+  "upcoming_alerts_count": "{n} Alèrtas venentas"
 }

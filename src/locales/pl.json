@@ -144,5 +144,9 @@
   "cs_legend": "Legend",
   "cs_no_data": "No train formation data available.",
   "cs_disclaimer": "All information without guarantee.",
-  "cs_nf": "LF"
+  "cs_nf": "LF",
+  "current_alerts": "Aktualne alerty",
+  "upcoming_alerts": "Nadchodzące alerty",
+  "current_alerts_count": "{n} Aktualne alerty",
+  "upcoming_alerts_count": "{n} Nadchodzące alerty"
 }

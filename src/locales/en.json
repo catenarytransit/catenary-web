@@ -189,5 +189,9 @@
   "cs_nf": "LF",
   "skip_to_current_trip": "Skip to current trip",
   "earlier_connections": "Earlier connections",
-  "later_connections": "Later connections"
+  "later_connections": "Later connections",
+  "current_alerts": "Current Alerts",
+  "upcoming_alerts": "Upcoming Alerts",
+  "current_alerts_count": "{n} Current Alerts",
+  "upcoming_alerts_count": "{n} Upcoming Alerts"
 }

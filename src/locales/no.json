@@ -165,5 +165,9 @@
   "cs_legend": "Legend",
   "cs_no_data": "No train formation data available.",
   "cs_disclaimer": "All information without guarantee.",
-  "cs_nf": "LF"
+  "cs_nf": "LF",
+  "current_alerts": "Gjeldende varsler",
+  "upcoming_alerts": "Kommende varsler",
+  "current_alerts_count": "{n} Gjeldende varsler",
+  "upcoming_alerts_count": "{n} Kommende varsler"
 }
