@@ -2,6 +2,7 @@
 	import { locale, _ } from 'svelte-i18n';
 	import { get } from 'svelte/store';
 	import { createEventDispatcher } from 'svelte';
+	import { getUnixTimeInTz } from './datePickerTimezone';
 
 	export let unixTime: number = Date.now() / 1000;
 	export let isNow: boolean = true;
@@ -38,47 +39,6 @@
 		return { year, month, day, hour, minute };
 	}
 
-	function getUnixTimeInTz(
-		year: number,
-		month: number,
-		day: number,
-		hour: number,
-		minute: number,
-		tz: string
-	): number {
-		const utcTimestamp = Date.UTC(year, month - 1, day, hour, minute, 0, 0);
-		const options = {
-			timeZone: tz === 'Local Time' || !tz ? undefined : tz,
-			year: 'numeric',
-			month: 'numeric',
-			day: 'numeric',
-			hour: 'numeric',
-			minute: 'numeric',
-			second: 'numeric',
-			hour12: false
-		} as const;
-
-		const formatter = new Intl.DateTimeFormat('en-US', options);
-		const tempDate = new Date(utcTimestamp);
-		const formattedStr = formatter.format(tempDate);
-		const match = formattedStr.match(/(\d+)\/(\d+)\/(\d+),\s+(\d+):(\d+):(\d+)/);
-		if (!match) {
-			return utcTimestamp / 1000;
-		}
-
-		const [_, mStr, dStr, yStr, hStr, minStr, sStr] = match;
-		const parsedY = parseInt(yStr, 10);
-		const parsedM = parseInt(mStr, 10);
-		const parsedD = parseInt(dStr, 10);
-		const parsedH = parseInt(hStr, 10);
-		const parsedMin = parseInt(minStr, 10);
-		const parsedSec = parseInt(sStr, 10);
-
-		const formattedUtc = Date.UTC(parsedY, parsedM - 1, parsedD, parsedH, parsedMin, parsedSec, 0);
-		const offsetMs = formattedUtc - utcTimestamp;
-
-		return (utcTimestamp - offsetMs) / 1000;
-	}
 
 	$: {
 		const currentUnix = isNow ? Date.now() / 1000 : unixTime;
