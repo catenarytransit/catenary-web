@@ -146,5 +146,9 @@
   "cs_legend": "Legend",
   "cs_no_data": "No train formation data available.",
   "cs_disclaimer": "All information without guarantee.",
-  "cs_nf": "LF"
+  "cs_nf": "LF",
+  "current_alerts": "目前警示",
+  "upcoming_alerts": "即將生效的警示",
+  "current_alerts_count": "{n} 目前警示",
+  "upcoming_alerts_count": "{n} 即將生效的警示"
 }
