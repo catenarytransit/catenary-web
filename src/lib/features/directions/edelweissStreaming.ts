@@ -160,7 +160,7 @@ function ensureSocket(): Promise<WebSocket> {
 		connectionReject = reject;
 		let socket: WebSocket;
 		try { socket = new WebSocket(url.toString()); }
-		catch (error) { connecting = null; reject(error); return; }
+		catch (error) { connecting = null; connectionReject = null; reject(error); return; }
 		sharedSocket = socket;
 		const timeout = setTimeout(() => {
 			if (sharedSocket !== socket) return;
@@ -223,6 +223,7 @@ function socketPageImmediate(
 			pendingRoutes.delete(requestId);
 			if (sent && sharedSocket?.readyState === WebSocket.OPEN && error?.name === 'AbortError')
 				sharedSocket.send(JSON.stringify({ type: 'cancel', requestId }));
+			if (holders === 0 && pendingRoutes.size === 0) closeSharedSocket();
 			if (error) reject(error);
 			else resolve();
 		}
