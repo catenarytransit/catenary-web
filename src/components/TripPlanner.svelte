@@ -29,7 +29,7 @@
 	import DatePicker from '$components/DatePicker.svelte';
 	import JourneySkeleton from '$components/JourneySkeleton.svelte';
 	import { _ } from 'svelte-i18n';
-	import { createRouteQuery, pageQuery, streamEdelweissPage, mergeEdelweissPages, itineraryIdentity, newRouteRequestId, loadCompleteEdelweissPage, type EdelweissPage, type EdelweissRouteQuery, type PageDirection } from '$lib/features/directions/edelweissStreaming';
+	import { createRouteQuery, pageQuery, streamEdelweissPage, mergeEdelweissPages, itineraryIdentity, newRouteRequestId, loadCompleteEdelweissPage, retainEdelweissConnection, type EdelweissPage, type EdelweissRouteQuery, type PageDirection } from '$lib/features/directions/edelweissStreaming';
 	import FootpathDebugPanel from '$components/FootpathDebugPanel.svelte';
 	import { footpathDebugEnabled, loadFootpathDebugPreference, type DebugStop } from '$lib/features/directions/footpathDebug';
 	import TripItineraryDetails from '$components/TripItineraryDetails.svelte';
@@ -225,6 +225,7 @@
 	}
 
 	onMount(() => {
+		const releaseEdelweiss = retainEdelweissConnection();
 		loadFootpathDebugPreference();
 		setDirectionsMapSelectionHandler((location) => {
 			if (!activeField) return false;
@@ -234,6 +235,7 @@
 		const unsubscribe = map_pointer_store.subscribe(() => syncEndpointMarkers());
 		return () => {
 			setDirectionsMapSelectionHandler(null);
+			releaseEdelweiss();
 			unsubscribe();
 			originMarker?.remove();
 			destinationMarker?.remove();
