@@ -47,7 +47,7 @@ export function eventDelayMinutes(event: ServiceEvent | null | undefined): numbe
 
 export function formatRealtimeDelay(event: ServiceEvent | null | undefined): string | null {
 	const minutes = eventDelayMinutes(event);
-	return minutes === null ? null : `${minutes >= 0 ? '+' : ''}${minutes}’`;
+	return minutes === null ? null : `${minutes >= 0 ? '+' : ''}${minutes}'`;
 }
 
 export interface EdelweissIntermediateStop extends Partial<RoutePoint>, RealtimeCall {
