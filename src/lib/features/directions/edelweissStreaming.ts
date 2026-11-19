@@ -129,6 +129,9 @@ class BackendRouteError extends Error {}
 let sharedSocket: WebSocket | null = null;
 let connecting: Promise<WebSocket> | null = null;
 let holders = 0;
+let routeQueue: Promise<void> = Promise.resolve();
+let connectionReject: ((reason: Error) => void) | null = null;
+let requestCount = 0;
 type PendingRoute = { onMessage: (message: Record<string, unknown>) => void; onFailure: (error: Error) => void };
 const pendingRoutes = new Map<string, PendingRoute>();
 
@@ -136,6 +139,9 @@ function closeSharedSocket(): void {
 	const socket = sharedSocket;
 	sharedSocket = null;
 	connecting = null;
+	connectionReject?.(new Error('Routing WebSocket disconnected'));
+	connectionReject = null;
+	requestCount = 0;
 	if (socket) {
 		socket.onopen = socket.onmessage = socket.onerror = socket.onclose = null;
 		if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) socket.close();
@@ -151,6 +157,7 @@ function ensureSocket(): Promise<WebSocket> {
 	const url = new URL('/v2/route/ws', EDELWEISS_ORIGIN);
 	url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
 	connecting = new Promise((resolve, reject) => {
+		connectionReject = reject;
 		let socket: WebSocket;
 		try { socket = new WebSocket(url.toString()); }
 		catch (error) { connecting = null; reject(error); return; }
@@ -164,6 +171,7 @@ function ensureSocket(): Promise<WebSocket> {
 			clearTimeout(timeout);
 			if (sharedSocket !== socket) return;
 			connecting = null;
+			connectionReject = null;
 			resolve(socket);
 		};
 		socket.onmessage = (event) => {
@@ -196,7 +204,7 @@ export function retainEdelweissConnection(): () => void {
 	};
 }
 
-function socketPage(
+function socketPageImmediate(
 	query: EdelweissRouteQuery,
 	requestId: string,
 	signal: AbortSignal,
@@ -251,6 +259,28 @@ function socketPage(
 			} catch (error) { finish(error instanceof Error ? error : new Error('Unable to send routing request')); }
 		}).catch(error => finish(error instanceof Error ? error : new Error('Routing connection failed')));
 	});
+}
+
+/**
+ * The backend supports one active request and one replacement, where a
+ * replacement cancels the active request. Serialise queries to preserve both
+ * paging and the progressive first page on a long-lived transport.
+ */
+function socketPage(
+	query: EdelweissRouteQuery,
+	requestId: string,
+	signal: AbortSignal,
+	onSnapshot: (page: EdelweissPage) => void
+): Promise<void> {
+	const work = routeQueue.catch(() => {}).then(() => {
+		if (signal.aborted) throw new DOMException('Routing request cancelled', 'AbortError');
+		// The server records at most 128 request identities per connection.
+		if (requestCount >= 100 && pendingRoutes.size === 0) closeSharedSocket();
+		requestCount++;
+		return socketPageImmediate(query, requestId, signal, onSnapshot);
+	});
+	routeQueue = work.catch(() => {});
+	return work;
 }
 
 /** HTTP is a functional fallback when a proxy does not yet support WebSocket upgrades. */
