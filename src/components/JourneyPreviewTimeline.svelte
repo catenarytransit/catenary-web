@@ -3,18 +3,14 @@
 	import JourneyRouteBadge from '$components/JourneyRouteBadge.svelte';
 
 	export let itinerary: EdelweissItinerary;
-	/** Use only endpoint times on the compact details summary. */
+	/** Keep the compact summary's clock order identical to the journey preview. */
 	export let summary = false;
 	let timelineWidth = 320;
 	$: segments = itineraryDisplaySegments(itinerary);
 	$: firstTransitLeg = itinerary.legs.find(leg => !isStreetLeg(leg.mode));
-	$: lastTransitLeg = [...itinerary.legs].reverse().find(leg => !isStreetLeg(leg.mode));
 	$: departureDelay = formatRealtimeDelay(firstTransitLeg?.ServiceDeparture ?? firstTransitLeg?.from?.ServiceDeparture);
-	$: arrivalDelay = formatRealtimeDelay(lastTransitLeg?.ServiceArrival ?? lastTransitLeg?.to?.ServiceArrival);
 	$: widths = allocateTimelinePercentages(segments, timelineWidth);
-	$: timeGroups = summary
-		? { departure: [{ time: itinerary.startTime, transit: true }], arrival: [{ time: itinerary.endTime, transit: true }] }
-		: itineraryPreviewTimeGroups(itinerary);
+	$: timeGroups = itineraryPreviewTimeGroups(itinerary);
 
 	function measureTimeline(node: HTMLDivElement) {
 		const measure = () => { timelineWidth = node.clientWidth || 320; };
@@ -28,17 +24,17 @@
 <div class="min-w-0 w-full">
 	<div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-2" aria-label="Journey times">
 		<div class="flex min-w-0 items-baseline justify-start gap-x-2.5 sm:gap-x-3">
-			{#each (summary ? timeGroups.departure : [...timeGroups.departure].reverse()) as marker}
-				<time datetime={marker.time} class={`shrink-0 whitespace-nowrap ${(summary || marker.time === itinerary.startTime) ? 'text-sm font-bold' : 'text-xs font-normal text-gray-600 dark:text-gray-300'}`}>{formatJourneyTime(marker.time)}</time>
+			{#each timeGroups.departure as marker}
+				<time datetime={marker.time} class={`shrink-0 whitespace-nowrap ${(marker.time === itinerary.startTime) ? 'text-sm font-bold' : 'text-xs font-normal text-gray-600 dark:text-gray-300'}`}>{formatJourneyTime(marker.time)}</time>
 			{/each}
-			{#if departureDelay && (summary || timeGroups.departure.some(marker => marker.transit))}
+			{#if departureDelay && timeGroups.departure.some(marker => marker.transit)}
 				<span data-testid="departure-delay" class="shrink-0 whitespace-nowrap text-xs font-medium tabular-nums text-amber-700 dark:text-amber-300">{departureDelay}</span>
 			{/if}
 		</div>
 		<span class="shrink-0 whitespace-nowrap text-center text-xs font-medium text-gray-600 dark:text-gray-300">{formatJourneyDuration(itinerary)}</span>
 		<div class="flex min-w-0 items-baseline justify-end gap-x-2.5 sm:gap-x-3">
-			{#each (summary ? timeGroups.arrival : [...timeGroups.arrival].reverse()) as marker}
-				<time datetime={marker.time} class={`shrink-0 whitespace-nowrap ${(summary || marker.time === itinerary.endTime) ? 'text-sm font-bold' : 'text-xs font-normal text-gray-600 dark:text-gray-300'}`}>{formatJourneyTime(marker.time)}</time>{#if marker.transit && arrivalDelay}<span class="text-xs font-medium tabular-nums text-amber-700 dark:text-amber-300">{arrivalDelay}</span>{/if}
+			{#each timeGroups.arrival as marker}
+				<time datetime={marker.time} class={`shrink-0 whitespace-nowrap ${(marker.time === itinerary.endTime) ? 'text-sm font-bold' : 'text-xs font-normal text-gray-600 dark:text-gray-300'}`}>{formatJourneyTime(marker.time)}</time>
 			{/each}
 		</div>
 	</div>

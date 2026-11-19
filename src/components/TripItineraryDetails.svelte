@@ -133,7 +133,7 @@
 			{:else}
 				<article class="rounded-xl border border-gray-200 bg-white p-4 text-gray-900 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white" aria-label={'Connection ' + (index + 1)} style={`--rail-light: ${connectionRailColor(leg.routeColor, false)}; --rail-dark: ${connectionRailColor(leg.routeColor, true)};`}>
 					<!-- Contiguous rows give the pearl string no gaps; left and right gutters match. -->
-					<div class="connection-row">
+					<div class="connection-row clock-anchored">
 						<div data-testid="departure-time-stack" class="flex min-w-0 flex-col items-end text-right tabular-nums">
 							<time class="text-sm font-semibold leading-5" datetime={leg.startTime || itinerary.startTime}>{legTime(leg, 'start')}</time>
 							{#if departureDelay}<span class="text-xs font-medium leading-4 text-amber-700 dark:text-amber-300">{departureDelay}</span>{/if}
@@ -174,7 +174,7 @@
 						{#if expandedStops[index]}
 							{#each stops(leg) as stop, stopIndex (stopIndex)}
 								{@const stopDelay = formatRealtimeDelay(stop.ServiceDeparture ?? stop.ServiceArrival)}
-								<div class="connection-row">
+								<div class="connection-row clock-anchored">
 									<div data-testid="intermediate-time-stack" class="flex min-w-0 flex-col items-end text-right text-xs tabular-nums leading-5 text-gray-500 dark:text-gray-400">
 										<time datetime={stop.departure || stop.arrival || stop.scheduledDeparture || stop.scheduledArrival || undefined}>{stopTime(stop)}</time>
 										{#if stopDelay}<span class="font-medium leading-4 text-amber-700 dark:text-amber-300">{stopDelay}</span>{/if}
@@ -187,7 +187,7 @@
 						{/if}
 					{/if}
 
-					<div class="connection-row">
+					<div class="connection-row clock-anchored">
 						<div data-testid="arrival-time-stack" class="flex min-w-0 flex-col items-end text-right tabular-nums">
 							<time class="text-sm font-semibold leading-5" datetime={leg.endTime || itinerary.endTime}>{legTime(leg, 'end')}</time>
 							{#if arrivalDelay}<span class="text-xs font-medium leading-4 text-amber-700 dark:text-amber-300">{arrivalDelay}</span>{/if}
@@ -222,6 +222,13 @@
 		align-items: center;
 		min-height: 2.5rem;
 	}
+	/* Clock rows anchor their pearl and station name to the 20px clock line,
+	   not the center of the taller time-and-delay stack. */
+	.connection-row.clock-anchored { align-items: start; }
+	.clock-anchored .pearl-rail { align-items: flex-start; }
+	.clock-anchored .pearl { margin-top: 6px; }
+	.clock-anchored .rail-first::before { top: 10px; }
+	.clock-anchored .rail-last::before { bottom: calc(100% - 10px); }
 	.pearl-rail {
 		position: relative;
 		align-self: stretch;

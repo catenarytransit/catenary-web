@@ -80,3 +80,37 @@ describe('realtime delay layout', () => {
 		expect(html).toContain("+0'");
 	});
 });
+
+
+describe('journey time and pearl alignment regressions', () => {
+	it('anchors every transit clock row independently of its delay', () => {
+		const realtime: EdelweissLeg = {
+			...leg,
+			ServiceDeparture: { TimetabledTime: leg.startTime, EstimatedTime: '2026-11-14T08:01:00Z' },
+			ServiceArrival: { TimetabledTime: leg.endTime, EstimatedTime: leg.endTime },
+			intermediateStops: [{ name: 'Middle', departure: '2026-11-14T08:06:00Z' }]
+		};
+		const html = details(realtime, { 0: true });
+		for (const kind of ['departure', 'intermediate', 'arrival']) {
+			expect(html).toMatch(new RegExp('class="connection-row clock-anchored">\\s*<div data-testid="' + kind + '-time-stack"'));
+		}
+	});
+
+	it('keeps walking endpoints outside transit anchors, with only endpoints bold', () => {
+		const trip = {
+			startTime: '2026-11-14T08:00:00Z',
+			endTime: '2026-11-14T09:00:00Z',
+			legs: [
+				{ mode: 'WALK', startTime: '2026-11-14T08:00:00Z', endTime: '2026-11-14T08:10:00Z' },
+				{ ...leg, startTime: '2026-11-14T08:10:00Z', endTime: '2026-11-14T08:50:00Z' },
+				{ mode: 'WALK', startTime: '2026-11-14T08:50:00Z', endTime: '2026-11-14T09:00:00Z' }
+			]
+		};
+		const html = render(JourneyPreviewTimeline, { props: { itinerary: trip, summary: true } }).body;
+		const clocks = [...html.matchAll(/<time datetime="([^"]+)" class="([^"]+)"/g)];
+		expect(clocks.map(match => match[1])).toEqual([
+			trip.startTime, trip.legs[1].startTime, trip.legs[1].endTime, trip.endTime
+		]);
+		expect(clocks.map(match => match[2].includes('font-bold'))).toEqual([true, false, false, true]);
+	});
+});
