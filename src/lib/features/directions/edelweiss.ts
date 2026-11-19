@@ -8,7 +8,7 @@ export interface Coordinate {
 	lon: number;
 }
 
-export interface RoutePoint extends Coordinate {
+export interface RoutePoint extends Coordinate, RealtimeCall {
 	stopId?: string | null;
 	name: string;
 	/** Stop platform information, when included by the routing backend. */
@@ -22,7 +22,35 @@ export interface EdelweissGeometry {
 	length?: number;
 }
 
-export interface EdelweissIntermediateStop extends Partial<RoutePoint> {
+export interface ServiceEvent { TimetabledTime?: string | null; EstimatedTime?: string | null; RecordedAtTime?: string | null; }
+
+export interface RealtimeCall {
+	ServiceDeparture?: ServiceEvent | null;
+	ServiceArrival?: ServiceEvent | null;
+	PlannedQuay?: string | null;
+	EstimatedQuay?: string | null;
+	NotServicedStop?: boolean;
+	NoBoardingAtStop?: boolean;
+	NoAlightingAtStop?: boolean;
+}
+
+/** Signed delay in minutes; zero is an explicit real-time prediction, not missing data. */
+export function eventDelayMinutes(event: ServiceEvent | null | undefined): number | null {
+	if (!event?.TimetabledTime) return null;
+	const current = event.RecordedAtTime ?? event.EstimatedTime;
+	if (!current) return null;
+	const plannedMs = Date.parse(event.TimetabledTime);
+	const currentMs = Date.parse(current);
+	if (!Number.isFinite(plannedMs) || !Number.isFinite(currentMs)) return null;
+	return Math.round((currentMs - plannedMs) / 60_000);
+}
+
+export function formatRealtimeDelay(event: ServiceEvent | null | undefined): string | null {
+	const minutes = eventDelayMinutes(event);
+	return minutes === null ? null : `${minutes >= 0 ? '+' : ''}${minutes}’`;
+}
+
+export interface EdelweissIntermediateStop extends Partial<RoutePoint>, RealtimeCall {
 	name: string;
 	arrival?: string | null;
 	departure?: string | null;
@@ -30,7 +58,7 @@ export interface EdelweissIntermediateStop extends Partial<RoutePoint> {
 	scheduledDeparture?: string | null;
 }
 
-export interface EdelweissLeg {
+export interface EdelweissLeg extends RealtimeCall {
 	mode: string;
 	duration?: number;
 	startTime?: string;
