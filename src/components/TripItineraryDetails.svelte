@@ -132,7 +132,7 @@
 				<article class="rounded-xl border border-gray-200 bg-white p-4 text-gray-900 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white" aria-label={'Connection ' + (index + 1)} style={`--rail-light: ${connectionRailColor(leg.routeColor, false)}; --rail-dark: ${connectionRailColor(leg.routeColor, true)};`}>
 					<!-- Contiguous rows give the pearl string no gaps; left and right gutters match. -->
 					<div class="connection-row">
-						<time class="min-w-0 text-right text-sm font-semibold tabular-nums leading-5" datetime={leg.startTime || itinerary.startTime}>{legTime(leg, 'start')}</time>{#if formatRealtimeDelay(leg.ServiceDeparture ?? leg.from?.ServiceDeparture)}<span class="text-xs font-medium text-amber-700 dark:text-amber-300">{formatRealtimeDelay(leg.ServiceDeparture ?? leg.from?.ServiceDeparture)}</span>{/if}
+						<time class="min-w-0 text-right text-sm font-semibold tabular-nums leading-5" datetime={leg.startTime || itinerary.startTime}>{legTime(leg, 'start')}{#if formatRealtimeDelay(leg.ServiceDeparture ?? leg.from?.ServiceDeparture)} <span class="text-xs font-medium text-amber-700 dark:text-amber-300">{formatRealtimeDelay(leg.ServiceDeparture ?? leg.from?.ServiceDeparture)}</span>{/if}</time>
 						<span class="pearl-rail rail-first" aria-hidden="true"><span class="pearl"></span></span>
 						<span class="min-w-0 text-left text-sm font-medium leading-5">{placeName(leg, 'from', index)}{#if $footpathDebugEnabled && leg.from && isValidPoint(leg.from)} <button type="button" class="ml-1 text-xs text-amber-700 underline" on:click={() => inspectStop(leg.from)}>Footpaths</button>{/if}</span>
 						<span class="min-w-0 break-words text-right text-xs text-gray-600 dark:text-gray-300">{platform(leg, 'from')}</span>
@@ -179,7 +179,7 @@
 					{/if}
 
 					<div class="connection-row">
-						<time class="min-w-0 text-right text-sm font-semibold tabular-nums leading-5" datetime={leg.endTime || itinerary.endTime}>{legTime(leg, 'end')}</time>{#if formatRealtimeDelay(leg.ServiceArrival ?? leg.to?.ServiceArrival)}<span class="text-xs font-medium text-amber-700 dark:text-amber-300">{formatRealtimeDelay(leg.ServiceArrival ?? leg.to?.ServiceArrival)}</span>{/if}
+						<time class="min-w-0 text-right text-sm font-semibold tabular-nums leading-5" datetime={leg.endTime || itinerary.endTime}>{legTime(leg, 'end')}{#if formatRealtimeDelay(leg.ServiceArrival ?? leg.to?.ServiceArrival)} <span class="text-xs font-medium text-amber-700 dark:text-amber-300">{formatRealtimeDelay(leg.ServiceArrival ?? leg.to?.ServiceArrival)}</span>{/if}</time>
 						<span class="pearl-rail rail-last" aria-hidden="true"><span class="pearl"></span></span>
 						<span class="min-w-0 text-left text-sm font-medium leading-5">{placeName(leg, 'to', index)}{#if $footpathDebugEnabled && leg.to && isValidPoint(leg.to)} <button type="button" class="ml-1 text-xs text-amber-700 underline" on:click={() => inspectStop(leg.to)}>Footpaths</button>{/if}</span>
 						<span class="min-w-0 break-words text-right text-xs text-gray-600 dark:text-gray-300">{platform(leg, 'to')}</span>
