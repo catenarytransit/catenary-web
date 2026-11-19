@@ -122,7 +122,80 @@ export function mergeEdelweissPages(pages: readonly EdelweissPage[]): EdelweissI
 
 class BackendRouteError extends Error {}
 
-/** Each page uses its own short-lived socket; Edelweiss releases RAPTOR state on completion. */
+/**
+ * The planner retains one connection from mount until unmount. Completed requests
+ * release only their own routing state; the transport remains available for later pages.
+ */
+let sharedSocket: WebSocket | null = null;
+let connecting: Promise<WebSocket> | null = null;
+let holders = 0;
+type PendingRoute = { onMessage: (message: Record<string, unknown>) => void; onFailure: (error: Error) => void };
+const pendingRoutes = new Map<string, PendingRoute>();
+
+function closeSharedSocket(): void {
+	const socket = sharedSocket;
+	sharedSocket = null;
+	connecting = null;
+	if (socket) {
+		socket.onopen = socket.onmessage = socket.onerror = socket.onclose = null;
+		if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) socket.close();
+	}
+	for (const pending of pendingRoutes.values()) pending.onFailure(new Error('Routing WebSocket disconnected'));
+	pendingRoutes.clear();
+}
+
+function ensureSocket(): Promise<WebSocket> {
+	if (sharedSocket?.readyState === WebSocket.OPEN) return Promise.resolve(sharedSocket);
+	if (connecting) return connecting;
+	if (typeof WebSocket === 'undefined') return Promise.reject(new Error('WebSocket unavailable'));
+	const url = new URL('/v2/route/ws', EDELWEISS_ORIGIN);
+	url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+	connecting = new Promise((resolve, reject) => {
+		let socket: WebSocket;
+		try { socket = new WebSocket(url.toString()); }
+		catch (error) { connecting = null; reject(error); return; }
+		sharedSocket = socket;
+		const timeout = setTimeout(() => {
+			if (sharedSocket !== socket) return;
+			closeSharedSocket();
+			reject(new Error('Routing WebSocket connection timed out'));
+		}, 10_000);
+		socket.onopen = () => {
+			clearTimeout(timeout);
+			if (sharedSocket !== socket) return;
+			connecting = null;
+			resolve(socket);
+		};
+		socket.onmessage = (event) => {
+			let message: Record<string, unknown>;
+			try { message = JSON.parse(String(event.data)); }
+			catch { return; }
+			if (typeof message.requestId === 'string') pendingRoutes.get(message.requestId)?.onMessage(message);
+		};
+		const failed = () => {
+			clearTimeout(timeout);
+			if (sharedSocket !== socket) return;
+			closeSharedSocket();
+			reject(new Error('Routing WebSocket disconnected'));
+		};
+		socket.onerror = failed;
+		socket.onclose = failed;
+	});
+	return connecting;
+}
+
+/** Opens the socket immediately on planner mount, even before a destination is selected. */
+export function retainEdelweissConnection(): () => void {
+	holders++;
+	void ensureSocket().catch(() => { /* The next route may fall back to HTTP. */ });
+	let released = false;
+	return () => {
+		if (released) return;
+		released = true;
+		if (--holders === 0) closeSharedSocket();
+	};
+}
+
 function socketPage(
 	query: EdelweissRouteQuery,
 	requestId: string,
@@ -130,83 +203,53 @@ function socketPage(
 	onSnapshot: (page: EdelweissPage) => void
 ): Promise<void> {
 	return new Promise((resolve, reject) => {
-		if (signal.aborted) {
-			reject(new DOMException('Routing request cancelled', 'AbortError'));
-			return;
-		}
-		if (typeof WebSocket === 'undefined') {
-			reject(new Error('WebSocket unavailable'));
-			return;
-		}
-		const url = new URL('/v1/route/ws', EDELWEISS_ORIGIN);
-		url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-		let socket: WebSocket;
-		try {
-			socket = new WebSocket(url.toString());
-		} catch (error) {
-			reject(error);
-			return;
-		}
+		if (signal.aborted) { reject(new DOMException('Routing request cancelled', 'AbortError')); return; }
 		let settled = false;
 		let sequence = 0;
+		let sent = false;
 		const onAbort = () => finish(new DOMException('Routing request cancelled', 'AbortError'));
-		const connectTimeout = setTimeout(() => finish(new Error('Routing WebSocket connection timed out')), 10_000);
 		function finish(error?: Error): void {
 			if (settled) return;
 			settled = true;
-			clearTimeout(connectTimeout);
 			signal.removeEventListener('abort', onAbort);
-			socket.onopen = null;
-			socket.onmessage = null;
-			socket.onerror = null;
-			socket.onclose = null;
-			if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) socket.close();
+			pendingRoutes.delete(requestId);
+			if (sent && sharedSocket?.readyState === WebSocket.OPEN && error?.name === 'AbortError')
+				sharedSocket.send(JSON.stringify({ type: 'cancel', requestId }));
 			if (error) reject(error);
 			else resolve();
 		}
 		signal.addEventListener('abort', onAbort, { once: true });
-		socket.onopen = () => {
-			clearTimeout(connectTimeout);
-			if (signal.aborted) return onAbort();
-			socket.send(JSON.stringify({
-				type: 'route',
-				requestId,
-				query: { ...query, request_id: requestId }
-			}));
-		};
-		socket.onmessage = (event: MessageEvent) => {
-			let message: Record<string, unknown>;
-			try {
-				message = JSON.parse(String(event.data));
-			} catch {
-				finish(new Error('Invalid routing WebSocket message'));
-				return;
-			}
-			if (message.requestId !== requestId) return;
-			try {
-				switch (message.type) {
-					case 'snapshot':
-						if (typeof message.sequence !== 'number' || message.sequence <= sequence) return;
-						sequence = message.sequence;
-						onSnapshot(parseEdelweissPage(message.response, requestId));
-						break;
-					case 'complete':
-						onSnapshot(parseEdelweissPage(message.response, requestId));
-						finish();
-						break;
-					case 'error':
-						finish(new BackendRouteError(typeof message.message === 'string' ? message.message : 'Routing failed'));
-						break;
-					case 'cancelled':
-						finish(new Error('Routing request cancelled'));
-						break;
+		void ensureSocket().then(socket => {
+			if (settled || signal.aborted) { onAbort(); return; }
+			pendingRoutes.set(requestId, {
+				onFailure: error => finish(error),
+				onMessage: message => {
+					try {
+						switch (message.type) {
+							case 'snapshot':
+								if (typeof message.sequence !== 'number' || message.sequence <= sequence) return;
+								sequence = message.sequence;
+								onSnapshot(parseEdelweissPage(message.response, requestId));
+								break;
+							case 'complete':
+								onSnapshot(parseEdelweissPage(message.response, requestId));
+								finish();
+								break;
+							case 'error':
+								finish(new BackendRouteError(typeof message.message === 'string' ? message.message : 'Routing failed'));
+								break;
+							case 'cancelled':
+								finish(new Error('Routing request cancelled'));
+								break;
+						}
+					} catch (error) { finish(error instanceof Error ? error : new Error('Invalid routing response')); }
 				}
-			} catch (error) {
-				finish(error instanceof Error ? error : new Error('Invalid routing response'));
-			}
-		};
-		socket.onerror = () => finish(new Error('Routing WebSocket unavailable'));
-		socket.onclose = () => finish(new Error('Routing WebSocket closed before completion'));
+			});
+			try {
+				socket.send(JSON.stringify({ type: 'route', requestId, query: { ...query, request_id: requestId } }));
+				sent = true;
+			} catch (error) { finish(error instanceof Error ? error : new Error('Unable to send routing request')); }
+		}).catch(error => finish(error instanceof Error ? error : new Error('Routing connection failed')));
 	});
 }
 
@@ -217,7 +260,7 @@ async function httpPage(
 	signal: AbortSignal,
 	onSnapshot: (page: EdelweissPage) => void
 ): Promise<void> {
-	const response = await fetch(new URL('/v1/route', EDELWEISS_ORIGIN), {
+	const response = await fetch(new URL('/v2/route', EDELWEISS_ORIGIN), {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ ...query, request_id: requestId }),
