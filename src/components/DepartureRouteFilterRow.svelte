@@ -13,7 +13,7 @@
 </script>
 
 <div class="flex items-center gap-1 mb-2" role="group" aria-label="Filter routes">
-	<div class="flex flex-1 min-w-0 overflow-x-auto gap-1">
+	<div class="catenary-scroll flex flex-1 min-w-0 overflow-x-auto gap-1">
 		{#each filters as filter (filter.key)}
 			<button
 				type="button"

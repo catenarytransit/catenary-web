@@ -76,7 +76,7 @@
   {#if error}<p role="alert" class="text-sm text-red-600">{error}</p>{/if}
   {#if result}
     <p class="mb-2 text-xs">Region {result.transitRegion} · stop index #{result.stop.stopIndex} · {result.outgoingCount} outgoing / {result.incomingCount} incoming {result.truncated ? '(showing shortest edges only)' : ''}</p>
-    <div class="max-h-48 overflow-y-auto text-xs">
+    <div class="catenary-scroll max-h-48 overflow-y-auto text-xs">
       {#each [...(outgoing ? result.outgoing.map(edge => ({ ...edge, direction: '→' })) : []), ...(incoming ? result.incoming.map(edge => ({ ...edge, direction: '←' })) : [])] as edge, index (index)}
         <button type="button" class="flex w-full items-center justify-between gap-2 border-b border-gray-200 py-1 text-left dark:border-gray-700" on:click={() => { map?.flyTo({ center: [edge.target.lon, edge.target.lat], zoom: 16 }); }}>
           <span>{edge.direction} {edge.target.name} (#{edge.target.stopIndex})</span>

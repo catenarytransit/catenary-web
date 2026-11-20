@@ -33,7 +33,7 @@
 	}
 </script>
 
-<div class="mx-1 my-2 flex gap-2 overflow-x-auto" role="group" aria-label="Plan a journey from or to this place">
+<div class="catenary-scroll mx-1 my-2 flex gap-2 overflow-x-auto" role="group" aria-label="Plan a journey from or to this place">
 	<button
 		type="button"
 		disabled={!available}

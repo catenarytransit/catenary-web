@@ -1090,7 +1090,7 @@ $: {
 		};
 	});
 </script>
-{#if $footpathDebugEnabled && debugStop}<div class="sticky top-0 z-50 max-h-[45vh] overflow-y-auto"><FootpathDebugPanel stop={debugStop} onClose={() => { debugStop = null; }} /></div>{/if}
+{#if $footpathDebugEnabled && debugStop}<div class="catenary-scroll sticky top-0 z-50 max-h-[45vh] overflow-y-auto"><FootpathDebugPanel stop={debugStop} onClose={() => { debugStop = null; }} /></div>{/if}
 
 <div class="h-full flex flex-col">
 	<HomeButton />

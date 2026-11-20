@@ -877,7 +877,7 @@
           <span>Direction of travel {group.destination || "destination"}</span>
         </div>-->
 
-				<div class="overflow-x-auto w-full flex items-end gap-1 px-4 pb-2">
+				<div class="catenary-scroll overflow-x-auto w-full flex items-end gap-1 px-4 pb-2">
 					{#each group.vehicles as vehicle, i}
 						<div class="flex-shrink-0 flex flex-col items-center">
 							<span class="text-xs mb-1 font-medium">{vehicle.label || vehicle.order + 1}</span>
