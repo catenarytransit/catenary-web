@@ -72,6 +72,7 @@
   "sprite": [
     {"id": "ofm", "url": "https://tiles.openfreemap.org/sprites/ofm_f384/ofm"},
     {"id": "mbicons", "url": "https://moreicons.catenarymaps.org/sprite"},
+    {"id": "osm", "url": "https://moreicons.catenarymaps.org/osmoriginal"},
     {
       "id": "orm",
       "url": "https://maps.catenarymaps.org/orm_sprite_symbols/symbols"
@@ -124,12 +125,28 @@
       "source-layer": "landcover",
       "minzoom": 12,
       "filter": ["==", ["get", "class"], "wetland"],
+      "layout": {"visibility": "visible"},
       "paint": {
         "fill-antialias": true,
-        "fill-opacity": 0.1,
+        "fill-opacity": 0.2,
         "fill-translate-anchor": "map",
-        "fill-pattern": "mbicons:wetland",
-        "fill-color": "#000000"
+        "fill-color": "rgba(0, 40, 146, 1)"
+      }
+    },
+    {
+      "id": "landcover_wetland-pattern",
+      "type": "fill",
+      "source": "openmaptiles",
+      "source-layer": "landcover",
+      "minzoom": 12,
+      "filter": ["==", ["get", "class"], "wetland"],
+      "layout": {"visibility": "none"},
+      "paint": {
+        "fill-antialias": true,
+        "fill-opacity": 0.05,
+        "fill-translate-anchor": "map",
+        "fill-color": "rgba(0, 40, 146, 1)",
+        "fill-pattern": "osm:wetland"
       }
     },
     {
@@ -1148,7 +1165,7 @@
       "layout": {"visibility": "visible"},
       "paint": {
         "fill-antialias": true,
-        "fill-color": "rgba(49, 49, 49, 1)",
+        "fill-color": "#514e49",
         "fill-opacity": 0.5
       }
     },
@@ -2009,37 +2026,6 @@
       }
     },
     {
-      "id": "bridge_path_pedestrian_casing",
-      "type": "line",
-      "source": "openmaptiles",
-      "source-layer": "transportation",
-      "filter": [
-        "all",
-        [
-          "match",
-          ["geometry-type"],
-          ["LineString", "MultiLineString"],
-          true,
-          false
-        ],
-        ["==", ["get", "brunnel"], "bridge"],
-        ["match", ["get", "class"], ["path", "pedestrian"], true, false]
-      ],
-      "paint": {
-        "line-color": "rgba(112, 148, 188, 1)",
-        "line-dasharray": [1, 0],
-        "line-width": [
-          "interpolate",
-          ["exponential", 1.2],
-          ["zoom"],
-          14,
-          1.5,
-          20,
-          18
-        ]
-      }
-    },
-    {
       "id": "bridge_secondary_tertiary_casing",
       "type": "line",
       "source": "openmaptiles",
@@ -2117,37 +2103,6 @@
           1.75,
           20,
           22
-        ]
-      }
-    },
-    {
-      "id": "bridge_path_pedestrian",
-      "type": "line",
-      "source": "openmaptiles",
-      "source-layer": "transportation",
-      "filter": [
-        "all",
-        [
-          "match",
-          ["geometry-type"],
-          ["LineString", "MultiLineString"],
-          true,
-          false
-        ],
-        ["==", ["get", "brunnel"], "bridge"],
-        ["match", ["get", "class"], ["path", "pedestrian"], true, false]
-      ],
-      "paint": {
-        "line-color": "#4a5f78",
-        "line-dasharray": [1, 0.3],
-        "line-width": [
-          "interpolate",
-          ["exponential", 1.2],
-          ["zoom"],
-          14,
-          0.5,
-          20,
-          10
         ]
       }
     },
@@ -2427,6 +2382,42 @@
       "paint": {"fill-color": "rgba(44, 44, 44, 0.92)"}
     },
     {
+      "id": "road_path_pedestrian-outline",
+      "type": "line",
+      "source": "openmaptiles",
+      "source-layer": "transportation",
+      "minzoom": 14,
+      "filter": [
+        "all",
+        [
+          "match",
+          ["geometry-type"],
+          ["LineString", "MultiLineString"],
+          true,
+          false
+        ],
+        ["match", ["get", "brunnel"], ["bridge", "tunnel"], false, true],
+        ["match", ["get", "class"], ["path", "pedestrian"], true, false],
+        ["match", ["get", "subclass"], ["cycleway", "steps"], false, true],
+        ["match", ["get", "surface"], ["unpaved"], false, true]
+      ],
+      "layout": {"line-join": "bevel"},
+      "paint": {
+        "line-width": [
+          "interpolate",
+          ["exponential", 1.2],
+          ["zoom"],
+          15,
+          1.7,
+          17,
+          2.5,
+          20,
+          13
+        ],
+        "line-color": "rgba(0, 0, 0, 1)"
+      }
+    },
+    {
       "id": "road_path_pedestrian",
       "type": "line",
       "source": "openmaptiles",
@@ -2470,6 +2461,70 @@
       "minzoom": 13,
       "filter": ["==", ["get", "class"], "swimming_pool"],
       "paint": {"fill-color": "#2a2a6a"}
+    },
+    {
+      "id": "bridge_path_pedestrian_casing",
+      "type": "line",
+      "source": "openmaptiles",
+      "source-layer": "transportation",
+      "filter": [
+        "all",
+        [
+          "match",
+          ["geometry-type"],
+          ["LineString", "MultiLineString"],
+          true,
+          false
+        ],
+        ["==", ["get", "brunnel"], "bridge"],
+        ["match", ["get", "class"], ["path", "pedestrian"], true, false]
+      ],
+      "paint": {
+        "line-color": "rgba(26, 24, 21, 1)",
+        "line-dasharray": [1, 0],
+        "line-width": [
+          "interpolate",
+          ["exponential", 1.2],
+          ["zoom"],
+          14,
+          5,
+          16,
+          6,
+          25,
+          30
+        ]
+      }
+    },
+    {
+      "id": "bridge_path_pedestrian",
+      "type": "line",
+      "source": "openmaptiles",
+      "source-layer": "transportation",
+      "filter": [
+        "all",
+        [
+          "match",
+          ["geometry-type"],
+          ["LineString", "MultiLineString"],
+          true,
+          false
+        ],
+        ["==", ["get", "brunnel"], "bridge"],
+        ["match", ["get", "class"], ["path", "pedestrian"], true, false]
+      ],
+      "paint": {
+        "line-color": "rgba(81, 77, 72, 1)",
+        "line-dasharray": [1, 0.3],
+        "line-width": [
+          "interpolate",
+          ["exponential", 1.2],
+          ["zoom"],
+          14,
+          0.5,
+          20,
+          10
+        ]
+      }
     },
     {
       "id": "boundary_3",
@@ -2592,23 +2647,16 @@
         ["!=", ["get", "subclass"], "bus_stop"],
         ["!=", ["get", "subclass"], "bus_station"],
         ["!=", ["get", "subclass"], "station"],
+        ["!=", ["get", "subclass"], "parking"],
+        ["!=", ["get", "subclass"], "motorcycle_parking"],
         ["!=", ["get", "class"], "railway"],
-        ["match", ["geometry-type"], ["Point", "MultiPoint"], true, false],
-        [
-          "any",
-          ["!=", ["coalesce", ["get", "name"], ""], ""],
-          ["!=", ["coalesce", ["get", "name_en"], ""], ""],
-          ["!=", ["coalesce", ["get", "name_int"], ""], ""],
-          ["!=", ["coalesce", ["get", "name:latin"], ""], ""],
-          ["!=", ["coalesce", ["get", "name:nonlatin"], ""], ""],
-          ["!=", ["coalesce", ["get", "name_de"], ""], ""]
-        ]
+        ["match", ["geometry-type"], ["Point", "MultiPoint"], true, false]
       ],
       "layout": {
         "text-anchor": "top",
         "icon-optional": true,
-        "text-allow-overlap": true,
-        "text-ignore-placement": true,
+        "text-allow-overlap": false,
+        "text-ignore-placement": false,
         "text-field": [
           "coalesce",
           ["get", "name"],
@@ -2624,50 +2672,59 @@
         "text-offset": [0, 0.6],
         "text-size": 12,
         "icon-image": [
-          "coalesce",
+          "case",
+          ["==", ["get", "class"], "bicycle_parking"],
+          "osm:bicycle_parking",
+          ["==", ["get", "class"], "recycling"],
+          "osm:recycling",
+          ["==", ["get", "class"], "waste_basket"],
+          "waste_basket",
           [
-            "image",
+            "coalesce",
             [
-              "concat",
-              "mbicons:",
+              "image",
               [
-                "match",
-                ["get", "class"],
-                ["pitch"],
-                ["get", "subclass"],
+                "concat",
+                "mbicons:",
                 [
                   "match",
+                  ["get", "class"],
+                  ["pitch"],
                   ["get", "subclass"],
-                  ["florist", "furniture"],
-                  ["get", "subclass"],
-                  ["get", "class"]
-                ]
-              ],
-              "-dark"
-            ]
-          ],
-          [
-            "image",
+                  [
+                    "match",
+                    ["get", "subclass"],
+                    ["florist", "furniture"],
+                    ["get", "subclass"],
+                    ["get", "class"]
+                  ]
+                ],
+                "-dark"
+              ]
+            ],
             [
-              "concat",
-              "ofm:",
+              "image",
               [
-                "match",
-                ["get", "class"],
-                ["pitch"],
-                ["get", "subclass"],
+                "concat",
+                "ofm:",
                 [
                   "match",
+                  ["get", "class"],
+                  ["pitch"],
                   ["get", "subclass"],
-                  ["florist", "furniture"],
-                  ["get", "subclass"],
-                  ["get", "class"]
-                ]
-              ],
-              "-dark"
-            ]
-          ],
-          ["image", "mbicons:marker-dark"]
+                  [
+                    "match",
+                    ["get", "subclass"],
+                    ["florist", "furniture"],
+                    ["get", "subclass"],
+                    ["get", "class"]
+                  ]
+                ],
+                "-dark"
+              ]
+            ],
+            ["image", "mbicons:marker-dark"]
+          ]
         ],
         "text-letter-spacing": 0.02
       },
