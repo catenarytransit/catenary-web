@@ -194,7 +194,7 @@
 		</div>
 
 		{#if expanded}
-			<div class="mt-2 flex flex-row gap-2 overflow-x-auto pb-1" role="group" aria-label="Alert languages">
+			<div class="catenary-scroll mt-2 flex flex-row gap-2 overflow-x-auto pb-1" role="group" aria-label="Alert languages">
 				{#each languagelistToUse as language}
 					<button
 						type="button"

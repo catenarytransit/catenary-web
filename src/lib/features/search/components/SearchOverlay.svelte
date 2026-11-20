@@ -22,7 +22,7 @@
 		{#if $autocompleteFocus}
 			<div
 				id="desktop_autocomplete_box"
-				class="max-h-[calc(100dvh-5rem)] overflow-y-auto rounded-b-xl border-t border-gray-200 dark:border-gray-700"
+				class="catenary-scroll max-h-[calc(100dvh-5rem)] overflow-y-auto rounded-b-xl border-t border-gray-200 dark:border-gray-700"
 			>
 				<SearchAutocompleteList length={10} />
 				<p class="px-3 py-2 text-xs text-gray-600 md:hidden dark:text-gray-300">Catenary Search Beta.</p>

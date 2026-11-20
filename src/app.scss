@@ -202,6 +202,7 @@ body::-webkit-scrollbar-thumb:hover {
 
 .catenary-scroll::-webkit-scrollbar {
 	width: var(--sb-size);
+	height: var(--sb-size);
 }
 
 .catenary-scroll::-webkit-scrollbar-track {

@@ -639,7 +639,7 @@
 </svelte:head>
 
 <section aria-label="Directions / Trip Planner" class="relative flex h-full min-h-0 flex-col overflow-hidden">
-	<div class="min-h-0 flex-1 overflow-y-auto px-4 py-4" class:hidden={detailsIndex !== null} aria-hidden={detailsIndex !== null}>
+	<div class="catenary-scroll min-h-0 flex-1 overflow-y-auto px-4 py-4" class:hidden={detailsIndex !== null} aria-hidden={detailsIndex !== null}>
 	<div use:portalToMobileViewport class="relative z-50 mb-4 rounded-xl bg-white text-gray-900 max-md:fixed max-md:inset-x-3 max-md:top-[max(0.5rem,env(safe-area-inset-top))] max-md:mb-0 max-md:border max-md:border-gray-200 max-md:p-3 max-md:shadow-xl dark:bg-gray-900 dark:text-white dark:max-md:border-gray-700" class:hidden={detailsIndex !== null}>
 	<div class="mb-4 flex items-center justify-between max-md:mb-2">
 		<h2 class="text-lg font-semibold max-md:sr-only">Directions</h2>
@@ -709,7 +709,7 @@
 				id="directions-suggestions"
 				role="listbox"
 				aria-label="Location suggestions"
-				class="absolute left-0 right-0 top-full z-50 mt-2 max-h-80 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900"
+				class="catenary-scroll absolute left-0 right-0 top-full z-50 mt-2 max-h-80 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900"
 			>
 				{#each suggestions as suggestion, index (suggestion.key)}
 					<button
@@ -902,7 +902,7 @@
 	{#if detailsIndex !== null && routes[detailsIndex]}
 		<TripItineraryDetails bind:scrollTop={detailsScrollTop} bind:expandedStops onInspectFootpaths={(stop) => { debugStop = stop; }} itinerary={routes[detailsIndex]} originName={originSelection?.name || origin} destinationName={destinationSelection?.name || destination} onBack={() => { detailsIndex = null; }} />
 	{/if}
-	{#if $footpathDebugEnabled && debugStop}<div class="absolute bottom-3 left-3 right-3 z-40 max-h-[55%] overflow-y-auto"><FootpathDebugPanel stop={debugStop} onClose={() => { debugStop = null; }} /></div>{/if}
+	{#if $footpathDebugEnabled && debugStop}<div class="catenary-scroll absolute bottom-3 left-3 right-3 z-40 max-h-[55%] overflow-y-auto"><FootpathDebugPanel stop={debugStop} onClose={() => { debugStop = null; }} /></div>{/if}
 </section>
 
 
