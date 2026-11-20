@@ -71,7 +71,8 @@
   },
   "sprite": [
     {"id": "ofm", "url": "https://tiles.openfreemap.org/sprites/ofm_f384/ofm"},
-    {"id": "mbicons", "url": "https://moreicons.catenarymaps.org/lighticons"},
+    {"id": "mbicons", "url": "https://moreicons.catenarymaps.org/sprite"},
+    {"id": "osm", "url": "https://moreicons.catenarymaps.org/osmoriginal"},
     {
       "id": "orm",
       "url": "https://maps.catenarymaps.org/orm_sprite_symbols/symbols"
@@ -157,13 +158,48 @@
       "type": "fill",
       "source": "openmaptiles",
       "source-layer": "landcover",
-      "minzoom": 9,
-      "filter": ["==", ["get", "class"], "wetland"],
+      "minzoom": 12,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "wetland"
+      ],
       "paint": {
         "fill-antialias": true,
-        "fill-opacity": 1,
-        "fill-pattern": "mbicons:wetland",
-        "fill-translate-anchor": "map"
+        "fill-opacity": 0.2,
+        "fill-translate-anchor": "map",
+        "fill-color": "rgba(40, 135, 219, 1)"
+      },
+      "layout": {
+        "visibility": "visible"
+      }
+    },
+    {
+      "id": "landcover_wetland-pattern",
+      "type": "fill",
+      "source": "openmaptiles",
+      "source-layer": "landcover",
+      "minzoom": 12,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "wetland"
+      ],
+      "layout": {
+        "visibility": "none"
+      },
+      "paint": {
+        "fill-antialias": true,
+        "fill-opacity": 0.05,
+        "fill-translate-anchor": "map",
+        "fill-color": "rgba(40, 135, 219, 1)",
+        "fill-pattern": "osm:wetland"
       }
     },
     {
@@ -3381,76 +3417,257 @@
       "minzoom": 17,
       "filter": [
         "all",
-        ["!=", ["get", "subclass"], "bus_stop"],
-        ["!=", ["get", "subclass"], "bus_station"],
-        ["match", ["geometry-type"], ["Point", "MultiPoint"], true, false],
         [
-          "any",
-          ["!=", ["coalesce", ["get", "name"], ""], ""],
-          ["!=", ["coalesce", ["get", "name_en"], ""], ""],
-          ["!=", ["coalesce", ["get", "name_int"], ""], ""],
-          ["!=", ["coalesce", ["get", "name:latin"], ""], ""],
-          ["!=", ["coalesce", ["get", "name:nonlatin"], ""], ""],
-          ["!=", ["coalesce", ["get", "name_de"], ""], ""]
+          "!=",
+          [
+            "get",
+            "subclass"
+          ],
+          "bus_stop"
+        ],
+        [
+          "!=",
+          [
+            "get",
+            "subclass"
+          ],
+          "bus_station"
+        ],
+        [
+          "!=",
+          [
+            "get",
+            "subclass"
+          ],
+          "station"
+        ],
+        [
+          "!=",
+          [
+            "get",
+            "subclass"
+          ],
+          "parking"
+        ],
+        [
+          "!=",
+          [
+            "get",
+            "subclass"
+          ],
+          "motorcycle_parking"
+        ],
+        [
+          "!=",
+          [
+            "get",
+            "class"
+          ],
+          "railway"
+        ],
+        [
+          "match",
+          [
+            "geometry-type"
+          ],
+          [
+            "Point",
+            "MultiPoint"
+          ],
+          true,
+          false
         ]
       ],
       "layout": {
         "icon-image": [
-          "coalesce",
+          "case",
           [
-            "image",
+            "==",
             [
-              "concat",
-              "mbicons:",
+              "get",
+              "class"
+            ],
+            "bicycle_parking"
+          ],
+          "osm:bicycle_parking",
+          [
+            "==",
+            [
+              "get",
+              "class"
+            ],
+            "recycling"
+          ],
+          "osm:recycling",
+          [
+            "==",
+            [
+              "get",
+              "class"
+            ],
+            "waste_basket"
+          ],
+          "waste_basket",
+          [
+            "coalesce",
+            [
+              "image",
               [
-                "match",
-                ["get", "class"],
-                ["pitch"],
-                ["get", "subclass"],
+                "concat",
+                "mbicons:",
                 [
                   "match",
-                  ["get", "subclass"],
-                  ["florist", "furniture"],
-                  ["get", "subclass"],
-                  ["get", "class"]
+                  [
+                    "get",
+                    "class"
+                  ],
+                  [
+                    "pitch"
+                  ],
+                  [
+                    "get",
+                    "subclass"
+                  ],
+                  [
+                    "match",
+                    [
+                      "get",
+                      "subclass"
+                    ],
+                    [
+                      "florist",
+                      "furniture"
+                    ],
+                    [
+                      "get",
+                      "subclass"
+                    ],
+                    [
+                      "get",
+                      "class"
+                    ]
+                  ]
                 ]
               ]
+            ],
+            [
+              "image",
+              [
+                "concat",
+                "ofm:",
+                [
+                  "match",
+                  [
+                    "get",
+                    "class"
+                  ],
+                  [
+                    "pitch"
+                  ],
+                  [
+                    "get",
+                    "subclass"
+                  ],
+                  [
+                    "match",
+                    [
+                      "get",
+                      "subclass"
+                    ],
+                    [
+                      "florist",
+                      "furniture"
+                    ],
+                    [
+                      "get",
+                      "subclass"
+                    ],
+                    [
+                      "get",
+                      "class"
+                    ]
+                  ]
+                ]
+              ]
+            ],
+            [
+              "image",
+              "mbicons:marker"
             ]
-          ],
-          ["image", "mbicons:marker"]
+          ]
         ],
         "text-anchor": "top",
         "icon-optional": true,
-        "text-allow-overlap": true,
-        "text-ignore-placement": true,
+        "text-allow-overlap": false,
+        "text-ignore-placement": false,
         "text-field": [
           "coalesce",
-          ["get", "name"],
-          ["get", "name_en"],
-          ["get", "name_int"],
-          ["get", "name:latin"],
-          ["get", "name:nonlatin"],
-          ["get", "name_de"],
+          [
+            "get",
+            "name"
+          ],
+          [
+            "get",
+            "name_en"
+          ],
+          [
+            "get",
+            "name_int"
+          ],
+          [
+            "get",
+            "name:latin"
+          ],
+          [
+            "get",
+            "name:nonlatin"
+          ],
+          [
+            "get",
+            "name_de"
+          ],
           ""
         ],
-        "text-font": ["Arimo-Regular"],
+        "text-font": [
+          "Arimo-Regular"
+        ],
         "text-max-width": 9,
-        "text-offset": [0, 0.6],
+        "text-offset": [
+          0,
+          0.6
+        ],
         "text-size": 12
       },
       "paint": {
         "text-color": [
           "match",
-          ["get", "class"],
-          ["shop"],
+          [
+            "get",
+            "class"
+          ],
+          [
+            "shop"
+          ],
           "#0a64c9",
-          ["restaurant", "bar", "cafe"],
+          [
+            "restaurant",
+            "bar",
+            "cafe"
+          ],
           "#915d03",
-          ["bank"],
+          [
+            "bank"
+          ],
           "#a17bed",
-          ["art_gallery", "theatre", "attraction"],
+          [
+            "art_gallery",
+            "theatre",
+            "attraction"
+          ],
           "#de108c",
-          ["garden"],
+          [
+            "garden"
+          ],
           "#83d374",
           "#666"
         ],
