@@ -59,6 +59,22 @@ describe('departure route filters', () => {
 		expect(routeFiltersEnabled(filters, 'rail', false, false)).toBe(true);
 	});
 
+	it('classifies coaches and extended bus routes alongside local buses', () => {
+		expect([3, 11, 200, 201, 209, 700, 730, 799, 800].map(departureRouteMode))
+			.toEqual(Array(9).fill('bus'));
+		expect([210, 400, 900, 106, 4].map(departureRouteMode))
+			.toEqual(['other', 'other', 'metro', 'rail', 'other']);
+		const filters = departureRouteFilters(
+			{ coaches: {
+				flixbus: { short_name: 'FLX', route_type: 200 },
+				coachExtended: { short_name: 'EX', route_type: 201 },
+				local: { short_name: '1', route_type: 3 }
+			} },
+			'bus'
+		);
+		expect(filters.map((filter) => filter.name)).toEqual(['1', 'EX', 'FLX']);
+	});
+
 	it('uses the Android mode groups including extended GTFS types', () => {
 		expect([700, 900, 106, 4].map(departureRouteMode)).toEqual(['bus', 'metro', 'rail', 'other']);
 	});
