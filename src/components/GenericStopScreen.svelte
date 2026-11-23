@@ -1111,6 +1111,7 @@ $: {
 						bind:unixTime={selected_unix_time}
 						bind:isNow={is_now}
 						timezone={displayTimezone}
+						showTimezone={false}
 						on:change={handleTimeSelectorChange}
 					/>
 				</div>
