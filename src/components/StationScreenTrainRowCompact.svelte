@@ -89,7 +89,7 @@
 
 	<!-- Left: Time (Vertical Stack) -->
 	<td class="px-1 py-0.5 w-[70px] align-middle">
-		<div class="flex flex-col items-start justify-center text-xs">
+		<div class="flex flex-col items-end justify-center text-right tabular-nums text-xs">
 			{#if event.trip_cancelled}
 				<span class="text-red-500 font-semibold text-xs">{$_('cancelled')}</span>
 				<div class="line-through opacity-70 text-xs">
