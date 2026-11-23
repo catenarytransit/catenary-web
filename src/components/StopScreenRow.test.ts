@@ -87,6 +87,17 @@ describe('compact nearby station departure times', () => {
 		expect(html).toContain('>+</span>');
 	});
 
+	it('shows the platform as plain right-aligned text rather than a badge', () => {
+		const html = row(StationScreenTrainRowCompact, departure, {
+			platform: 'Platform 4A',
+			show_timediff: false
+		});
+		expect(html).toContain('4A');
+		expect(html).toContain('text-right w-[80px] align-middle');
+		expect(html).not.toContain('bg-gray-200 dark:bg-gray-700');
+		expect(html).not.toContain('px-1.5 py-0.5 rounded');
+	});
+
 	it('uses a minus sign for an early departure', () => {
 		const html = row(
 			StationScreenTrainRowCompact,
