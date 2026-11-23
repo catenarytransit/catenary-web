@@ -155,6 +155,9 @@ $: {
 	let current_time = Date.now();
 	let fly_to_already = false;
 	let data_meta: any = null; // primary/routes/shapes merged from any page
+	// Full-screen loading is only appropriate before the first successful response.
+	let hasLoadedDepartures = false;
+	let initialLoadError: string | null = null;
 
 	// GTFS departures use primary; OSM departures return station metadata separately.
 	$: displayName = data_meta?.primary?.stop_name ?? data_meta?.osm_station?.name ?? stationName ?? 'Loading...';
@@ -394,6 +397,8 @@ $: {
 		mergedEvents = [];
 		filtered_dates_to_events = {};
 		raw_grouped_events = {};
+		hasLoadedDepartures = false;
+		initialLoadError = null;
 		hide_past_events = true;
 		visible_from_unix_time = selected_unix_time;
 		alerts_expanded = false;
@@ -581,6 +586,8 @@ $: {
 		try {
 			console.log(`Fetching ${id} range ${startSec}-${endSec}`);
 			const resp = await fetch(buildUrl(startSec, endSec), { mode: 'cors' });
+			// An error payload must not be mistaken for an empty timetable and erase existing rows.
+			if (!resp.ok) throw new Error(`Departure request failed (${resp.status})`);
 			// Optimization: Use native json() parser
 			const data = await resp.json();
 			console.log(`Fetch ${id} returned items:`, data.events?.length);
@@ -607,6 +614,10 @@ $: {
 					return stack;
 				});
 				return;
+			}
+
+			if (!Array.isArray(data.events)) {
+				throw new Error('Departure response is missing an events array');
 			}
 
 			let shouldPrimeMap = false;
@@ -663,6 +674,8 @@ $: {
 
 			// mergePageEvents is now async
 			await mergePageEvents(id, events, refreshedAt);
+			hasLoadedDepartures = true;
+			initialLoadError = null;
 			if (page) page.loading = false;
 
 			// Auto-tune next page size by density (only if it's a primary page fetch)
@@ -684,6 +697,7 @@ $: {
 			if (page) {
 				page.error = (e as Error).message;
 				page.loading = false;
+				if (!hasLoadedDepartures) initialLoadError = page.error;
 			} else {
 				console.warn('Background refresh failed', e);
 			}
@@ -1350,16 +1364,25 @@ $: {
 							{/if}
 						{/each}
 
-						<!-- Loader / pager hint -->
+					{:else if !hasLoadedDepartures}
+						{#if initialLoadError}
+							<p class="ml-2" role="alert">Unable to load departures.</p>
+							<button class="ml-2 underline" on:click={loadInitialPages}>Try again</button>
+						{:else}
+							<p class="ml-2">Loading…</p>
+						{/if}
+					{:else}
+						<p class="ml-2">No departures.</p>
+					{/if}
+
+					<!-- Keep the board and its pager mounted during refreshes, including empty pages. -->
+					{#if hasLoadedDepartures}
 						<div class="w-full text-center py-4 text-sm opacity-80">
 							{#if pages.some((p) => p.loading)}
 								<span>{$_('loadingmoredepartures')}…</span>
-							{:else}{/if}
-
+							{/if}
 							<button class="underline" on:click={loadNextPage}>{$_('loadmore')}</button>
 						</div>
-					{:else}
-						<p class="ml-2">Loading…</p>
 					{/if}
 				</div>
 			</div>
