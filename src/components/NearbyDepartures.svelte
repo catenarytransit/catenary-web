@@ -1020,6 +1020,7 @@
 										}}
 										current_time={reference_time_sec}
 										show_seconds={false}
+										use_symbol_sign={true}
 										timezone={station.timezone}
 									/>
 								{/each}

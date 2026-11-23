@@ -63,6 +63,40 @@ describe.each([StopScreenRow, StationScreenTrainRow, StationScreenTrainRowCompac
 		});
 	}
 );
+describe('compact nearby station departure times', () => {
+	const scheduled = 1794709200;
+	const departure = {
+		...arrivalOnly,
+		realtime_arrival: null,
+		scheduled_departure: scheduled,
+		realtime_departure: scheduled + 180,
+		service_date: '2026-11-14',
+		headsign: 'Central'
+	};
+
+	it('left-aligns equally sized scheduled and realtime clocks with a signed late delay', () => {
+		const html = row(StationScreenTrainRowCompact, departure, {
+			use_symbol_sign: true,
+			show_timediff: false
+		});
+		expect(html).toContain('items-start justify-center text-left tabular-nums text-sm');
+		expect(html).toContain('line-through text-sm');
+		expect(html).toContain('font-medium text-sm');
+		expect(html).toContain('18:20');
+		expect(html).toContain('18:23');
+		expect(html).toContain('>+</span>');
+	});
+
+	it('uses a minus sign for an early departure', () => {
+		const html = row(
+			StationScreenTrainRowCompact,
+			{ ...departure, realtime_departure: scheduled - 180 },
+			{ use_symbol_sign: true, show_timediff: false }
+		);
+		expect(html).toContain('>-</span>');
+	});
+});
+
 describe('stop event time selection', () => {
 	const both = {
 		realtime_departure: 200,
