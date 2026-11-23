@@ -164,6 +164,8 @@ $: {
 		data_meta?.primary?.timezone ?? data_meta?.stops?.[0]?.timezone ?? stationTimezone ?? 'UTC';
 	let show_arrivals_only = false; // Add missing state variable
 	let hide_past_events = true;
+	// Keep the displayed timetable stable until a newly selected time finishes loading.
+	let visible_from_unix_time = initial_selected_unix_time;
 
 	// Filters
 	type Mode = 'rail' | 'rer' | 'transilien' | 'metro' | 'bus' | 'other';
@@ -336,7 +338,7 @@ $: {
 
 		// hide anything behind 1 min
 		let cutoff_time = hide_past_events
-			? (is_now ? Date.now() / 1000 : selected_unix_time) - 1 * 60
+			? (is_now ? Date.now() / 1000 : visible_from_unix_time) - 1 * 60
 			: 0;
 
 		for (const [date_code, events] of Object.entries(raw_grouped_events)) {
@@ -393,6 +395,7 @@ $: {
 		filtered_dates_to_events = {};
 		raw_grouped_events = {};
 		hide_past_events = true;
+		visible_from_unix_time = selected_unix_time;
 		alerts_expanded = false;
 		lastShiftTime = Date.now();
 		if (clearMeta) {
@@ -842,9 +845,11 @@ $: {
 		if (!Number.isFinite(targetTimeSec)) return;
 
 		// Selecting a different time must never clear the station header or metadata.
-		hide_past_events = is_now;
+		// Preserve existing rows until new data arrives; then apply the new cutoff.
 		if (pages.length === 0) {
 			await loadInitialPages();
+			hide_past_events = true;
+			visible_from_unix_time = targetTimeSec;
 			return;
 		}
 
@@ -859,6 +864,8 @@ $: {
 			earlier_loading = true;
 			try {
 				await fetchPage(newStart, earliestStart);
+				visible_from_unix_time = targetTimeSec;
+				hide_past_events = true;
 				await tick();
 				if (scrollContainer) {
 					scrollContainer.scrollTop = beforeTop + scrollContainer.scrollHeight - beforeHeight;
@@ -870,6 +877,12 @@ $: {
 			const newStart = Math.max(0, latestEnd - OVERLAP_SECONDS);
 			const newEnd = Math.floor(targetTimeSec) + currentPageHours * 3600;
 			if (newStart < newEnd) await fetchPage(newStart, newEnd);
+			visible_from_unix_time = targetTimeSec;
+			hide_past_events = true;
+		} else {
+			// The chosen interval is already cached; no request or full-panel reset.
+			visible_from_unix_time = targetTimeSec;
+			hide_past_events = true;
 		}
 	}
 
