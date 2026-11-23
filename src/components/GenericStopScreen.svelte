@@ -117,8 +117,7 @@ $: {
 	const THRESHOLD_HIGH = 150; // many results → use 2h
 	const THRESHOLD_LOW = 40; // sparse → use up to 24h
 
-	// We page forward in time from now. If user toggles previous, we still keep
-	// showing earlier items but we don't load older pages by default.
+	// Keep pages and already loaded departures when navigating in either direction.
 	let pages: Array<{
 		id: string;
 		startSec: number;
@@ -505,30 +504,13 @@ $: {
 		}
 
 		// Remove any stale events for this pageId that weren't in the incoming chunk,
-		// or any event in the eventIndex whose time falls within the fetched range but was not returned
+		// without discarding results from overlapping, independently fetched pages
 		const incomingKeys = new Set(incoming.map((ev) => composeEventKey(ev)));
-		const [startSecStr, endSecStr] = pageId.split('-');
-		const startSec = parseInt(startSecStr, 10);
-		const endSec = parseInt(endSecStr, 10);
-		const hasValidRange = !isNaN(startSec) && !isNaN(endSec);
-
 		for (const [key, value] of eventIndex.entries()) {
 			let shouldPrune = false;
 			if (value.pageId === pageId && !incomingKeys.has(key)) {
 				shouldPrune = true;
-			} else if (hasValidRange && !incomingKeys.has(key)) {
-				const ev = value.event;
-				const eventTime =
-					ev.realtime_departure ??
-					ev.realtime_arrival ??
-					ev.scheduled_departure ??
-					ev.scheduled_arrival ??
-					0;
-				if (eventTime >= startSec && eventTime <= endSec) {
-					shouldPrune = true;
-				}
 			}
-
 			if (shouldPrune) {
 				eventIndex.delete(key);
 			}
@@ -629,7 +611,6 @@ $: {
 			// Establish/merge meta (primary/routes/shapes) — keep latest
 			if (!data_meta) {
 				data_meta = data;
-				if (page) page.loading = false;
 				shouldPrimeMap = true;
 			} else {
 				// Optimization: reduce object spread garbage
@@ -665,7 +646,6 @@ $: {
 			const refreshedAt = Date.now();
 			if (page) {
 				page.refreshedAt = refreshedAt;
-				page.loading = false;
 			}
 
 			const events = (data.events || []) as any[];
@@ -680,6 +660,7 @@ $: {
 
 			// mergePageEvents is now async
 			await mergePageEvents(id, events, refreshedAt);
+			if (page) page.loading = false;
 
 			// Auto-tune next page size by density (only if it's a primary page fetch)
 			if (page) {
@@ -834,75 +815,35 @@ $: {
 	}
 
 	async function loadEarlier() {
-		if (!scrollContainer) return;
-		if (pages.length === 0) return;
+		if (!scrollContainer || pages.length === 0 || earlier_loading || pages.some((p) => p.loading)) return;
 
-		// Avoid stacking multiple earlier loads while any page is loading
-		if (pages.some((p) => p.loading)) return;
+		const earliestStart = Math.min(...pages.map((p) => p.startSec));
+		const newStart = Math.max(0, earliestStart - 3600);
+		if (newStart === earliestStart) return;
 
 		const beforeHeight = scrollContainer.scrollHeight;
 		const beforeTop = scrollContainer.scrollTop;
-
-		if (hide_past_events) {
-			const earliestStart = Math.min(...pages.map((p) => p.startSec));
-			is_now = false;
-			selected_unix_time = earliestStart;
-			hide_past_events = false;
-			earlier_loading = true;
-			try {
-				await tick();
-			} finally {
-				earlier_loading = false;
-			}
-
-			// Keep the currently visible content anchored after new items are prepended
-			const afterHeight = scrollContainer.scrollHeight;
-			const delta = afterHeight - beforeHeight;
-			scrollContainer.scrollTop = beforeTop + delta;
-			return;
-		}
-
-		// Roll the date picker back one hour from the current anchor time
-		const baseTimeSec = is_now
-			? Math.floor(Date.now() / 1000)
-			: Math.floor(selected_unix_time || Date.now() / 1000);
-		const newSelected = baseTimeSec - 3600;
 		is_now = false;
-		selected_unix_time = newSelected;
-
-		// Fetch one hour of data before the earliest loaded page, keeping existing range
-		const earliestStart = Math.min(...pages.map((p) => p.startSec));
-		const newStart = Math.max(0, earliestStart - 3600);
-		const newEnd = earliestStart;
-
-		// If we've already loaded this exact range, skip
-		if (pages.find((p) => p.startSec === newStart && p.endSec === newEnd)) {
-			return;
-		}
-
+		selected_unix_time = newStart;
+		hide_past_events = false;
 		earlier_loading = true;
 		try {
-			await fetchPage(newStart, newEnd);
+			// Add another hour above the existing departures without removing old rows.
+			await fetchPage(newStart, earliestStart);
 			await tick();
+			scrollContainer.scrollTop = beforeTop + scrollContainer.scrollHeight - beforeHeight;
 		} finally {
 			earlier_loading = false;
 		}
-
-		// Keep the currently visible content anchored after new items are prepended
-		const afterHeight = scrollContainer.scrollHeight;
-		const delta = afterHeight - beforeHeight;
-		scrollContainer.scrollTop = beforeTop + delta;
 	}
 
 	async function handleTimeSelectorChange() {
 		const targetTimeSec = is_now ? Math.floor(Date.now() / 1000) : selected_unix_time;
+		if (!Number.isFinite(targetTimeSec)) return;
 
-		if (is_now) {
-			hide_past_events = true;
-		}
-
+		// Selecting a different time must never clear the station header or metadata.
+		hide_past_events = is_now;
 		if (pages.length === 0) {
-			resetState(false);
 			await loadInitialPages();
 			return;
 		}
@@ -910,50 +851,25 @@ $: {
 		const earliestStart = Math.min(...pages.map((p) => p.startSec));
 		const latestEnd = Math.max(...pages.map((p) => p.endSec));
 
-		// Drastic change check (more than 3 hours outside the currently loaded range)
-		const DRASTIC_LIMIT = 3 * 3600;
-		if (targetTimeSec < earliestStart - DRASTIC_LIMIT || targetTimeSec > latestEnd + DRASTIC_LIMIT) {
-			console.log('Drastic time change, resetting state', targetTimeSec, earliestStart, latestEnd);
-			resetState(false);
-			await loadInitialPages();
-			return;
-		}
-
 		if (targetTimeSec < earliestStart) {
-			// Seamlessly prepend earlier data
 			const newStart = Math.max(0, Math.floor(targetTimeSec));
-			const newEnd = earliestStart;
-			if (newStart < newEnd) {
-				hide_past_events = false;
-
-				let beforeHeight = 0;
-				let beforeTop = 0;
+			if (newStart >= earliestStart) return;
+			const beforeHeight = scrollContainer?.scrollHeight ?? 0;
+			const beforeTop = scrollContainer?.scrollTop ?? 0;
+			earlier_loading = true;
+			try {
+				await fetchPage(newStart, earliestStart);
+				await tick();
 				if (scrollContainer) {
-					beforeHeight = scrollContainer.scrollHeight;
-					beforeTop = scrollContainer.scrollTop;
+					scrollContainer.scrollTop = beforeTop + scrollContainer.scrollHeight - beforeHeight;
 				}
-
-				earlier_loading = true;
-				try {
-					await fetchPage(newStart, newEnd);
-					await tick();
-				} finally {
-					earlier_loading = false;
-				}
-
-				if (scrollContainer) {
-					const afterHeight = scrollContainer.scrollHeight;
-					const delta = afterHeight - beforeHeight;
-					scrollContainer.scrollTop = beforeTop + delta;
-				}
+			} finally {
+				earlier_loading = false;
 			}
-		} else if (targetTimeSec > latestEnd) {
-			// Seamlessly append later data
-			const newStart = latestEnd - OVERLAP_SECONDS;
+		} else if (targetTimeSec >= latestEnd) {
+			const newStart = Math.max(0, latestEnd - OVERLAP_SECONDS);
 			const newEnd = Math.floor(targetTimeSec) + currentPageHours * 3600;
-			if (newStart < newEnd) {
-				await fetchPage(newStart, newEnd);
-			}
+			if (newStart < newEnd) await fetchPage(newStart, newEnd);
 		}
 	}
 
@@ -1285,7 +1201,7 @@ $: {
 					</div>
 
 					{#if Object.keys(filtered_dates_to_events).length > 0}
-						{#each Object.keys(filtered_dates_to_events) as date_code}
+						{#each Object.keys(filtered_dates_to_events) as date_code (date_code)}
 							<p class="text-md font-semibold mt-0 mb-1 mx-3">
 								{new Date(date_code).toLocaleDateString(
 									timezone_to_locale(locale_inside_component, displayTimezone),
@@ -1303,7 +1219,7 @@ $: {
 							{#if active_tab === 'rail' || active_tab === 'rer' || active_tab === 'transilien'}
 								<table class="w-full border-collapse">
 									<tbody>
-										{#each filtered_dates_to_events[date_code] as event}
+										{#each filtered_dates_to_events[date_code] as event (composeEventKey(event))}
 											{@const eventAlerts = alertsByEventKey[composeEventKey(event)] ?? []}
 											<StationScreenTrainRow
 												eurostyle={is_inside_eurostyle}
@@ -1321,7 +1237,7 @@ $: {
 								</table>
 							{:else}
 								<!-- Non-Rail (Div) List -->
-								{#each filtered_dates_to_events[date_code] as event}
+								{#each filtered_dates_to_events[date_code] as event (composeEventKey(event))}
 									{@const shortName =
 										data_meta.routes?.[event.chateau]?.[event.route_id]?.short_name}
 									{@const longName = data_meta.routes?.[event.chateau]?.[event.route_id]?.long_name}
