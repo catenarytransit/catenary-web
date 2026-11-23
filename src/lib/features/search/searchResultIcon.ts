@@ -20,7 +20,7 @@ function transportIcon(value: unknown): string | null {
     if (type === 0 || (type >= 900 && type < 1000)) return ICONS.tram;
     if (type === 1 || (type >= 400 && type < 700)) return ICONS.metro;
     if (type === 2 || (type >= 100 && type < 400)) return ICONS.train;
-    if (type === 3 || (type >= 700 && type < 900)) return ICONS.bus;
+    if (type === 3 || type === 11 || (type >= 200 && type < 210) || (type >= 700 && type < 900)) return ICONS.bus;
   }
   if (typeof value !== 'string') return null;
   const mode = value.toLowerCase();

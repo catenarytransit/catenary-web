@@ -33,7 +33,7 @@
 	import Clock from './Clock.svelte';
 	import StopScreenRow from './StopScreenRow.svelte';
 	import DepartureRouteFilterRow from './DepartureRouteFilterRow.svelte';
-	import { departureRouteFilters, matchesDepartureRouteFilters, routeFiltersEnabled } from '$lib/features/departures/routeFilters';
+	import { departureRouteFilters, departureRouteMode, matchesDepartureRouteFilters, routeFiltersEnabled } from '$lib/features/departures/routeFilters';
 	import StationScreenTrainRow from './StationScreenTrainRow.svelte';
 	import {
 		SingleTrip,
@@ -180,10 +180,9 @@ $: {
 		route_type: number,
 		shortName: string | null | undefined
 	): Mode {
-		if ([3, 11, 700].includes(route_type)) return 'bus';
-		if ([0, 1, 5, 7, 12, 900].includes(route_type)) return 'metro';
-		if ([2, 106, 107, 101, 100, 102, 103].includes(route_type)) return 'rail';
-		return 'other';
+		// Use the same mode classification as the route filter row. In
+		// particular, extended GTFS coach routes (200-209) are bus services.
+		return departureRouteMode(route_type);
 	}
 
 	$: regionId = (() => {
