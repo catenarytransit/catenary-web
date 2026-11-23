@@ -3,11 +3,22 @@ import { layerspercategory } from './layernames';
 import { map_pointer_store, stops_to_hide_store } from '../globalstores';
 import { get } from 'svelte/store';
 
+// Coach stops can share a parent with rail, metro or tram stations. Keep the
+// coach platform selectable even if another route type serves that station.
+// Preserve the outer 'all' so refilter_stops() can append hidden-stop rules.
 export const default_bus_filter = [
 	'all',
-	['!', ['in', 1, ['get', 'route_types']]],
-	['!', ['in', 0, ['get', 'route_types']]],
-	['!', ['in', 2, ['get', 'route_types']]]
+	[
+		'any',
+		['in', 200, ['get', 'route_types']],
+		['in', 200, ['get', 'children_route_types']],
+		[
+			'all',
+			['!', ['in', 1, ['get', 'route_types']]],
+			['!', ['in', 0, ['get', 'route_types']]],
+			['!', ['in', 2, ['get', 'route_types']]]
+		]
+	]
 ];
 
 export const default_metro_filter = [
