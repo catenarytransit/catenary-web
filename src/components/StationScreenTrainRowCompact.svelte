@@ -237,7 +237,7 @@
 	<td class="px-1 py-0.5 text-right w-[80px] align-middle">
 		{#if platform}
 			<span
-				class="bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded text-xs font-bold text-gray-800 dark:text-gray-200 inline-block"
+				class="text-xs font-bold text-gray-800 dark:text-gray-200"
 			>
 				{platform.replace('Track', '').replace('platform', '').replace('Platform', '').trim()}
 			</span>
