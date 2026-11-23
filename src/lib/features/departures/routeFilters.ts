@@ -14,8 +14,14 @@ export interface DepartureRouteFilter {
 	route: DepartureRoute;
 }
 
-export function departureRouteMode(routeType: number): string {
-	if ([3, 11, 700].includes(routeType)) return 'bus';
+export type DepartureRouteMode = 'bus' | 'metro' | 'rail' | 'other';
+
+export function departureRouteMode(routeType: number): DepartureRouteMode {
+	if (
+		[3, 11, 800].includes(routeType) ||
+		(routeType >= 200 && routeType <= 209) ||
+		(routeType >= 700 && routeType <= 799)
+	) return 'bus';
 	if ([0, 1, 5, 7, 12, 900].includes(routeType)) return 'metro';
 	if ([2, 106, 107, 101, 100, 102, 103].includes(routeType)) return 'rail';
 	return 'other';
