@@ -6,6 +6,7 @@ import {
 	geolocation_store,
 	map_pointer_store,
 	show_my_location_store,
+	show_location_circles_store,
 	usunits_store
 } from './globalstores';
 
@@ -88,6 +89,7 @@ export function update_geolocation_source() {
 					acc: geolocation.coords.accuracy,
 					heading: geolocation.coords.heading,
 					show: show_my_location,
+					circles: get(show_location_circles_store),
 					units: usunits
 				});
 

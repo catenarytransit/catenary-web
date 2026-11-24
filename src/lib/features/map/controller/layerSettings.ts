@@ -8,7 +8,7 @@ import {
 	bus_label_with_headsign,
 	trajectory_layerspercategory
 } from '$components/addLayers/addLiveDots';
-import { custom_icons_category_to_layer_id } from '$root/globalstores';
+import { custom_icons_category_to_layer_id, show_location_circles_store } from '$root/globalstores';
 
 export const LAYER_SETTINGS_STORAGE_KEY = 'layersettingsv9';
 
@@ -283,11 +283,17 @@ export function applyLayerSettings(
 	for (const layerId of [
 		'nobearing_position',
 		'geolocationheadingshell',
-		'km_text',
-		'km_line',
 		'userpositionacclayer'
 	]) {
 		setVisibility(map, layerId, showMyLocation);
+	}
+
+	const showCircles = showMyLocation && get(show_location_circles_store);
+	for (const layerId of ['km_text', 'km_line']) {
+		setVisibility(map, layerId, showCircles && !useUsUnits);
+	}
+	for (const layerId of ['miles_text', 'miles_line']) {
+		setVisibility(map, layerId, showCircles && useUsUnits);
 	}
 
 	applyFoamerLayers(map, settings);

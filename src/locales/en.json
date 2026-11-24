@@ -74,6 +74,7 @@
   "ontime": "On time",
   "defaultlang": "Default language",
   "showmylocation": "Show my location",
+  "showlocationcircles": "Show distance circles around me",
   "hidepreviousstops": "Hide previous stops",
   "shownpreviousstops": "Show {n} previous {n, plural, =1 {stop} other{stops}}",
   "Platform": "Platform",

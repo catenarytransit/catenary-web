@@ -19,6 +19,7 @@ import {
 	lock_on_gps_store,
 	map_pointer_store,
 	show_my_location_store,
+	show_location_circles_store,
 	show_topo_global_store,
 	usunits_store
 } from '$root/globalstores';
@@ -130,6 +131,9 @@ export function createMapController(
 			}),
 			show_my_location_store.subscribe((value) => {
 				showMyLocation = value;
+				if (loaded) runLayerSettings();
+			}),
+			show_location_circles_store.subscribe(() => {
 				if (loaded) runLayerSettings();
 			}),
 			additional_filter_for_vehicles_store.subscribe(() => {
