@@ -1125,7 +1125,7 @@ $: {
 									class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'rail' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
 									on:click={() => (active_tab = 'rail')}
 								>
-									<span class="material-symbols-outlined text-lg">train</span>
+									<span aria-hidden="true" class="w-5 h-5 shrink-0 bg-current" style="mask: url('/icons/train-right-fill-color.svg') center / contain no-repeat; -webkit-mask: url('/icons/train-right-fill-color.svg') center / contain no-repeat;"></span>
 									{$_('headingIntercityRail')}
 								</button>
 							{:else if mode === 'rer'}
@@ -1133,7 +1133,7 @@ $: {
 									class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'rer' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
 									on:click={() => (active_tab = 'rer')}
 								>
-									<span class="material-symbols-outlined text-lg">subway</span>
+									<span aria-hidden="true" class="w-5 h-5 shrink-0 bg-current" style="mask: url('/icons/train-right-fill-color.svg') center / contain no-repeat; -webkit-mask: url('/icons/train-right-fill-color.svg') center / contain no-repeat;"></span>
 									RER
 								</button>
 							{:else if mode === 'transilien'}
@@ -1141,7 +1141,7 @@ $: {
 									class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'transilien' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
 									on:click={() => (active_tab = 'transilien')}
 								>
-									<span class="material-symbols-outlined text-lg">train</span>
+									<span aria-hidden="true" class="w-5 h-5 shrink-0 bg-current" style="mask: url('/icons/train-right-fill-color.svg') center / contain no-repeat; -webkit-mask: url('/icons/train-right-fill-color.svg') center / contain no-repeat;"></span>
 									Transilien
 								</button>
 							{:else if mode === 'metro'}
@@ -1149,7 +1149,7 @@ $: {
 									class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'metro' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
 									on:click={() => (active_tab = 'metro')}
 								>
-									<span class="material-symbols-outlined text-lg">tram</span>
+									<span aria-hidden="true" class="w-5 h-5 shrink-0 bg-current" style="mask: url('/icons/tram-right-fill-color.svg') center / contain no-repeat; -webkit-mask: url('/icons/tram-right-fill-color.svg') center / contain no-repeat;"></span>
 									{$_('headingLocalRail')}
 								</button>
 							{:else if mode === 'bus'}
@@ -1157,7 +1157,7 @@ $: {
 									class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'bus' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
 									on:click={() => (active_tab = 'bus')}
 								>
-									<span class="material-symbols-outlined text-lg">directions_bus</span>
+									<span aria-hidden="true" class="w-5 h-5 shrink-0 bg-current" style="mask: url('/icons/bus-right-fill-color.svg') center / contain no-repeat; -webkit-mask: url('/icons/bus-right-fill-color.svg') center / contain no-repeat;"></span>
 									{$_('headingBus')}
 								</button>
 							{:else if mode === 'other'}
@@ -1165,7 +1165,7 @@ $: {
 									class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'other' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
 									on:click={() => (active_tab = 'other')}
 								>
-									<span class="material-symbols-outlined text-lg">more_horiz</span>
+									<svg aria-hidden="true" class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></svg>
 									{$_('headingOther')}
 								</button>
 							{/if}
