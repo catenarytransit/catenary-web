@@ -8,6 +8,7 @@
 		current_orm_layer_type_store,
 		show_zombie_buses_store,
 		show_my_location_store,
+		show_location_circles_store,
 		show_topo_global_store,
 		map_pointer_store
 	} from '../globalstores';
@@ -395,15 +396,8 @@
 			</div>
 			<div>
 				<input
-					on:click={() => {
-						show_my_location_store.update((value) => !value);
-						localStorage.setItem('show-my-location', String(!show_my_location));
-						runSettingsAdapt();
-					}}
-					on:keydown={() => {
-						show_my_location_store.update((value) => !value);
-						localStorage.setItem('show-my-location', String(!show_my_location));
-						runSettingsAdapt();
+					on:change={(event) => {
+						show_my_location_store.set(event.currentTarget.checked);
 					}}
 					checked={show_my_location}
 					id="show-my-location"
@@ -411,6 +405,20 @@
 					class="align-middle my-auto w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
 				/>
 				<label for="show-my-location" class="ml-2">{$_('showmylocation')}</label>
+			</div>
+
+			<div>
+				<input
+					on:change={(event) => {
+						show_location_circles_store.set(event.currentTarget.checked);
+					}}
+					checked={$show_location_circles_store}
+					disabled={!show_my_location}
+					id="show-location-circles"
+					type="checkbox"
+					class="align-middle my-auto w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+				/>
+				<label for="show-location-circles" class="ml-2">{$_('showlocationcircles')}</label>
 			</div>
 
 			<div>
