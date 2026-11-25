@@ -669,9 +669,6 @@ $: {
 			if (destroyed) return false;
 
 			const refreshedAt = Date.now();
-			if (page) {
-				page.refreshedAt = refreshedAt;
-			}
 
 			const events = (data.events || []) as any[];
 
@@ -688,6 +685,7 @@ $: {
 			await mergePageEvents(id, events, refreshedAt);
 			if (destroyed) return false;
 			if (prepend) hide_past_events = false;
+			if (page) page.refreshedAt = refreshedAt;
 			hasLoadedDepartures = true;
 			initialLoadError = null;
 			if (page) {
