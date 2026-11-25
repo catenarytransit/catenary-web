@@ -653,7 +653,7 @@ $: {
 				}
 				if (!data_meta.primary && data.primary) data_meta.primary = data.primary;
 				if (!data_meta.osm_station && data.osm_station) data_meta.osm_station = data.osm_station;
-				if (!data_meta.primary?.timezone && data.primary?.timezone) data_meta.primary = { ...data_meta.primary, ...data.primary };
+				if (!data_meta.primary?.timezone && data.primary?.timezone) data_meta.primary = { ...data_meta.primary, timezone: data.primary.timezone };
 				if (!data_meta.stops?.some((stop: any) => stop.timezone) && data.stops?.length) data_meta.stops = data.stops;
 
 				// Force reactivity
