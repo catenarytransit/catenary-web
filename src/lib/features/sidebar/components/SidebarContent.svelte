@@ -77,7 +77,7 @@
 
 	{#if latest_item_on_stack.data instanceof StopStack}
 		{#await import('$components/StopScreen.svelte') then { default: StopScreen }}
-			{#key latest_item_on_stack}
+			{#key JSON.stringify([latest_item_on_stack.data.chateau_id, latest_item_on_stack.data.stop_id])}
 				<StopScreen
 					preserveCamera={latest_item_on_stack.openedFromMap}
 					chateau={latest_item_on_stack.data.chateau_id}
@@ -91,7 +91,7 @@
 
 	{#if latest_item_on_stack.data instanceof OsmStationStack}
 		{#await import('$components/OsmStationScreen.svelte') then { default: OsmStationScreen }}
-			{#key latest_item_on_stack}
+			{#key latest_item_on_stack.data.osm_id}
 				<OsmStationScreen
 					preserveCamera={latest_item_on_stack.openedFromMap}
 					osm_id={latest_item_on_stack.data.osm_id}

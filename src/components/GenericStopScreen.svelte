@@ -135,6 +135,8 @@ $: {
 	// dynamic page size in hours (auto-tunes based on density)
 	let currentPageHours = 1; // default page size
 	let earlier_loading = false;
+	let destroyed = false;
+	onDestroy(() => { destroyed = true; });
 
 	let refreshTimer: any;
 	let lastShiftTime = Date.now();
@@ -163,8 +165,8 @@ $: {
 	$: displayName = data_meta?.primary?.stop_name ?? data_meta?.osm_station?.name ?? stationName ?? 'Loading...';
 	$: displayLat = data_meta?.primary?.stop_lat ?? data_meta?.osm_station?.lat ?? stationLat;
 	$: displayLon = data_meta?.primary?.stop_lon ?? data_meta?.osm_station?.lon ?? stationLon;
-	$: displayTimezone =
-		data_meta?.primary?.timezone ?? data_meta?.stops?.[0]?.timezone ?? stationTimezone ?? 'UTC';
+	$: knownTimezone = data_meta?.primary?.timezone || data_meta?.osm_station?.timezone || data_meta?.stops?.find((stop: any) => stop.timezone)?.timezone || stationTimezone || null;
+	$: displayTimezone = knownTimezone ?? 'UTC';
 	let show_arrivals_only = false; // Add missing state variable
 	let hide_past_events = true;
 	// Keep the displayed timetable stable until a newly selected time finishes loading.
@@ -555,7 +557,8 @@ $: {
 			for (const ev of chunk) {
 				const tz =
 					data_meta?.primary?.timezone ??
-					data_meta?.stops?.[0]?.timezone ??
+					data_meta?.osm_station?.timezone ??
+					data_meta?.stops?.find((stop: any) => stop.timezone)?.timezone ??
 					stationTimezone ??
 					'UTC';
 				const stamp =
@@ -577,10 +580,15 @@ $: {
 	async function doFetch(
 		startSec: number,
 		endSec: number,
-		page?: { id: string; loading: boolean; refreshedAt: number; error?: string }
-	) {
+		page?: { id: string; loading: boolean; refreshedAt: number; error?: string },
+		prepend = false
+	): Promise<boolean> {
 		const id = page?.id ?? pageIdFor(startSec, endSec);
-		if (page) page.loading = true;
+		if (page) {
+			page.loading = true;
+			page.error = undefined;
+			pages = [...pages];
+		}
 
 		try {
 			console.log(`Fetching ${id} range ${startSec}-${endSec}`);
@@ -589,6 +597,7 @@ $: {
 			if (!resp.ok) throw new Error(`Departure request failed (${resp.status})`);
 			// Optimization: Use native json() parser
 			const data = await resp.json();
+			if (destroyed) return false;
 			console.log(`Fetch ${id} returned items:`, data.events?.length);
 
 			if (data.redirect_to_osm_station_id) {
@@ -612,7 +621,7 @@ $: {
 					}
 					return stack;
 				});
-				return;
+				return false;
 			}
 
 			if (!Array.isArray(data.events)) {
@@ -644,6 +653,8 @@ $: {
 				}
 				if (!data_meta.primary && data.primary) data_meta.primary = data.primary;
 				if (!data_meta.osm_station && data.osm_station) data_meta.osm_station = data.osm_station;
+				if (!data_meta.primary?.timezone && data.primary?.timezone) data_meta.primary = { ...data_meta.primary, timezone: data.primary.timezone };
+				if (!data_meta.stops?.some((stop: any) => stop.timezone) && data.stops?.length) data_meta.stops = data.stops;
 
 				// Force reactivity
 				data_meta = data_meta;
@@ -655,11 +666,9 @@ $: {
 
 			// Yield after parsing and meta merge
 			await yieldToMain();
+			if (destroyed) return false;
 
 			const refreshedAt = Date.now();
-			if (page) {
-				page.refreshedAt = refreshedAt;
-			}
 
 			const events = (data.events || []) as any[];
 
@@ -672,10 +681,17 @@ $: {
 			}
 
 			// mergePageEvents is now async
+			const restoreScroll = prepend ? captureScrollAnchor() : undefined;
 			await mergePageEvents(id, events, refreshedAt);
+			if (destroyed) return false;
+			if (prepend) hide_past_events = false;
+			if (page) page.refreshedAt = refreshedAt;
 			hasLoadedDepartures = true;
 			initialLoadError = null;
-			if (page) page.loading = false;
+			if (page) {
+				page.loading = false;
+				pages = [...pages];
+			}
 
 			// Auto-tune next page size by density (only if it's a primary page fetch)
 			if (page) {
@@ -683,15 +699,18 @@ $: {
 			}
 
 			await tick();
+			if (destroyed) return false;
+			restoreScroll?.();
 
 			if (shouldPrimeMap) {
 				setTimeout(() => primeMapContextFromMeta(), 0);
 			}
 
 			// Only check for more if this was a driven fetch (page exists) and not a background refresh
-			if (page) {
+			if (page && !prepend) {
 				checkIfMoreNeeded(events.length === 0);
 			}
+			return true;
 		} catch (e) {
 			if (page) {
 				page.error = (e as Error).message;
@@ -700,24 +719,33 @@ $: {
 			} else {
 				console.warn('Background refresh failed', e);
 			}
+			return false;
+		} finally {
+			if (page && !destroyed) {
+				page.loading = false;
+				pages = [...pages];
+			}
 		}
 	}
 
-	async function fetchPage(startSec: number, endSec: number) {
+	async function fetchPage(startSec: number, endSec: number, prepend = false) {
 		const id = pageIdFor(startSec, endSec);
 		let page = pages.find((p) => p.id === id);
+		if (page?.loading) return false;
 		if (!page) {
-			page = { id, startSec, endSec, refreshedAt: 0, loading: true };
-			pages.push(page);
+			page = { id, startSec, endSec, refreshedAt: 0, loading: false };
+			pages = [...pages, page];
 		}
-		await doFetch(startSec, endSec, page);
+		const ok = await doFetch(startSec, endSec, page, prepend);
+		if (!ok && !destroyed) pages = pages.filter((p) => p !== page || p.refreshedAt > 0);
+		return ok;
 	}
 
 	async function refreshAllPages() {
-		if (pages.length === 0) return;
+		if (destroyed || pages.length === 0 || earlier_loading || pages.some((p) => p.loading)) return;
 
-		// If is_now is true, check if we need to shift the pages forward
-		if (is_now) {
+		// Keep historical pages pinned while browsing earlier departures.
+		if (is_now && hide_past_events) {
 			const nowMs = Date.now();
 			const elapsedSec = Math.floor((nowMs - lastShiftTime) / 1000);
 			if (elapsedSec >= 60) {
@@ -822,12 +850,29 @@ $: {
 	}
 
 	async function loadNextPage() {
+		if (destroyed || earlier_loading || pages.some((p) => p.loading)) return;
 		if (pages.length === 0) return loadInitialPages();
 		// find max endSec among pages
 		let maxEnd = Math.max(...pages.map((p) => p.endSec));
 		const start = maxEnd - OVERLAP_SECONDS; // overlap to dedupe
 		const end = start + currentPageHours * 3600;
 		await fetchPage(start, end);
+	}
+
+	function captureScrollAnchor(): (() => void) | undefined {
+		const container = scrollContainer;
+		if (!container) return;
+		const bounds = container.getBoundingClientRect();
+		const row = Array.from(container.querySelectorAll('tr, [data-departure-row]')).find((element) => {
+			const rect = element.getBoundingClientRect();
+			return rect.bottom > bounds.top && rect.top < bounds.bottom;
+		});
+		if (!row) return;
+		const top = row.getBoundingClientRect().top - bounds.top;
+		return () => {
+			if (scrollContainer !== container || !container.contains(row)) return;
+			container.scrollTop += row.getBoundingClientRect().top - container.getBoundingClientRect().top - top;
+		};
 	}
 
 	async function loadEarlier() {
@@ -837,17 +882,10 @@ $: {
 		const newStart = Math.max(0, earliestStart - 3600);
 		if (newStart === earliestStart) return;
 
-		const beforeHeight = scrollContainer.scrollHeight;
-		const beforeTop = scrollContainer.scrollTop;
-		is_now = false;
-		selected_unix_time = newStart;
-		hide_past_events = false;
+		// Earlier is pagination, not a change of selected time or navigation state.
 		earlier_loading = true;
 		try {
-			// Add another hour above the existing departures without removing old rows.
-			await fetchPage(newStart, earliestStart);
-			await tick();
-			scrollContainer.scrollTop = beforeTop + scrollContainer.scrollHeight - beforeHeight;
+			await fetchPage(newStart, earliestStart, true);
 		} finally {
 			earlier_loading = false;
 		}
@@ -935,7 +973,7 @@ $: {
 			// We delay slightly to ensure UI is stable
 			setTimeout(() => {
 				// Re-check
-				if (scrollContainer.scrollHeight <= scrollContainer.clientHeight + 50 || isEmpty) {
+				if (!destroyed && scrollContainer && (scrollContainer.scrollHeight <= scrollContainer.clientHeight + 50 || isEmpty)) {
 					loadNextPage();
 				}
 			}, 100);
@@ -1041,17 +1079,15 @@ $: {
 			<div class="flex flex-row ml-1 items-baseline">
 				<h2 class="text-lg font-bold">{displayName}</h2>
 				<p class="ml-auto align-middle">
-					<Clock
-						time_seconds={current_time / 1000}
-						show_seconds={true}
-						timezone={displayTimezone}
-					/>
+					{#if knownTimezone}
+						<Clock time_seconds={current_time / 1000} show_seconds={true} timezone={displayTimezone} />
+					{/if}
 				</p>
 			</div>
 			{#if $footpathDebugEnabled && typeof displayLat === 'number' && typeof displayLon === 'number'}<button type="button" class="rounded-lg border border-amber-600 px-2 py-1 text-xs text-amber-700 dark:text-amber-300" on:click={() => { debugStop = { name: displayName, lat: displayLat, lon: displayLon }; }}>Inspect footpaths</button>{/if}
 			<DirectionsActions name={displayName} lat={displayLat} lon={displayLon} kind={osm_id ? 'station' : 'stop'} locationKey={osm_id ? 'station:' + osm_id : 'stop:' + chateau + ':' + key} />
 			<p class="text-sm ml-1 mb-0">
-				{displayTimezone}
+				{knownTimezone ?? ''}
 				{#if osm_id && show_osm_ids}
 					<span class="font-mono text-xs dark:text-gray-400 text-gray-500 ml-2"
 						>osm id: {osm_id}</span
@@ -1211,7 +1247,8 @@ $: {
 						<button
 							class="mt-1 ml-1 mb-1 px-3 py-1.5 font-semibold border border-gray-400 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-[1px] inline-flex items-center w-auto cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
 							on:click={loadEarlier}
-							disabled={earlier_loading}
+							disabled={earlier_loading || pages.some((p) => p.loading) || !hasLoadedDepartures}
+							aria-busy={earlier_loading}
 						>
 							<span class="inline-block align-bottom mr-1">
 								{#if earlier_loading}
@@ -1276,6 +1313,7 @@ $: {
 									{@const isRatp = event.chateau === IDFM_CHATEAU_ID && isRatpRoute(shortName)}
 									{@const eventAlerts = alertsByEventKey[composeEventKey(event)] ?? []}
 									<div
+										data-departure-row
 										class="mx-1 py-1 border-b-1 border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
 										on:click={() => {
 											data_stack_store.update((x) => {
