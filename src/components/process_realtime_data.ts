@@ -314,28 +314,6 @@ export function rerender_category_live_dots(category: string, map: maplibregl.Ma
 				.filter(
 					(entry): entry is [string, PositionedVehicle] => entry[1].position != null
 				)
-				.filter(([rt_id, vehicle_data]) => {
-					if (
-						vehicle_data.position.latitude == 34.099503 &&
-						vehicle_data.position.longitude == -117.29602
-					) {
-						return false;
-					}
-					if (
-						vehicle_data.position.latitude == 34.250793 &&
-						vehicle_data.position.longitude == -119.205025
-					) {
-						return false;
-					}
-					if (
-						vehicle_data.position.latitude == 34.05573 &&
-						vehicle_data.position.longitude == -118.23351
-					) {
-						return false;
-					} else {
-						return true;
-					}
-				})
 				.map(([rt_id, vehicle_data]) => {
 					return processVehicleFeature(
 						rt_id,
