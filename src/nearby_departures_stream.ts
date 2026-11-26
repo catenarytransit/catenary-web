@@ -223,23 +223,16 @@ export class NearbyDepartureStreamState {
 		if (message.type !== 'nearby_departures') return null;
 		if (!isSnapshot(message.data)) throw new Error('Missing nearby departures payload');
 		const data = message.data;
-		switch (message.phase) {
-			case 'priority':
-				if (message.complete) throw new Error('Priority frame cannot finish the request');
-				if (this.priority) return null;
-				this.priority = data;
-				return this.publishPriority ? { data, complete: false } : null;
-			case 'remaining':
-				if (!message.complete || !this.priority) throw new Error('Invalid remaining frame');
-				this.finished = true;
-				return { data: mergeNearbyDepartures(this.priority, data), complete: true };
-			case 'full':
-				if (!message.complete) throw new Error('Incomplete full frame');
-				this.finished = true;
-				return { data, complete: true };
-			default:
-				throw new Error('Unknown nearby departures phase');
+		if (message.phase === 'full') {
+			if (!message.complete) throw new Error('Incomplete full frame');
+			this.finished = true;
+			return { data, complete: true };
 		}
+		if (!message.phase) throw new Error('Missing nearby departures phase');
+		const snapshot = this.priority ? mergeNearbyDepartures(this.priority, data) : data;
+		this.priority = snapshot;
+		this.finished = message.complete === true;
+		return this.finished || this.publishPriority ? { data: snapshot, complete: this.finished } : null;
 	}
 }
 
@@ -279,7 +272,7 @@ function fetchNearbySocket(
 		socket.onopen = () => {
 			try {
 				socket.send(JSON.stringify({
-					...query, type: 'nearby_departures', request_id: requestId, progressive
+					...query, type: 'nearby_departures', request_id: requestId, progressive, three_phase: true
 				}));
 			} catch (error) {
 				finish(error);
