@@ -1,118 +1,9 @@
 <script lang="ts">
-	type UnixTimestamp = number;
-	type ServiceDate = string;
-
-	interface NearbyDeparturesV3Query {
-		lat: number;
-		lon: number;
-		departure_time?: UnixTimestamp;
-		radius?: number;
-		limit_per_station?: number;
-		limit_per_headsign?: number;
-		skip_realtime?: boolean;
-		rt_timeout_ms?: number;
-	}
-
-	interface StopOutputV3 {
-		gtfs_id: string;
-		name: string;
-		lat: number;
-		lon: number;
-		osm_station_id: number | null;
-		timezone: string;
-	}
-
-	interface NearbyDeparturesDebug {
-		total_time_ms: number;
-		db_connection_time_ms: number;
-		stops_fetch_time_ms: number;
-		etcd_connection_time_ms: number;
-		pipeline_processing_time_ms: number;
-	}
-
-	interface RouteInfoExport {
-		short_name: string | null;
-		long_name: string | null;
-		agency_name: string | null;
-		color: string | null;
-		text_color: string | null;
-		route_type: number;
-
-		/*
-		 * These are added or inspected by the frontend even though the Rust
-		 * RouteInfoExport currently does not explicitly serialize agency_id.
-		 */
-		agency_id?: string;
-	}
-
-	interface AgencyInfo {
-		agency_name: string | null;
-	}
-
-	interface LongDistanceDeparture {
-		scheduled_departure: UnixTimestamp | null;
-		realtime_departure: UnixTimestamp | null;
-		scheduled_arrival: UnixTimestamp | null;
-		realtime_arrival: UnixTimestamp | null;
-		service_date: ServiceDate;
-		headsign: string;
-		platform: string | null;
-		trip_id: string;
-		trip_short_name: string | null;
-		route_id: string;
-		stop_id: string;
-		agency_id: string;
-		cancelled: boolean;
-		delayed: boolean;
-		chateau_id: string;
-		last_stop: boolean;
-		final_station_name: string | null;
-	}
-
-	interface StationDepartureGroup {
-		station_name: string;
-		osm_station_id: number | null;
-		distance_m: number;
-		departures: LongDistanceDeparture[];
-		lat: number;
-		lon: number;
-		timezone: string;
-	}
-
-	interface LocalDeparture {
-		trip_id: string;
-		departure_schedule: UnixTimestamp | null;
-		departure_realtime: UnixTimestamp | null;
-		arrival_schedule: UnixTimestamp | null;
-		arrival_realtime: UnixTimestamp | null;
-		stop_id: string;
-		stop_name: string | null;
-		cancelled: boolean;
-		platform: string | null;
-		service_date: ServiceDate;
-		last_stop: boolean;
-	}
-
-	interface LocalDepartureRouteGroup {
-		chateau_id: string;
-		route_id: string;
-		color: string | null;
-		text_color: string | null;
-		short_name: string | null;
-		long_name: string | null;
-		route_type: number;
-		agency_name: string | null;
-		headsigns: Record<string, LocalDeparture[]>;
-		closest_distance: number;
-	}
-
-	interface NearbyDeparturesV3Response {
-		long_distance: StationDepartureGroup[];
-		local: LocalDepartureRouteGroup[];
-		routes: Record<string, Record<string, RouteInfoExport>>;
-		stops: Record<string, Record<string, StopOutputV3>>;
-		debug: NearbyDeparturesDebug;
-	}
+	import { fetchNearbyDepartures } from '../nearby_departures_stream';
+	import type {
+		UnixTimestamp, StopOutputV3, RouteInfoExport, AgencyInfo, LongDistanceDeparture,
+		StationDepartureGroup, LocalDeparture, LocalDepartureRouteGroup, NearbyDeparturesV3Response
+	} from '../nearby_departures_stream';
 
 	interface StationDisplayItem {
 		type: 'station';
@@ -374,6 +265,8 @@
 	let show_gtfs_ids = get(show_gtfs_ids_store);
 
 	let abort_controller: AbortController | null = null;
+	let active_query_key: string | null = null;
+	let has_snapshot = false;
 
 	type SortMode = 'alpha' | 'distance';
 	const LS_SORT_KEY = 'nearby_sort_mode_v1';
@@ -393,10 +286,10 @@
 		const mode = get(nearby_pick_state_store);
 		if (mode === 1) {
 			const pick = get(nearby_user_picks_store);
-			if (pick?.latitude && pick?.longitude) return { lat: pick.latitude, lng: pick.longitude };
+			if (pick && Number.isFinite(pick.latitude) && Number.isFinite(pick.longitude)) return { lat: pick.latitude, lng: pick.longitude };
 		} else {
 			const geo = get(geolocation_store);
-			if (geo?.coords?.latitude && geo?.coords?.longitude) {
+			if (geo && Number.isFinite(geo.coords.latitude) && Number.isFinite(geo.coords.longitude)) {
 				return { lat: geo.coords.latitude, lng: geo.coords.longitude };
 			}
 		}
@@ -503,7 +396,6 @@
 	let first_load = false;
 	let first_attempt_sent = false;
 	let timeout_first_attempt: ReturnType<typeof setInterval> | null = null;
-	let delayed_refresh_timeout: ReturnType<typeof setTimeout> | null = null;
 	let loading = false;
 	let marker_reference: maplibregl.Marker | null = null;
 	let centre_pin_ripple_id = 0;
@@ -572,13 +464,9 @@
 
 			getNearbyDepartures();
 			const interval = window.setInterval(() => {
-				getNearbyDepartures();
+				// Do not cancel a slow refresh just because the next polling tick arrived.
+				if (!abort_controller) getNearbyDepartures();
 			}, 30_000);
-
-			delayed_refresh_timeout = window.setTimeout(() => {
-				getNearbyDepartures();
-				first_load = true;
-			}, 1500);
 
 			timeout_first_attempt = window.setInterval(() => {
 				if (!first_attempt_sent) {
@@ -593,7 +481,8 @@
 				clearInterval(interval);
 				if (clock_interval) clearInterval(clock_interval);
 				if (timeout_first_attempt) clearInterval(timeout_first_attempt);
-				if (delayed_refresh_timeout) clearTimeout(delayed_refresh_timeout);
+				abort_controller?.abort();
+				abort_controller = null;
 				if (marker_reference) marker_reference.remove();
 				window.removeEventListener('storage', onStorage);
 				window.removeEventListener('resize', onResize);
@@ -664,101 +553,93 @@
 		getNearbyDepartures();
 	}
 
+	function applyNearbySnapshot(data: NearbyDeparturesV3Response) {
+		v3_long_distance = data.long_distance;
+		v3_local = data.local;
+
+		const raw_routes = data.routes;
+		const raw_agencies: Record<string, Record<string, AgencyInfo>> = {};
+		for (const chateau in raw_routes) {
+			raw_agencies[chateau] = {};
+			for (const route_id in raw_routes[chateau]) {
+				const r = raw_routes[chateau][route_id];
+				if (r.agency_name && !r.agency_id) r.agency_id = r.agency_name;
+				if (r.agency_id) raw_agencies[chateau][r.agency_id] = { agency_name: r.agency_name };
+			}
+		}
+		v3_routes = raw_routes;
+		v3_agencies = raw_agencies;
+		v3_stops = data.stops;
+		refilter();
+
+		const stops_context = get(map_pointer_store)?.getSource('stops_context');
+		if (stops_context) {
+			const features = v3_long_distance.map(station => ({
+				type: 'Feature',
+				geometry: { type: 'Point', coordinates: [station.lon, station.lat] },
+				properties: { name: station.station_name, id: station.osm_station_id || 'station' }
+			}));
+			stops_context.setData({ type: 'FeatureCollection', features });
+		}
+	}
+
 	async function getNearbyDepartures() {
+		const query_type = get(nearby_pick_state_store);
+		const coord = currentReferenceCoord();
+		// Preserve the existing ten-minute lookback for date-picker searches.
+		const departure_time = is_now ? undefined :
+			Math.max(0, Math.floor(selected_unix_time - TIME_PREVIOUS_CUTOFF));
+		// GPS jitter is a refresh, whereas a changed pin, mode or date is a new search.
+		const query_key = JSON.stringify([
+			query_type, query_type === 1 ? coord : null, departure_time
+		]);
+
+		abort_controller?.abort();
+		abort_controller = null;
+		if (query_key !== active_query_key) {
+			active_query_key = query_key;
+			has_snapshot = false;
+			first_load = false;
+			applyNearbySnapshot({ long_distance: [], local: [], routes: {}, stops: {} });
+		}
+		if (!coord) {
+			loading = false;
+			first_attempt_sent = false;
+			return;
+		}
+
+		const { lat, lng } = coord;
+		checkEurostyle(lat, lng);
+		checkSwitzerland(lat, lng);
+		first_attempt_sent = true;
 		loading = true;
-		let query_type = get(nearby_pick_state_store);
-		let geolocation_of_user = get(geolocation_store);
-		let lat = 0;
-		let lng = 0;
+		const controller = new AbortController();
+		abort_controller = controller;
 
-		if (query_type == 1) {
-			let user_picks = get(nearby_user_picks_store);
-			if (user_picks != null) {
-				lat = user_picks.latitude;
-				lng = user_picks.longitude;
+		try {
+			const data = await fetchNearbyDepartures(
+				{ lat, lon: lng, limit_per_station: 30, departure_time },
+				!has_snapshot, controller.signal,
+				text => jsonWebWorker.parse(text),
+				priority => {
+					if (controller.signal.aborted || abort_controller !== controller) return;
+					applyNearbySnapshot(priority);
+					has_snapshot = true;
+				}
+			);
+			if (controller.signal.aborted || abort_controller !== controller) return;
+			applyNearbySnapshot(data);
+			has_snapshot = true;
+			// Only completed snapshots are cached; a priority frame is never a complete result.
+			if (query_type === 0) nearby_deps_cache_gps.set(data);
+		} catch (error) {
+			if (!controller.signal.aborted) console.error('Unable to load nearby departures', error);
+		} finally {
+			if (abort_controller === controller) {
+				abort_controller = null;
+				loading = false;
+				first_load = true;
 			}
-		}
-
-		if (query_type == 0 && geolocation_of_user) {
-			lat = geolocation_of_user.coords.latitude;
-			lng = geolocation_of_user.coords.longitude;
-		}
-
-		if (lat != 0 && lng != 0) {
-			checkEurostyle(lat, lng);
-			checkSwitzerland(lat, lng);
-			first_attempt_sent = true;
-			let url = `https://birch_nearby.catenarymaps.org/nearbydeparturesfromcoordsv3?lat=${lat}&lon=${lng}&limit_per_station=30`;
-			if (!is_now) {
-				// When using the date picker, allow some trips before the selected time
-				// by shifting the reference time backwards by TIME_PREVIOUS_CUTOFF.
-				const shifted = Math.max(0, Math.floor(selected_unix_time - TIME_PREVIOUS_CUTOFF));
-				url += `&departure_time=${shifted}`;
-			}
-
-			if (abort_controller) {
-				/* abort_controller.abort(); */
-			}
-			abort_controller = new AbortController();
-			let signal = abort_controller.signal;
-
-			fetch(url, { signal: signal })
-				.then((response) => response.text())
-				.then((text): Promise<NearbyDeparturesV3Response> => jsonWebWorker.parse(text))
-				.then((data: NearbyDeparturesV3Response) => {
-					v3_long_distance = data.long_distance || [];
-					v3_local = data.local || [];
-					loading = false;
-
-					const raw_routes: Record<string, Record<string, RouteInfoExport>> =
-						data.routes ?? {};
-
-					const raw_agencies: Record<string, Record<string, AgencyInfo>> = {};
-					for (let chateau in raw_routes) {
-						if (!raw_agencies[chateau]) raw_agencies[chateau] = {};
-						for (let route_id in raw_routes[chateau]) {
-							let r = raw_routes[chateau][route_id];
-							if (r.agency_name && !r.agency_id) {
-								r.agency_id = r.agency_name;
-							}
-							if (r.agency_id) {
-								raw_agencies[chateau][r.agency_id] = { agency_name: r.agency_name };
-							}
-						}
-					}
-					v3_routes = raw_routes;
-					v3_agencies = raw_agencies;
-					v3_stops = data.stops || {};
-
-					refilter();
-
-					// Optional: Map Updates
-					let map = get(map_pointer_store);
-					if (map && v3_long_distance.length > 0) {
-						let stops_context = map.getSource('stops_context');
-						if (stops_context) {
-							let features = v3_long_distance.map((station) => ({
-								type: 'Feature',
-								geometry: {
-									type: 'Point',
-									coordinates: [station.lon, station.lat]
-								},
-								properties: {
-									name: station.station_name,
-									id: station.osm_station_id || 'station' // Fallback if ID missing
-								}
-							}));
-							stops_context.setData({
-								type: 'FeatureCollection',
-								features: features
-							});
-						}
-					}
-
-					if (query_type == 0) {
-						nearby_deps_cache_gps.set(data);
-					}
-				});
 		}
 	}
 
