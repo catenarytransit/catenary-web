@@ -1,4 +1,4 @@
-import { alertUrl, weatherSymbol } from '$lib/features/map/layers/floodAlerts';
+import { alertFeatureUrl, weatherSymbol } from '$lib/features/map/layers/floodAlerts';
 import * as maplibregl from 'maplibre-gl';
 import type { Writable } from 'svelte/store';
 import { writable, get } from 'svelte/store';
@@ -157,7 +157,7 @@ export function setup_click_handler(
 
 			if (map.getZoom() >= 10 && map.getLayer(weatherSymbol)) {
 				const alert = map.queryRenderedFeatures(clickBbox, { layers: [weatherSymbol] })[0];
-				const url = alertUrl(alert?.properties?.URL);
+				const url = alertFeatureUrl(alert?.properties ?? null);
 				if (url) {
 					data_stack_store.update(items => [...items, new StackInterface(new WeatherAlertStack(url, String(alert.properties.prod_type)), true)].slice(-25));
 					on_sidebar_trigger_store.update(x => x + 1);
