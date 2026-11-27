@@ -32,6 +32,7 @@ export function installFloodAlerts(map: Map) {
 	let data: FeatureCollection = { type: 'FeatureCollection', features: [] };
 	let disposed = false;
 	let busy = false;
+	let lastActive: Feature<Geometry>[] = [];
 	let dark = false;
 	const controller = new AbortController();
 	const unsubscribe = darkMode.subscribe(value => {
@@ -43,16 +44,18 @@ export function installFloodAlerts(map: Map) {
 	});
 	function render() {
 		const active = activeFloodAlerts(data);
+		if (active.features.length === lastActive.length && active.features.every((feature, i) => feature === lastActive[i])) return;
+		lastActive = active.features;
 		const markers: Feature<Geometry>[] = [];
 		for (const feature of active.features) {
 			try { markers.push({ ...pointOnFeature(feature), properties: feature.properties }); }
 			catch { /* Skip malformed geometry. */ }
 		}
-		map.getSource<GeoJSONSource>(source)?.setData(active);
-		map.getSource<GeoJSONSource>(points)?.setData({ type: 'FeatureCollection', features: markers });
+		(map.getSource(source) as GeoJSONSource | undefined)?.setData(active);
+		(map.getSource(points) as GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: markers });
 	}
 	async function refresh() {
-		if (busy || disposed) return;
+		if (busy || disposed || !map.getSource(source)) return;
 		busy = true;
 		try {
 			const response = await fetch(url, { signal: controller.signal, cache: 'no-cache' });
@@ -81,7 +84,7 @@ export function installFloodAlerts(map: Map) {
 				'text-halo-color': dark ? '#202020' : '#ffffff', 'text-halo-width': 1 } });
 		void refresh();
 	}
-	const tick = window.setInterval(() => { if (!disposed) render(); }, 1000);
+	const tick = window.setInterval(() => { if (!disposed && map.getSource(source)) render(); }, 1000);
 	const poll = window.setInterval(() => void refresh(), 60_000);
 	map.on('remove', () => {
 		disposed = true;
