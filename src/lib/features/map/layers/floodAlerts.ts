@@ -10,12 +10,18 @@ const points = 'flood-alert-points';
 const icon = 'flood-alert-icon';
 const url = 'https://raw.githubusercontent.com/catenarytransit/weather-alerts-mirror/main/alerts-on-screen.geojson';
 
+// ArcGIS uses lowercase fields; the archive can retain uppercase fields.
+function alertTime(value: unknown): number {
+	if (typeof value === 'number') return Number.isFinite(value) ? value : NaN;
+	return typeof value === 'string' ? Date.parse(value) : NaN;
+}
+
 export function activeFloodAlerts(data: FeatureCollection, now = Date.now()): FeatureCollection {
 	return { type: 'FeatureCollection', features: data.features.filter(({ properties, geometry }) => {
 		if (!properties || !geometry || typeof properties.prod_type !== 'string' ||
 			! /flood/i.test(properties.prod_type)) return false;
-		const onset = typeof properties.ONSET === 'string' ? Date.parse(properties.ONSET) : NaN;
-		const ends = typeof properties.ENDS === 'string' ? Date.parse(properties.ENDS) : NaN;
+		const onset = alertTime(properties.onset ?? properties.ONSET);
+		const ends = alertTime(properties.ends ?? properties.ENDS);
 		return onset <= now && now < ends;
 	}) };
 }
@@ -26,6 +32,10 @@ export function alertUrl(value: unknown): string | null {
 		const parsed = new URL(value);
 		return parsed.origin === 'https://api.weather.gov' && parsed.pathname.startsWith('/alerts/') ? parsed.href : null;
 	} catch { return null; }
+}
+
+export function alertFeatureUrl(properties: Feature['properties']): string | null {
+	return alertUrl(properties?.url) ?? alertUrl(properties?.URL);
 }
 
 export function installFloodAlerts(map: Map) {
@@ -49,7 +59,7 @@ export function installFloodAlerts(map: Map) {
 		const markers: Feature<Geometry>[] = [];
 		for (const feature of active.features) {
 			try { markers.push({ ...pointOnFeature(feature), properties: feature.properties }); }
-			catch { /* Skip malformed geometry. */ }
+			catch (error) { console.warn('Unable to place weather alert marker', feature.id, error); }
 		}
 		(map.getSource(source) as GeoJSONSource | undefined)?.setData(active);
 		(map.getSource(points) as GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: markers });
