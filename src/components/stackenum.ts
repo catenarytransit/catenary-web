@@ -12,7 +12,8 @@ export class StackInterface {
 		| BlockStack
 		| VehicleHistoryStack
 		| OsmItemStack
-		| OsmStationStack;
+		| OsmStationStack
+		| WeatherAlertStack;
 
 	constructor(
 		data:
@@ -27,7 +28,8 @@ export class StackInterface {
 			| BlockStack
 			| VehicleHistoryStack
 			| OsmItemStack
-			| OsmStationStack,
+			| OsmStationStack
+			| WeatherAlertStack,
 		// Preserve the camera for selections made directly on the map or its chooser.
 		public openedFromMap = false
 	) {
@@ -519,4 +521,8 @@ export function clearNearbyDeparturesUrl(): void {
 	if (page === 'nearby' || page === 'nearby_departures') {
 		replacePageQuery({});
 	}
+}
+
+export class WeatherAlertStack {
+	constructor(public url: string, public title: string) {}
 }
