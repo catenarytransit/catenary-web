@@ -1,6 +1,7 @@
 <script lang="ts">
 	import {
 		BlockStack,
+		WeatherAlertStack,
 		TripPlannerStack,
 		MapSelectionScreen,
 		OsmItemStack,
@@ -14,6 +15,7 @@
 		VehicleSelectedStack,
 		type StackInterface
 	} from '$components/stackenum';
+	import WeatherAlertPanel from './WeatherAlertPanel.svelte';
 	import HomeButton from '$components/SidebarParts/home_button.svelte';
 	import TripPlanner from '$components/TripPlanner.svelte';
 	import SettingsMenu from '$components/SettingsMenu.svelte';
@@ -34,6 +36,12 @@
 {/if}
 
 {#if latest_item_on_stack != null}
+	{#if latest_item_on_stack.data instanceof WeatherAlertStack}
+		<HomeButton />
+		{#key latest_item_on_stack.data.url}
+			<WeatherAlertPanel url={latest_item_on_stack.data.url} title={latest_item_on_stack.data.title} />
+		{/key}
+	{/if}
 	{#if latest_item_on_stack.data instanceof MapSelectionScreen}
 		{#await import('$components/MapSelectionScreen.svelte') then { default: MapSelectionScreenComponent }}
 			<MapSelectionScreenComponent map_selection_screen={latest_item_on_stack.data} {darkMode} />

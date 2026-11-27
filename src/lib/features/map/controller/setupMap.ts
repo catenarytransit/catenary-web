@@ -1,3 +1,4 @@
+import { installFloodAlerts } from '../layers/floodAlerts';
 import { get } from 'svelte/store';
 import type { Writable } from 'svelte/store';
 import { makeFireMap } from '$components/wildfireMap';
@@ -102,6 +103,7 @@ export async function setupMap(
 		console.log('setting up click handler');
 
 		setup_click_handler(map, layerspercategory, setSidebarOpen);
+		installFloodAlerts(map);
 
 		const [stationImage, geoNavImage, geoCircleImage] = await Promise.all([
 			map.loadImage('/station-enter.png'),
