@@ -307,7 +307,13 @@ export function startTrajectoryManager(map: Map) {
 				};
 
 				// Group features into corresponding map sources
-				if (routeType === 3 || routeType === 11) {
+				if (
+					routeType === 3 ||
+					routeType === 11 ||
+					routeType === 800 ||
+					(routeType >= 200 && routeType <= 209) ||
+					(routeType >= 700 && routeType <= 799)
+				) {
 					busesFeatures.push(feature);
 				} else if (routeType === 0 || routeType === 1 || routeType === 5 || routeType === 7) {
 					localrailFeatures.push(feature);

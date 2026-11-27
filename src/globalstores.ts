@@ -115,6 +115,7 @@ export const show_zombie_buses_store = writable(false);
 
 export const usunits_store = writable(false);
 export const show_my_location_store = writable(true);
+export const show_location_circles_store = writable(true);
 export const show_gtfs_ids_store = writable(false);
 export const show_stop_codes_store = writable(false);
 

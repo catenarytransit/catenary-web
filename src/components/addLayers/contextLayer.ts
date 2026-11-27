@@ -211,7 +211,7 @@ export async function makeContextLayerDataset(map: maplibregl.Map) {
 			'icon-optional': false,
 			'icon-keep-upright': false
 		},
-		filter: ['all', ['==', 3, ['get', 'stop_route_type']], ['==', true, ['get', 'cancelled']]],
+		filter: ['all', ['any', ['==', 3, ['get', 'stop_route_type']], ['all', ['>=', ['get', 'stop_route_type'], 200], ['<=', ['get', 'stop_route_type'], 209]]], ['==', true, ['get', 'cancelled']]],
 		minzoom: 9.5
 	});
 
@@ -229,7 +229,7 @@ export async function makeContextLayerDataset(map: maplibregl.Map) {
 			'circle-opacity': ['interpolate', ['linear'], ['zoom'], 11, 0.7, 12, 1]
 			//'circle-emissive-strength': 1
 		},
-		filter: ['all', ['==', 3, ['get', 'stop_route_type']], ['!=', true, ['get', 'cancelled']]],
+		filter: ['all', ['any', ['==', 3, ['get', 'stop_route_type']], ['all', ['>=', ['get', 'stop_route_type'], 200], ['<=', ['get', 'stop_route_type'], 209]]], ['!=', true, ['get', 'cancelled']]],
 		minzoom: 9.5
 	});
 
@@ -262,7 +262,7 @@ export async function makeContextLayerDataset(map: maplibregl.Map) {
 			'text-halo-width': 1
 			//'text-emissive-strength': 1
 		},
-		filter: ['all', ['==', 3, ['get', 'stop_route_type']]],
+		filter: ['all', ['any', ['==', 3, ['get', 'stop_route_type']], ['all', ['>=', ['get', 'stop_route_type'], 200], ['<=', ['get', 'stop_route_type'], 209]]]],
 		minzoom: 12.5
 	});
 
@@ -280,7 +280,7 @@ export async function makeContextLayerDataset(map: maplibregl.Map) {
 			'circle-opacity': ['interpolate', ['linear'], ['zoom'], 11, 0.7, 12, 1]
 			//'circle-emisive-strength': 1
 		},
-		filter: ['all', ['!=', 3, ['get', 'stop_route_type']], ['!=', 2, ['get', 'stop_route_type']]],
+		filter: ['all', ['!', ['any', ['==', 3, ['get', 'stop_route_type']], ['all', ['>=', ['get', 'stop_route_type'], 200], ['<=', ['get', 'stop_route_type'], 209]]]], ['!=', 2, ['get', 'stop_route_type']]],
 		minzoom: 6
 	});
 
@@ -306,7 +306,7 @@ export async function makeContextLayerDataset(map: maplibregl.Map) {
 			'text-halo-width': 1
 			//'text-emissive-strength': 1
 		},
-		filter: ['all', ['!=', 3, ['get', 'stop_route_type']], ['!=', 2, ['get', 'stop_route_type']]],
+		filter: ['all', ['!', ['any', ['==', 3, ['get', 'stop_route_type']], ['all', ['>=', ['get', 'stop_route_type'], 200], ['<=', ['get', 'stop_route_type'], 209]]]], ['!=', 2, ['get', 'stop_route_type']]],
 		minzoom: 9
 	});
 

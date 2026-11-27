@@ -88,21 +88,21 @@
 	{/if}
 
 	<!-- Left: Time (Vertical Stack) -->
-	<td class="px-1 py-0.5 w-[70px] align-middle">
-		<div class="flex flex-col items-start justify-center text-xs">
+	<td class="px-1 py-0.5 w-[70px] align-middle text-left">
+		<div class="flex flex-col items-start justify-center text-left tabular-nums text-sm">
 			{#if event.trip_cancelled}
 				<span class="text-red-500 font-semibold text-xs">{$_('cancelled')}</span>
-				<div class="line-through opacity-70 text-xs">
+				<div class="line-through opacity-70 text-sm">
 					<Clock {timezone} time_seconds={shared_scheduled_time ?? shared_rt_time} {show_seconds} />
 				</div>
 			{:else if event.trip_deleted}
 				<span class="text-red-500 font-semibold text-xs">{$_('deleted')}</span>
-				<div class="line-through opacity-70 text-xs">
+				<div class="line-through opacity-70 text-sm">
 					<Clock {timezone} time_seconds={shared_scheduled_time ?? shared_rt_time} {show_seconds} />
 				</div>
 			{:else if event.stop_cancelled}
 				<span class="text-red-500 font-semibold text-xs">{$_('stop_cancelled')}</span>
-				<div class="line-through opacity-70 text-xs">
+				<div class="line-through opacity-70 text-sm">
 					<Clock {timezone} time_seconds={shared_scheduled_time ?? shared_rt_time} {show_seconds} />
 				</div>
 			{:else}
@@ -110,12 +110,12 @@
 					<!-- Vertical Mode: Scheduled -> Delay -> Realtime -->
 					{#if shared_rt_time != shared_scheduled_time}
 						{#if shared_scheduled_time != null}
-							<span class="text-gray-600 dark:text-gray-400 line-through">
+							<span class="text-gray-600 dark:text-gray-400 line-through text-sm">
 								<Clock {timezone} time_seconds={shared_scheduled_time} {show_seconds} />
 							</span>
 						{/if}
 						<span
-							class={`text-seashore dark:text-seashoredark font-medium ${shared_rt_time < current_time / 1000 ? 'opacity-70' : ''}`}
+							class={`text-seashore dark:text-seashoredark font-medium text-sm ${shared_rt_time < current_time / 1000 ? 'opacity-70' : ''}`}
 						>
 							<Clock {timezone} time_seconds={shared_rt_time} {show_seconds} />
 						</span>
@@ -129,7 +129,7 @@
 					{:else}
 						<!-- On Time (Vertical) - Just show Clock -->
 						<span
-							class={`text-seashore dark:text-seashoredark font-medium ${shared_rt_time < current_time / 1000 ? 'opacity-70' : ''}`}
+							class={`text-seashore dark:text-seashoredark font-medium text-sm ${shared_rt_time < current_time / 1000 ? 'opacity-70' : ''}`}
 						>
 							<Clock {timezone} time_seconds={shared_rt_time} {show_seconds} />
 						</span>
@@ -237,7 +237,7 @@
 	<td class="px-1 py-0.5 text-right w-[80px] align-middle">
 		{#if platform}
 			<span
-				class="bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded text-xs font-bold text-gray-800 dark:text-gray-200 inline-block"
+				class="text-xs font-bold text-gray-800 dark:text-gray-200"
 			>
 				{platform.replace('Track', '').replace('platform', '').replace('Platform', '').trim()}
 			</span>

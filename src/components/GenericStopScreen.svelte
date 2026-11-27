@@ -33,7 +33,7 @@
 	import Clock from './Clock.svelte';
 	import StopScreenRow from './StopScreenRow.svelte';
 	import DepartureRouteFilterRow from './DepartureRouteFilterRow.svelte';
-	import { departureRouteFilters, matchesDepartureRouteFilters, routeFiltersEnabled } from '$lib/features/departures/routeFilters';
+	import { departureRouteFilters, departureRouteMode, matchesDepartureRouteFilters, routeFiltersEnabled } from '$lib/features/departures/routeFilters';
 	import StationScreenTrainRow from './StationScreenTrainRow.svelte';
 	import {
 		SingleTrip,
@@ -117,8 +117,7 @@ $: {
 	const THRESHOLD_HIGH = 150; // many results → use 2h
 	const THRESHOLD_LOW = 40; // sparse → use up to 24h
 
-	// We page forward in time from now. If user toggles previous, we still keep
-	// showing earlier items but we don't load older pages by default.
+	// Keep pages and already loaded departures when navigating in either direction.
 	let pages: Array<{
 		id: string;
 		startSec: number;
@@ -136,6 +135,8 @@ $: {
 	// dynamic page size in hours (auto-tunes based on density)
 	let currentPageHours = 1; // default page size
 	let earlier_loading = false;
+	let destroyed = false;
+	onDestroy(() => { destroyed = true; });
 
 	let refreshTimer: any;
 	let lastShiftTime = Date.now();
@@ -156,15 +157,20 @@ $: {
 	let current_time = Date.now();
 	let fly_to_already = false;
 	let data_meta: any = null; // primary/routes/shapes merged from any page
+	// Full-screen loading is only appropriate before the first successful response.
+	let hasLoadedDepartures = false;
+	let initialLoadError: string | null = null;
 
 	// GTFS departures use primary; OSM departures return station metadata separately.
 	$: displayName = data_meta?.primary?.stop_name ?? data_meta?.osm_station?.name ?? stationName ?? 'Loading...';
 	$: displayLat = data_meta?.primary?.stop_lat ?? data_meta?.osm_station?.lat ?? stationLat;
 	$: displayLon = data_meta?.primary?.stop_lon ?? data_meta?.osm_station?.lon ?? stationLon;
-	$: displayTimezone =
-		data_meta?.primary?.timezone ?? data_meta?.stops?.[0]?.timezone ?? stationTimezone ?? 'UTC';
+	$: knownTimezone = data_meta?.primary?.timezone || data_meta?.osm_station?.timezone || data_meta?.stops?.find((stop: any) => stop.timezone)?.timezone || stationTimezone || null;
+	$: displayTimezone = knownTimezone ?? 'UTC';
 	let show_arrivals_only = false; // Add missing state variable
 	let hide_past_events = true;
+	// Keep the displayed timetable stable until a newly selected time finishes loading.
+	let visible_from_unix_time = initial_selected_unix_time;
 
 	// Filters
 	type Mode = 'rail' | 'rer' | 'transilien' | 'metro' | 'bus' | 'other';
@@ -176,10 +182,9 @@ $: {
 		route_type: number,
 		shortName: string | null | undefined
 	): Mode {
-		if ([3, 11, 700].includes(route_type)) return 'bus';
-		if ([0, 1, 5, 7, 12, 900].includes(route_type)) return 'metro';
-		if ([2, 106, 107, 101, 100, 102, 103].includes(route_type)) return 'rail';
-		return 'other';
+		// Use the same mode classification as the route filter row. In
+		// particular, extended GTFS coach routes (200-209) are bus services.
+		return departureRouteMode(route_type);
 	}
 
 	$: regionId = (() => {
@@ -337,7 +342,7 @@ $: {
 
 		// hide anything behind 1 min
 		let cutoff_time = hide_past_events
-			? (is_now ? Date.now() / 1000 : selected_unix_time) - 1 * 60
+			? (is_now ? Date.now() / 1000 : visible_from_unix_time) - 1 * 60
 			: 0;
 
 		for (const [date_code, events] of Object.entries(raw_grouped_events)) {
@@ -393,7 +398,10 @@ $: {
 		mergedEvents = [];
 		filtered_dates_to_events = {};
 		raw_grouped_events = {};
+		hasLoadedDepartures = false;
+		initialLoadError = null;
 		hide_past_events = true;
+		visible_from_unix_time = selected_unix_time;
 		alerts_expanded = false;
 		lastShiftTime = Date.now();
 		if (clearMeta) {
@@ -505,30 +513,13 @@ $: {
 		}
 
 		// Remove any stale events for this pageId that weren't in the incoming chunk,
-		// or any event in the eventIndex whose time falls within the fetched range but was not returned
+		// without discarding results from overlapping, independently fetched pages
 		const incomingKeys = new Set(incoming.map((ev) => composeEventKey(ev)));
-		const [startSecStr, endSecStr] = pageId.split('-');
-		const startSec = parseInt(startSecStr, 10);
-		const endSec = parseInt(endSecStr, 10);
-		const hasValidRange = !isNaN(startSec) && !isNaN(endSec);
-
 		for (const [key, value] of eventIndex.entries()) {
 			let shouldPrune = false;
 			if (value.pageId === pageId && !incomingKeys.has(key)) {
 				shouldPrune = true;
-			} else if (hasValidRange && !incomingKeys.has(key)) {
-				const ev = value.event;
-				const eventTime =
-					ev.realtime_departure ??
-					ev.realtime_arrival ??
-					ev.scheduled_departure ??
-					ev.scheduled_arrival ??
-					0;
-				if (eventTime >= startSec && eventTime <= endSec) {
-					shouldPrune = true;
-				}
 			}
-
 			if (shouldPrune) {
 				eventIndex.delete(key);
 			}
@@ -566,7 +557,8 @@ $: {
 			for (const ev of chunk) {
 				const tz =
 					data_meta?.primary?.timezone ??
-					data_meta?.stops?.[0]?.timezone ??
+					data_meta?.osm_station?.timezone ??
+					data_meta?.stops?.find((stop: any) => stop.timezone)?.timezone ??
 					stationTimezone ??
 					'UTC';
 				const stamp =
@@ -588,16 +580,24 @@ $: {
 	async function doFetch(
 		startSec: number,
 		endSec: number,
-		page?: { id: string; loading: boolean; refreshedAt: number; error?: string }
-	) {
+		page?: { id: string; loading: boolean; refreshedAt: number; error?: string },
+		prepend = false
+	): Promise<boolean> {
 		const id = page?.id ?? pageIdFor(startSec, endSec);
-		if (page) page.loading = true;
+		if (page) {
+			page.loading = true;
+			page.error = undefined;
+			pages = [...pages];
+		}
 
 		try {
 			console.log(`Fetching ${id} range ${startSec}-${endSec}`);
 			const resp = await fetch(buildUrl(startSec, endSec), { mode: 'cors' });
+			// An error payload must not be mistaken for an empty timetable and erase existing rows.
+			if (!resp.ok) throw new Error(`Departure request failed (${resp.status})`);
 			// Optimization: Use native json() parser
 			const data = await resp.json();
+			if (destroyed) return false;
 			console.log(`Fetch ${id} returned items:`, data.events?.length);
 
 			if (data.redirect_to_osm_station_id) {
@@ -621,7 +621,11 @@ $: {
 					}
 					return stack;
 				});
-				return;
+				return false;
+			}
+
+			if (!Array.isArray(data.events)) {
+				throw new Error('Departure response is missing an events array');
 			}
 
 			let shouldPrimeMap = false;
@@ -629,7 +633,6 @@ $: {
 			// Establish/merge meta (primary/routes/shapes) — keep latest
 			if (!data_meta) {
 				data_meta = data;
-				if (page) page.loading = false;
 				shouldPrimeMap = true;
 			} else {
 				// Optimization: reduce object spread garbage
@@ -650,6 +653,8 @@ $: {
 				}
 				if (!data_meta.primary && data.primary) data_meta.primary = data.primary;
 				if (!data_meta.osm_station && data.osm_station) data_meta.osm_station = data.osm_station;
+				if (!data_meta.primary?.timezone && data.primary?.timezone) data_meta.primary = { ...data_meta.primary, timezone: data.primary.timezone };
+				if (!data_meta.stops?.some((stop: any) => stop.timezone) && data.stops?.length) data_meta.stops = data.stops;
 
 				// Force reactivity
 				data_meta = data_meta;
@@ -661,12 +666,9 @@ $: {
 
 			// Yield after parsing and meta merge
 			await yieldToMain();
+			if (destroyed) return false;
 
 			const refreshedAt = Date.now();
-			if (page) {
-				page.refreshedAt = refreshedAt;
-				page.loading = false;
-			}
 
 			const events = (data.events || []) as any[];
 
@@ -679,7 +681,17 @@ $: {
 			}
 
 			// mergePageEvents is now async
+			const restoreScroll = prepend ? captureScrollAnchor() : undefined;
 			await mergePageEvents(id, events, refreshedAt);
+			if (destroyed) return false;
+			if (prepend) hide_past_events = false;
+			if (page) page.refreshedAt = refreshedAt;
+			hasLoadedDepartures = true;
+			initialLoadError = null;
+			if (page) {
+				page.loading = false;
+				pages = [...pages];
+			}
 
 			// Auto-tune next page size by density (only if it's a primary page fetch)
 			if (page) {
@@ -687,40 +699,53 @@ $: {
 			}
 
 			await tick();
+			if (destroyed) return false;
+			restoreScroll?.();
 
 			if (shouldPrimeMap) {
 				setTimeout(() => primeMapContextFromMeta(), 0);
 			}
 
 			// Only check for more if this was a driven fetch (page exists) and not a background refresh
-			if (page) {
+			if (page && !prepend) {
 				checkIfMoreNeeded(events.length === 0);
 			}
+			return true;
 		} catch (e) {
 			if (page) {
 				page.error = (e as Error).message;
 				page.loading = false;
+				if (!hasLoadedDepartures) initialLoadError = page.error;
 			} else {
 				console.warn('Background refresh failed', e);
+			}
+			return false;
+		} finally {
+			if (page && !destroyed) {
+				page.loading = false;
+				pages = [...pages];
 			}
 		}
 	}
 
-	async function fetchPage(startSec: number, endSec: number) {
+	async function fetchPage(startSec: number, endSec: number, prepend = false) {
 		const id = pageIdFor(startSec, endSec);
 		let page = pages.find((p) => p.id === id);
+		if (page?.loading) return false;
 		if (!page) {
-			page = { id, startSec, endSec, refreshedAt: 0, loading: true };
-			pages.push(page);
+			page = { id, startSec, endSec, refreshedAt: 0, loading: false };
+			pages = [...pages, page];
 		}
-		await doFetch(startSec, endSec, page);
+		const ok = await doFetch(startSec, endSec, page, prepend);
+		if (!ok && !destroyed) pages = pages.filter((p) => p !== page || p.refreshedAt > 0);
+		return ok;
 	}
 
 	async function refreshAllPages() {
-		if (pages.length === 0) return;
+		if (destroyed || pages.length === 0 || earlier_loading || pages.some((p) => p.loading)) return;
 
-		// If is_now is true, check if we need to shift the pages forward
-		if (is_now) {
+		// Keep historical pages pinned while browsing earlier departures.
+		if (is_now && hide_past_events) {
 			const nowMs = Date.now();
 			const elapsedSec = Math.floor((nowMs - lastShiftTime) / 1000);
 			if (elapsedSec >= 60) {
@@ -825,6 +850,7 @@ $: {
 	}
 
 	async function loadNextPage() {
+		if (destroyed || earlier_loading || pages.some((p) => p.loading)) return;
 		if (pages.length === 0) return loadInitialPages();
 		// find max endSec among pages
 		let maxEnd = Math.max(...pages.map((p) => p.endSec));
@@ -833,127 +859,81 @@ $: {
 		await fetchPage(start, end);
 	}
 
+	function captureScrollAnchor(): (() => void) | undefined {
+		const container = scrollContainer;
+		if (!container) return;
+		const bounds = container.getBoundingClientRect();
+		const row = Array.from(container.querySelectorAll('tr, [data-departure-row]')).find((element) => {
+			const rect = element.getBoundingClientRect();
+			return rect.bottom > bounds.top && rect.top < bounds.bottom;
+		});
+		if (!row) return;
+		const top = row.getBoundingClientRect().top - bounds.top;
+		return () => {
+			if (scrollContainer !== container || !container.contains(row)) return;
+			container.scrollTop += row.getBoundingClientRect().top - container.getBoundingClientRect().top - top;
+		};
+	}
+
 	async function loadEarlier() {
-		if (!scrollContainer) return;
-		if (pages.length === 0) return;
+		if (!scrollContainer || pages.length === 0 || earlier_loading || pages.some((p) => p.loading)) return;
 
-		// Avoid stacking multiple earlier loads while any page is loading
-		if (pages.some((p) => p.loading)) return;
-
-		const beforeHeight = scrollContainer.scrollHeight;
-		const beforeTop = scrollContainer.scrollTop;
-
-		if (hide_past_events) {
-			const earliestStart = Math.min(...pages.map((p) => p.startSec));
-			is_now = false;
-			selected_unix_time = earliestStart;
-			hide_past_events = false;
-			earlier_loading = true;
-			try {
-				await tick();
-			} finally {
-				earlier_loading = false;
-			}
-
-			// Keep the currently visible content anchored after new items are prepended
-			const afterHeight = scrollContainer.scrollHeight;
-			const delta = afterHeight - beforeHeight;
-			scrollContainer.scrollTop = beforeTop + delta;
-			return;
-		}
-
-		// Roll the date picker back one hour from the current anchor time
-		const baseTimeSec = is_now
-			? Math.floor(Date.now() / 1000)
-			: Math.floor(selected_unix_time || Date.now() / 1000);
-		const newSelected = baseTimeSec - 3600;
-		is_now = false;
-		selected_unix_time = newSelected;
-
-		// Fetch one hour of data before the earliest loaded page, keeping existing range
 		const earliestStart = Math.min(...pages.map((p) => p.startSec));
 		const newStart = Math.max(0, earliestStart - 3600);
-		const newEnd = earliestStart;
+		if (newStart === earliestStart) return;
 
-		// If we've already loaded this exact range, skip
-		if (pages.find((p) => p.startSec === newStart && p.endSec === newEnd)) {
-			return;
-		}
-
+		// Earlier is pagination, not a change of selected time or navigation state.
 		earlier_loading = true;
 		try {
-			await fetchPage(newStart, newEnd);
-			await tick();
+			await fetchPage(newStart, earliestStart, true);
 		} finally {
 			earlier_loading = false;
 		}
-
-		// Keep the currently visible content anchored after new items are prepended
-		const afterHeight = scrollContainer.scrollHeight;
-		const delta = afterHeight - beforeHeight;
-		scrollContainer.scrollTop = beforeTop + delta;
 	}
 
 	async function handleTimeSelectorChange() {
 		const targetTimeSec = is_now ? Math.floor(Date.now() / 1000) : selected_unix_time;
+		if (!Number.isFinite(targetTimeSec)) return;
 
-		if (is_now) {
-			hide_past_events = true;
-		}
-
+		// Selecting a different time must never clear the station header or metadata.
+		// Preserve existing rows until new data arrives; then apply the new cutoff.
 		if (pages.length === 0) {
-			resetState(false);
 			await loadInitialPages();
+			hide_past_events = true;
+			visible_from_unix_time = targetTimeSec;
 			return;
 		}
 
 		const earliestStart = Math.min(...pages.map((p) => p.startSec));
 		const latestEnd = Math.max(...pages.map((p) => p.endSec));
 
-		// Drastic change check (more than 3 hours outside the currently loaded range)
-		const DRASTIC_LIMIT = 3 * 3600;
-		if (targetTimeSec < earliestStart - DRASTIC_LIMIT || targetTimeSec > latestEnd + DRASTIC_LIMIT) {
-			console.log('Drastic time change, resetting state', targetTimeSec, earliestStart, latestEnd);
-			resetState(false);
-			await loadInitialPages();
-			return;
-		}
-
 		if (targetTimeSec < earliestStart) {
-			// Seamlessly prepend earlier data
 			const newStart = Math.max(0, Math.floor(targetTimeSec));
-			const newEnd = earliestStart;
-			if (newStart < newEnd) {
-				hide_past_events = false;
-
-				let beforeHeight = 0;
-				let beforeTop = 0;
+			if (newStart >= earliestStart) return;
+			const beforeHeight = scrollContainer?.scrollHeight ?? 0;
+			const beforeTop = scrollContainer?.scrollTop ?? 0;
+			earlier_loading = true;
+			try {
+				await fetchPage(newStart, earliestStart);
+				visible_from_unix_time = targetTimeSec;
+				hide_past_events = true;
+				await tick();
 				if (scrollContainer) {
-					beforeHeight = scrollContainer.scrollHeight;
-					beforeTop = scrollContainer.scrollTop;
+					scrollContainer.scrollTop = beforeTop + scrollContainer.scrollHeight - beforeHeight;
 				}
-
-				earlier_loading = true;
-				try {
-					await fetchPage(newStart, newEnd);
-					await tick();
-				} finally {
-					earlier_loading = false;
-				}
-
-				if (scrollContainer) {
-					const afterHeight = scrollContainer.scrollHeight;
-					const delta = afterHeight - beforeHeight;
-					scrollContainer.scrollTop = beforeTop + delta;
-				}
+			} finally {
+				earlier_loading = false;
 			}
-		} else if (targetTimeSec > latestEnd) {
-			// Seamlessly append later data
-			const newStart = latestEnd - OVERLAP_SECONDS;
+		} else if (targetTimeSec >= latestEnd) {
+			const newStart = Math.max(0, latestEnd - OVERLAP_SECONDS);
 			const newEnd = Math.floor(targetTimeSec) + currentPageHours * 3600;
-			if (newStart < newEnd) {
-				await fetchPage(newStart, newEnd);
-			}
+			if (newStart < newEnd) await fetchPage(newStart, newEnd);
+			visible_from_unix_time = targetTimeSec;
+			hide_past_events = true;
+		} else {
+			// The chosen interval is already cached; no request or full-panel reset.
+			visible_from_unix_time = targetTimeSec;
+			hide_past_events = true;
 		}
 	}
 
@@ -993,7 +973,7 @@ $: {
 			// We delay slightly to ensure UI is stable
 			setTimeout(() => {
 				// Re-check
-				if (scrollContainer.scrollHeight <= scrollContainer.clientHeight + 50 || isEmpty) {
+				if (!destroyed && scrollContainer && (scrollContainer.scrollHeight <= scrollContainer.clientHeight + 50 || isEmpty)) {
 					loadNextPage();
 				}
 			}, 100);
@@ -1099,17 +1079,15 @@ $: {
 			<div class="flex flex-row ml-1 items-baseline">
 				<h2 class="text-lg font-bold">{displayName}</h2>
 				<p class="ml-auto align-middle">
-					<Clock
-						time_seconds={current_time / 1000}
-						show_seconds={true}
-						timezone={displayTimezone}
-					/>
+					{#if knownTimezone}
+						<Clock time_seconds={current_time / 1000} show_seconds={true} timezone={displayTimezone} />
+					{/if}
 				</p>
 			</div>
 			{#if $footpathDebugEnabled && typeof displayLat === 'number' && typeof displayLon === 'number'}<button type="button" class="rounded-lg border border-amber-600 px-2 py-1 text-xs text-amber-700 dark:text-amber-300" on:click={() => { debugStop = { name: displayName, lat: displayLat, lon: displayLon }; }}>Inspect footpaths</button>{/if}
 			<DirectionsActions name={displayName} lat={displayLat} lon={displayLon} kind={osm_id ? 'station' : 'stop'} locationKey={osm_id ? 'station:' + osm_id : 'stop:' + chateau + ':' + key} />
 			<p class="text-sm ml-1 mb-0">
-				{displayTimezone}
+				{knownTimezone ?? ''}
 				{#if osm_id && show_osm_ids}
 					<span class="font-mono text-xs dark:text-gray-400 text-gray-500 ml-2"
 						>osm id: {osm_id}</span
@@ -1168,6 +1146,7 @@ $: {
 						bind:unixTime={selected_unix_time}
 						bind:isNow={is_now}
 						timezone={displayTimezone}
+						showTimezone={false}
 						on:change={handleTimeSelectorChange}
 					/>
 				</div>
@@ -1182,7 +1161,7 @@ $: {
 									class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'rail' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
 									on:click={() => (active_tab = 'rail')}
 								>
-									<span class="material-symbols-outlined text-lg">train</span>
+									<span aria-hidden="true" class="w-5 h-5 shrink-0 bg-current" style="mask: url('/icons/train-right-fill-color.svg') center / contain no-repeat; -webkit-mask: url('/icons/train-right-fill-color.svg') center / contain no-repeat;"></span>
 									{$_('headingIntercityRail')}
 								</button>
 							{:else if mode === 'rer'}
@@ -1190,7 +1169,7 @@ $: {
 									class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'rer' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
 									on:click={() => (active_tab = 'rer')}
 								>
-									<span class="material-symbols-outlined text-lg">subway</span>
+									<span aria-hidden="true" class="w-5 h-5 shrink-0 bg-current" style="mask: url('/icons/train-right-fill-color.svg') center / contain no-repeat; -webkit-mask: url('/icons/train-right-fill-color.svg') center / contain no-repeat;"></span>
 									RER
 								</button>
 							{:else if mode === 'transilien'}
@@ -1198,7 +1177,7 @@ $: {
 									class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'transilien' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
 									on:click={() => (active_tab = 'transilien')}
 								>
-									<span class="material-symbols-outlined text-lg">train</span>
+									<span aria-hidden="true" class="w-5 h-5 shrink-0 bg-current" style="mask: url('/icons/train-right-fill-color.svg') center / contain no-repeat; -webkit-mask: url('/icons/train-right-fill-color.svg') center / contain no-repeat;"></span>
 									Transilien
 								</button>
 							{:else if mode === 'metro'}
@@ -1206,7 +1185,7 @@ $: {
 									class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'metro' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
 									on:click={() => (active_tab = 'metro')}
 								>
-									<span class="material-symbols-outlined text-lg">tram</span>
+									<span aria-hidden="true" class="w-5 h-5 shrink-0 bg-current" style="mask: url('/icons/tram-right-fill-color.svg') center / contain no-repeat; -webkit-mask: url('/icons/tram-right-fill-color.svg') center / contain no-repeat;"></span>
 									{$_('headingLocalRail')}
 								</button>
 							{:else if mode === 'bus'}
@@ -1214,7 +1193,7 @@ $: {
 									class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'bus' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
 									on:click={() => (active_tab = 'bus')}
 								>
-									<span class="material-symbols-outlined text-lg">directions_bus</span>
+									<span aria-hidden="true" class="w-5 h-5 shrink-0 bg-current" style="mask: url('/icons/bus-right-fill-color.svg') center / contain no-repeat; -webkit-mask: url('/icons/bus-right-fill-color.svg') center / contain no-repeat;"></span>
 									{$_('headingBus')}
 								</button>
 							{:else if mode === 'other'}
@@ -1222,7 +1201,7 @@ $: {
 									class={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${active_tab === 'other' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
 									on:click={() => (active_tab = 'other')}
 								>
-									<span class="material-symbols-outlined text-lg">more_horiz</span>
+									<svg aria-hidden="true" class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></svg>
 									{$_('headingOther')}
 								</button>
 							{/if}
@@ -1268,7 +1247,8 @@ $: {
 						<button
 							class="mt-1 ml-1 mb-1 px-3 py-1.5 font-semibold border border-gray-400 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-[1px] inline-flex items-center w-auto cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
 							on:click={loadEarlier}
-							disabled={earlier_loading}
+							disabled={earlier_loading || pages.some((p) => p.loading) || !hasLoadedDepartures}
+							aria-busy={earlier_loading}
 						>
 							<span class="inline-block align-bottom mr-1">
 								{#if earlier_loading}
@@ -1285,7 +1265,7 @@ $: {
 					</div>
 
 					{#if Object.keys(filtered_dates_to_events).length > 0}
-						{#each Object.keys(filtered_dates_to_events) as date_code}
+						{#each Object.keys(filtered_dates_to_events) as date_code (date_code)}
 							<p class="text-md font-semibold mt-0 mb-1 mx-3">
 								{new Date(date_code).toLocaleDateString(
 									timezone_to_locale(locale_inside_component, displayTimezone),
@@ -1303,7 +1283,7 @@ $: {
 							{#if active_tab === 'rail' || active_tab === 'rer' || active_tab === 'transilien'}
 								<table class="w-full border-collapse">
 									<tbody>
-										{#each filtered_dates_to_events[date_code] as event}
+										{#each filtered_dates_to_events[date_code] as event (composeEventKey(event))}
 											{@const eventAlerts = alertsByEventKey[composeEventKey(event)] ?? []}
 											<StationScreenTrainRow
 												eurostyle={is_inside_eurostyle}
@@ -1321,7 +1301,7 @@ $: {
 								</table>
 							{:else}
 								<!-- Non-Rail (Div) List -->
-								{#each filtered_dates_to_events[date_code] as event}
+								{#each filtered_dates_to_events[date_code] as event (composeEventKey(event))}
 									{@const shortName =
 										data_meta.routes?.[event.chateau]?.[event.route_id]?.short_name}
 									{@const longName = data_meta.routes?.[event.chateau]?.[event.route_id]?.long_name}
@@ -1333,6 +1313,7 @@ $: {
 									{@const isRatp = event.chateau === IDFM_CHATEAU_ID && isRatpRoute(shortName)}
 									{@const eventAlerts = alertsByEventKey[composeEventKey(event)] ?? []}
 									<div
+										data-departure-row
 										class="mx-1 py-1 border-b-1 border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
 										on:click={() => {
 											data_stack_store.update((x) => {
@@ -1421,16 +1402,25 @@ $: {
 							{/if}
 						{/each}
 
-						<!-- Loader / pager hint -->
+					{:else if !hasLoadedDepartures}
+						{#if initialLoadError}
+							<p class="ml-2" role="alert">Unable to load departures.</p>
+							<button class="ml-2 underline" on:click={loadInitialPages}>Try again</button>
+						{:else}
+							<p class="ml-2">Loading…</p>
+						{/if}
+					{:else}
+						<p class="ml-2">No departures.</p>
+					{/if}
+
+					<!-- Keep the board and its pager mounted during refreshes, including empty pages. -->
+					{#if hasLoadedDepartures}
 						<div class="w-full text-center py-4 text-sm opacity-80">
 							{#if pages.some((p) => p.loading)}
 								<span>{$_('loadingmoredepartures')}…</span>
-							{:else}{/if}
-
+							{/if}
 							<button class="underline" on:click={loadNextPage}>{$_('loadmore')}</button>
 						</div>
-					{:else}
-						<p class="ml-2">Loading…</p>
 					{/if}
 				</div>
 			</div>

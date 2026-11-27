@@ -7,6 +7,8 @@
 	export let unixTime: number = Date.now() / 1000;
 	export let isNow: boolean = true;
 	export let timezone: string = 'UTC';
+	// Hide the caption when the parent already identifies the station time zone.
+	export let showTimezone: boolean = true;
 
 	const dispatch = createEventDispatcher();
 
@@ -473,7 +475,7 @@
 			{$_('now') || 'Now'}
 		</button>
 	</div>
-	{#if timezone && timezone !== 'Local Time'}
+	{#if showTimezone && timezone && timezone !== 'Local Time'}
 		<div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
 			{timezone}
 		</div>

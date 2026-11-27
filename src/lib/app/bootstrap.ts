@@ -9,6 +9,7 @@ import {
 	consentGiven,
 	data_stack_store,
 	show_my_location_store,
+	show_location_circles_store,
 	show_zombie_buses_store,
 	ui_theme_store
 } from '$root/globalstores';
@@ -120,9 +121,16 @@ export function startBrowserRuntime(): () => void {
 	preloadFeatureScreens();
 	cleanupLegacyServiceWorkerCache();
 
-	if (localStorage.getItem('show-my-location') === 'false') {
-		show_my_location_store.set(false);
-	}
+	show_my_location_store.set(localStorage.getItem('show-my-location') !== 'false');
+	show_location_circles_store.set(localStorage.getItem('show-location-circles') !== 'false');
+	cleanups.push(
+		show_my_location_store.subscribe((value) => {
+			localStorage.setItem('show-my-location', String(value));
+		}),
+		show_location_circles_store.subscribe((value) => {
+			localStorage.setItem('show-location-circles', String(value));
+		})
+	);
 
 	if (localStorage.getItem('showzombiebuses') === 'true') {
 		show_zombie_buses_store.set(true);

@@ -1,6 +1,6 @@
 import { get } from 'svelte/store';
 import { createGeoJSONCircleFeature } from '../geoMathsAssist';
-import { ui_theme_store, usunits_store, show_my_location_store } from '../globalstores';
+import { ui_theme_store, usunits_store, show_my_location_store, show_location_circles_store } from '../globalstores';
 import { determineDarkModeToBool } from './determineDarkModeToBool';
 
 /**
@@ -114,7 +114,7 @@ export function setUserCircles(map: maplibregl.Map, lng: number, lat: number) {
 	};
 
 	// If user location display is disabled, hide all radius circles
-	if (!show_my_location) {
+	if (!show_my_location || !get(show_location_circles_store)) {
 		setVisSafe('km_line', 'none');
 		setVisSafe('km_text', 'none');
 		setVisSafe('miles_line', 'none');
